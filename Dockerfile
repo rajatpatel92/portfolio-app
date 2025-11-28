@@ -32,6 +32,9 @@ COPY . .
 # Generate Prisma Client
 RUN npx prisma generate
 
+# Compile seed script
+RUN npx tsc prisma/seed.ts --outDir prisma --module commonjs --target es2017 --skipLibCheck --esModuleInterop
+
 RUN \
     if [ -f yarn.lock ]; then yarn run build; \
     elif [ -f package-lock.json ]; then npm run build; \
@@ -61,8 +64,11 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma schema and migrations for runtime usage if needed (e.g. migrations)
-COPY --from=builder /app/prisma ./prisma
+# Copy Prisma schema, migrations, and compiled seed script
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
+# Install prisma globally to run migrations
+RUN npm install -g prisma
 
 USER nextjs
 
@@ -74,4 +80,4 @@ ENV HOSTNAME "0.0.0.0"
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output
-CMD ["node", "server.js"]
+CMD ["/bin/sh", "-c", "npx prisma migrate deploy && node prisma/seed.js && node server.js"]

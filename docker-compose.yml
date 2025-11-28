@@ -12,6 +12,7 @@ services:
       - NEXTAUTH_URL=${NEXTAUTH_URL}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - AUTH_TRUST_HOST=true
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     depends_on:
       - db
     networks:
