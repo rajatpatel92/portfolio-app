@@ -71,7 +71,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
 # Install prisma globally to run migrations
-RUN npm install -g prisma@5.22.0 bcryptjs
+# Increase timeout and retries for QEMU stability
+RUN npm config set fetch-retry-maxtimeout 600000 \
+    && npm config set fetch-retry-mintimeout 10000 \
+    && npm install -g bcryptjs
+RUN npm install -g --unsafe-perm prisma@5.22.0
 
 # Set NODE_PATH so global modules can be found
 ENV NODE_PATH=/usr/local/lib/node_modules
