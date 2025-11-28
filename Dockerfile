@@ -53,7 +53,7 @@ ENV NODE_ENV production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -68,7 +68,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
 # Install prisma globally to run migrations
-RUN npm install -g prisma@5.22.0
+RUN npm install -g prisma@5.22.0 bcryptjs
+
+# Set NODE_PATH so global modules can be found
+ENV NODE_PATH=/usr/local/lib/node_modules
 
 USER nextjs
 
@@ -80,4 +83,4 @@ ENV HOSTNAME "0.0.0.0"
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output
-CMD ["/bin/sh", "-c", "npx prisma migrate deploy && node prisma/seed.js && node server.js"]
+CMD ["/bin/sh", "-c", "prisma migrate deploy && node prisma/seed.js && node server.js"]
