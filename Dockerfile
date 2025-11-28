@@ -68,7 +68,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
 # Install prisma globally to run migrations
-RUN npm install -g prisma
+RUN npm install -g prisma@5.22.0
 
 USER nextjs
 
