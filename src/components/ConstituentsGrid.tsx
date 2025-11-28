@@ -25,7 +25,7 @@ interface Constituent {
     change1Y: ChangeData | null;
     changeYTD: ChangeData | null;
     inceptionChange: ChangeData;
-    inceptionChange: ChangeData;
+
     xirr?: number | null;
     dividendYield?: number;
 }

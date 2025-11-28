@@ -495,11 +495,14 @@ export class MarketDataService {
                     country: profile.country,
                     sectorAllocations: holdings.sectorWeightings || [],
                     countryAllocations: [], // Yahoo doesn't provide country breakdown easily in this module, leaving empty for now
-                    countryAllocations: [], // Yahoo doesn't provide country breakdown easily in this module, leaving empty for now
+
                     dividendRate: quote.summaryDetail?.dividendRate,
                     dividendYield: quote.summaryDetail?.dividendYield,
                     exDividendDate: calendar.exDividendDate ? new Date(calendar.exDividendDate) : undefined
                 };
+
+                const detail = quote.summaryDetail || {};
+                const keyStats = quote.defaultKeyStatistics || {};
 
                 let dividendRate = detail.dividendRate;
                 let dividendYield = detail.dividendYield;
