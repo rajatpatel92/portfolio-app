@@ -28,7 +28,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: rajatpatel92/portfolio-app
+          images: ${{ secrets.DOCKER_USERNAME }}/portfolio-app
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
