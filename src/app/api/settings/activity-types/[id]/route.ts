@@ -1,0 +1,38 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+export async function PUT(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        const { name, behavior } = await request.json();
+
+        if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+
+        const updated = await prisma.activityType.update({
+            where: { id },
+            data: { name, behavior }
+        });
+
+        return NextResponse.json(updated);
+    } catch (error) {
+        return NextResponse.json({ error: 'Failed to update activity type' }, { status: 500 });
+    }
+}
+
+export async function DELETE(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        await prisma.activityType.delete({
+            where: { id }
+        });
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        return NextResponse.json({ error: 'Failed to delete activity type' }, { status: 500 });
+    }
+}

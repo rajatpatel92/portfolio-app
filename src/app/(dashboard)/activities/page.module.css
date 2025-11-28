@@ -1,0 +1,278 @@
+.container {
+    padding: 2rem;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.025em;
+}
+
+.activitiesGrid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.sidebar {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    position: sticky;
+    top: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.sidebarTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.filterGroup {
+    margin-bottom: 1.5rem;
+}
+
+.filterLabel {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.select {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--card-border);
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.rangeGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.rangeButton {
+    padding: 0.5rem;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-secondary);
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.rangeButton:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.rangeButton.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.main {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.listHeader {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.listTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.tableContainer {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.table th {
+    text-align: left;
+    padding: 1rem;
+    border-bottom: 1px solid var(--card-border);
+    color: var(--text-secondary);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--card-border);
+    color: var(--text-primary);
+}
+
+.row:hover {
+    background-color: var(--hover-bg);
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge.BUY {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.badge.SELL {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+}
+
+.badge.DIVIDEND {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--primary);
+}
+
+.badge.INTEREST {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+}
+
+.pagination {
+    padding: 1rem;
+    border-top: 1px solid var(--card-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pageButton {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.pageButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (max-width: 1024px) {
+    .activitiesGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        position: static;
+    }
+}
+
+.table td {
+    border-bottom: 1px solid var(--card-border);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.table tr:hover {
+    background-color: var(--hover-bg);
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.editButton,
+.deleteButton {
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+.editButton {
+    background-color: #eff6ff;
+    color: var(--primary);
+    border-color: #bfdbfe;
+}
+
+.editButton:hover {
+    background-color: #dbeafe;
+}
+
+.deleteButton {
+    background-color: #fef2f2;
+    color: var(--danger);
+    border-color: #fecaca;
+}
+
+.deleteButton:hover {
+    background-color: #fee2e2;
+}
+
+.formWrapper {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease-out, opacity 0.3s ease-out, margin-bottom 0.3s ease;
+    opacity: 0;
+    margin-bottom: 0;
+}
+
+.formWrapper.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    margin-bottom: 2rem;
+}
+
+.formInner {
+    overflow: hidden;
+}

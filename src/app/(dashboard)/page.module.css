@@ -1,0 +1,271 @@
+.container {
+  padding: 2rem;
+  max-width: 1600px;
+  /* Wider for dashboard */
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 2rem;
+  grid-area: header;
+}
+
+.greeting {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.025em;
+  margin-bottom: 0.5rem;
+}
+
+.date {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.insightsGrid {
+  display: grid;
+  gap: 1.5rem;
+  grid-area: insights;
+  grid-template-columns: 3fr 2fr;
+}
+
+@media (max-width: 1024px) {
+  .insightsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: auto auto;
+  gap: 1.5rem;
+  grid-template-areas:
+    "hero hero stats stats"
+    "insights insights insights insights"
+    "performance performance performance performance"
+    "chart chart chart chart"
+    "table table table table";
+}
+
+/* Hero Section (Net Worth) */
+.heroCard {
+  grid-area: hero;
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  color: white;
+  padding: 2rem;
+  border-radius: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 200px;
+}
+
+.heroLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.heroValue {
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.heroChange {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.2);
+  width: fit-content;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+}
+
+.heroChangeLabel {
+  margin-left: 0.25rem;
+}
+
+/* Stats Grid (XIRR, etc) */
+.statsGrid {
+  grid-area: stats;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.statCard {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  min-height: 200px;
+}
+
+.statLabel {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statValue {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.05em;
+}
+
+.positive {
+  color: var(--success);
+}
+
+.negative {
+  color: var(--danger);
+}
+
+.statValueRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.statAmount {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.05em;
+}
+
+.statPercentPill {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+}
+
+.statPercentPill.positive {
+  background-color: rgba(16, 185, 129, 0.1);
+  /* Emerald-500 with opacity */
+  color: var(--success);
+}
+
+.statPercentPill.negative {
+  background-color: rgba(239, 68, 68, 0.1);
+  /* Red-500 with opacity */
+  color: var(--danger);
+}
+
+/* Chart Section */
+.chartSection {
+  grid-area: chart;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  min-height: 400px;
+}
+
+.performanceSection {
+  grid-area: performance;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  min-height: 400px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.link {
+  color: var(--primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* Table Section */
+.tableSection {
+  grid-area: table;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  overflow: hidden;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50vh;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 1024px) {
+  .dashboardGrid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "hero"
+      "stats"
+      "stats"
+      "insights"
+      "performance"
+      "chart"
+      "table";
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+    /* Keep stats side-by-side on tablet */
+  }
+}
+
+@media (max-width: 640px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+    /* Stack stats on mobile */
+  }
+
+  .heroValue {
+    font-size: 2.5rem;
+  }
+}

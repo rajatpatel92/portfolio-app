@@ -1,0 +1,242 @@
+.container {
+    padding: 2rem;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.025em;
+    margin-bottom: 2rem;
+}
+
+.settingsGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    grid-template-areas:
+        "currency rates ui"
+        "platforms accounts accounts"
+        "invTypes actTypes accTypes";
+}
+
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.currency {
+    grid-area: currency;
+}
+
+.ui {
+    grid-area: ui;
+}
+
+.rates {
+    grid-area: rates;
+}
+
+.invTypes {
+    grid-area: invTypes;
+}
+
+.actTypes {
+    grid-area: actTypes;
+}
+
+.accTypes {
+    grid-area: accTypes;
+}
+
+.platforms {
+    grid-area: platforms;
+}
+
+.accounts {
+    grid-area: accounts;
+}
+
+.cardTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.field {
+    margin-bottom: 1.5rem;
+}
+
+.label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.input,
+.select {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--card-border);
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.form {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.button {
+    padding: 0.75rem 1.5rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.button:hover {
+    background: var(--primary-hover);
+}
+
+.list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.item:last-child {
+    border-bottom: none;
+}
+
+.accountInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.accountName {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.accountMeta {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.deleteButton {
+    padding: 0.25rem 0.75rem;
+    background: transparent;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.deleteButton:hover {
+    background: var(--danger);
+    color: white;
+}
+
+.itemActions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.editButton {
+    padding: 0.25rem 0.75rem;
+    background: transparent;
+    border: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.editButton:hover {
+    border-color: var(--text-primary);
+    color: var(--text-primary);
+}
+
+.editForm {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    align-items: center;
+}
+
+.editActions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.saveButton {
+    padding: 0.25rem 0.75rem;
+    background: var(--success);
+    border: 1px solid var(--success);
+    color: white;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.saveButton:hover {
+    opacity: 0.9;
+}
+
+.cancelButton {
+    padding: 0.25rem 0.75rem;
+    background: transparent;
+    border: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.cancelButton:hover {
+    border-color: var(--text-primary);
+    color: var(--text-primary);
+}
+
+@media (max-width: 1024px) {
+    .settingsGrid {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "currency"
+            "rates"
+            "ui"
+            "platforms"
+            "accounts"
+            "invTypes"
+            "actTypes"
+            "accTypes";
+    }
+}

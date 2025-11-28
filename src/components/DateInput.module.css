@@ -1,0 +1,68 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.inputWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.textInput {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    padding-right: 2.5rem;
+    /* Space for icon */
+    border: 1px solid var(--card-border);
+    border-radius: 0.5rem;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    transition: border-color 0.2s;
+    font-family: inherit;
+}
+
+.textInput:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.textInput.error {
+    border-color: var(--danger);
+}
+
+.pickerWrapper {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.nativeInput {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.icon {
+    font-size: 1.25rem;
+    pointer-events: none;
+    /* Let clicks pass to native input */
+}

@@ -1,0 +1,248 @@
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 1rem;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--card-border);
+    position: relative;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.closeButton {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.closeButton:hover {
+    color: var(--text-primary);
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+}
+
+.stepContent {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.dropZone {
+    border: 2px dashed var(--card-border);
+    border-radius: 0.5rem;
+    padding: 3rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--hover-bg);
+}
+
+.dropZone:hover {
+    border-color: var(--primary);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.uploadIcon {
+    font-size: 3rem;
+    color: var(--text-tertiary);
+    margin-bottom: 1rem;
+}
+
+.fileName {
+    margin-top: 1rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.templateLink {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.primaryButton {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.2s;
+}
+
+.primaryButton:hover {
+    background: var(--primary-hover);
+}
+
+.primaryButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.secondaryButton {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--card-border);
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+}
+
+.secondaryButton:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.loadingState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    gap: 1rem;
+    color: var(--text-secondary);
+}
+
+.spinner {
+    font-size: 2rem;
+    animation: spin 1s linear infinite;
+    color: var(--primary);
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.summary {
+    display: flex;
+    justify-content: space-around;
+    background: var(--hover-bg);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.statLabel {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.statValue {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.success {
+    color: var(--success);
+}
+
+.danger {
+    color: var(--danger);
+}
+
+.errorList {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--card-border);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.errorList h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    color: var(--danger);
+}
+
+.errorList ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.errorList li {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.fixMessage {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.successMessage {
+    text-align: center;
+    padding: 2rem;
+}
+
+.checkIcon {
+    font-size: 3rem;
+    color: var(--success);
+    margin-bottom: 1rem;
+}
+
+.successState {
+    text-align: center;
+    padding: 2rem;
+}
+
+.successIcon {
+    font-size: 4rem;
+    color: var(--success);
+    margin-bottom: 1.5rem;
+}

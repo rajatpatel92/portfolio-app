@@ -1,0 +1,120 @@
+.container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.addButton {
+    padding: 0.75rem 1.5rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.addButton:hover {
+    background: var(--primary-hover);
+}
+
+.tableWrapper {
+    background: var(--card-bg);
+    border-radius: 1rem;
+    border: 1px solid var(--card-border);
+    overflow: hidden;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.th,
+.td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--card-border);
+    color: var(--text-primary);
+}
+
+.th {
+    background: var(--background-subtle);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.deleteButton {
+    padding: 0.5rem 1rem;
+    background: var(--error);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: opacity 0.2s;
+}
+
+.deleteButton:hover {
+    opacity: 0.9;
+}
+
+.formCard {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 1rem;
+    border: 1px solid var(--card-border);
+    margin-bottom: 2rem;
+}
+
+.form {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.input,
+.select {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    background: var(--background);
+    color: var(--text-primary);
+    min-width: 200px;
+}
+
+.cancelButton {
+    padding: 0.75rem 1.5rem;
+    background: var(--background-subtle);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    cursor: pointer;
+}

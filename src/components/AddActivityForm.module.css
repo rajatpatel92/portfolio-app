@@ -1,0 +1,184 @@
+.form {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--card-border);
+    margin-bottom: 2rem;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.field {
+    margin-bottom: 0;
+}
+
+.field>label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.input,
+.select {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--card-border);
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    background-color: var(--input-bg);
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.input:focus,
+.select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.readOnly {
+    background-color: var(--hover-bg);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+.button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.button:hover {
+    background-color: var(--primary-hover);
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.cancelButton {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--card-bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--card-border);
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancelButton:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+    border-color: var(--text-tertiary);
+}
+
+.autocomplete {
+    position: relative;
+}
+
+.results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 300px;
+    /* Ensure dropdown is wide enough */
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 20;
+    list-style: none;
+    padding: 0.5rem 0;
+    margin: 0.5rem 0 0;
+}
+
+.resultItem {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: background-color 0.1s;
+}
+
+.resultItem:hover {
+    background-color: var(--hover-bg);
+}
+
+.resultSymbol {
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 100px;
+    flex-shrink: 0;
+}
+
+.resultName {
+    flex: 1;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.875rem;
+}
+
+.resultExchange {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+.hint {
+    font-size: 0.75rem;
+    color: var(--danger);
+    margin-top: 0.5rem;
+}
+
+.totalDisplay {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    padding: 0.625rem 0.875rem;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 0.5rem;
+    text-align: right;
+    height: 42px;
+    /* Match standard input height */
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}

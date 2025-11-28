@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Platform {
+  id         String     @id @default(uuid())
+  name       String
+  slug       String     @unique
+  currency   String     @default("USD") // USD, CAD, INR
+  activities Activity[]
+  accounts   Account[]
+}
+
+model Account {
+  id         String     @id @default(uuid())
+  name       String
+  type       String     // RRSP, TFSA, etc.
+  currency   String     @default("USD")
+  platformId String
+  platform   Platform   @relation(fields: [platformId], references: [id])
+  activities Activity[]
+}
+
+
+
+model Currency {
+  code       String       @id
+  rateToBase Float
+  investments Investment[]
+}
+
+model Investment {
+  id           String     @id @default(uuid())
+  symbol       String     @unique
+  name         String
+  type         String
+  currencyCode String
+  currency     Currency   @relation(fields: [currencyCode], references: [code])
+  activities   Activity[]
+}
+
+model Activity {
+  id           String     @id @default(uuid())
+  investmentId String
+  investment   Investment @relation(fields: [investmentId], references: [id])
+  type         String     // BUY, SELL, DIVIDEND, SPLIT
+  date         DateTime
+  quantity     Float
+  price        Float
+  fee          Float      @default(0)
+  currency     String     // Currency of the transaction
+  platformId   String?
+  platform     Platform?  @relation(fields: [platformId], references: [id])
+  accountId    String?
+  account      Account?   @relation(fields: [accountId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model MarketDataCache {
+  symbol        String   @id
+  price         Float
+  change        Float
+  changePercent Float
+  currency      String
+  history       Json?    // Historical price data (map of date -> price)
+  sectorAllocations Json? // ETF Sector breakdown
+  countryAllocations Json? // ETF Country breakdown
+  sector        String?
+  country       String?
+  dividendRate  Float?
+  dividendYield Float?
+  exDividendDate DateTime?
+  lastUpdated   DateTime @default(now())
+}
+
+model InvestmentType {
+  id   String @id @default(uuid())
+  name String @unique
+}
+
+model ActivityType {
+  id       String @id @default(uuid())
+  name     String @unique
+  behavior String // 'ADD', 'REMOVE', 'NEUTRAL'
+}
+
+model AccountType {
+  id       String @id @default(uuid())
+  name     String
+  currency String @default("USD")
+
+  @@unique([name, currency])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  role      String   @default("VIEWER") // ADMIN, EDITOR, VIEWER
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
