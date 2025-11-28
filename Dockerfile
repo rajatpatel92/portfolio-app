@@ -35,6 +35,9 @@ RUN npx prisma generate
 # Compile seed script
 RUN npx tsc prisma/seed.ts --outDir prisma --module commonjs --target es2017 --skipLibCheck --esModuleInterop
 
+# Increase memory limit for build
+ENV NODE_OPTIONS=--max-old-space-size=4096
+
 RUN \
     if [ -f yarn.lock ]; then yarn run build; \
     elif [ -f package-lock.json ]; then npm run build; \
