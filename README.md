@@ -34,6 +34,28 @@ This guide explains how to deploy the Portfolio App using Docker and Docker Comp
     Open your browser and navigate to:
     [http://localhost:3000](http://localhost:3000)
 
+## Run from Docker Hub
+
+To run the application using the pre-built image from Docker Hub (`rajatpatel7/portfolio-app:latest`) instead of building locally:
+
+1.  **Configure Environment**: Follow Step 2 in **Setup** to create your `.env` file.
+
+2.  **Update Docker Compose**:
+    Open `docker-compose.yml` and replace the `build` section for the `app` service with the `image` property:
+
+    ```yaml
+    services:
+      app:
+        image: rajatpatel7/portfolio-app:latest
+        # build: ... (remove or comment out the build section)
+        ...
+    ```
+
+3.  **Start the App**:
+    ```bash
+    docker-compose up -d
+    ```
+
 ## Management
 
 -   **Stop the application**:
