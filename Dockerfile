@@ -1,5 +1,6 @@
 
 FROM node:22-alpine AS base
+RUN apk add --no-cache openssl
 
 # Install dependencies only when needed
 FROM base AS deps
