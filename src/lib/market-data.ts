@@ -314,10 +314,21 @@ export class MarketDataService {
             }
         } catch (error) {
             console.error(`Error fetching exchange rate for ${from}/${to}:`, error);
+
+            // Fallback: Check cache again, return it even if expired (stale data is better than no data)
+            const cached = await prisma.marketDataCache.findUnique({
+                where: { symbol: reverseSymbol } // Corrected to use reverseSymbol for fallback
+            });
+
+            if (cached) {
+                console.warn(`Using stale cache for ${reverseSymbol} due to API error`); // Corrected to use reverseSymbol
+                return 1 / cached.price; // Invert the cached price as it's for the reverse symbol
+            }
         }
 
         return null;
     }
+
 
     /**
      * Get historical prices for performance calculation with caching (24h)
