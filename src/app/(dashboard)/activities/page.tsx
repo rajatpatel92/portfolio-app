@@ -200,6 +200,7 @@ export default function ActivitiesPage() {
 
     const [selectedActivities, setSelectedActivities] = useState<Set<string>>(new Set());
     const [showImportModal, setShowImportModal] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
 
     const handleBatchDelete = async () => {
         if (selectedActivities.size === 0) return;
@@ -397,34 +398,97 @@ export default function ActivitiesPage() {
                         >
                             Fetch Dividends
                         </button>
-                        <button
-                            onClick={handleExport}
-                            style={{
-                                background: 'var(--card-bg)',
-                                color: 'var(--text-primary)',
-                                border: '1px solid var(--card-border)',
-                                padding: '0.75rem 1.5rem',
-                                borderRadius: '0.5rem',
-                                fontWeight: 600,
-                                cursor: 'pointer'
-                            }}
-                        >
-                            Export CSV
-                        </button>
-                        <button
-                            onClick={() => setShowImportModal(true)}
-                            style={{
-                                background: 'var(--card-bg)',
-                                color: 'var(--text-primary)',
-                                border: '1px solid var(--card-border)',
-                                padding: '0.75rem 1.5rem',
-                                borderRadius: '0.5rem',
-                                fontWeight: 600,
-                                cursor: 'pointer'
-                            }}
-                        >
-                            Import CSV
-                        </button>
+                        <div style={{ position: 'relative' }}>
+                            <button
+                                onClick={() => setShowMenu(!showMenu)}
+                                style={{
+                                    background: 'var(--card-bg)',
+                                    color: 'var(--text-primary)',
+                                    border: '1px solid var(--card-border)',
+                                    padding: '0.75rem',
+                                    borderRadius: '0.5rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '42px',
+                                    height: '42px'
+                                }}
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="1" />
+                                    <circle cx="12" cy="5" r="1" />
+                                    <circle cx="12" cy="19" r="1" />
+                                </svg>
+                            </button>
+
+                            {showMenu && (
+                                <>
+                                    <div
+                                        style={{ position: 'fixed', inset: 0, zIndex: 10 }}
+                                        onClick={() => setShowMenu(false)}
+                                    />
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '100%',
+                                        right: 0,
+                                        marginTop: '0.5rem',
+                                        background: 'var(--card-bg)',
+                                        border: '1px solid var(--card-border)',
+                                        borderRadius: '0.5rem',
+                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                        zIndex: 20,
+                                        minWidth: '160px',
+                                        overflow: 'hidden'
+                                    }}>
+                                        <button
+                                            onClick={() => {
+                                                handleExport();
+                                                setShowMenu(false);
+                                            }}
+                                            style={{
+                                                display: 'block',
+                                                width: '100%',
+                                                textAlign: 'left',
+                                                padding: '0.75rem 1rem',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: 'var(--text-primary)',
+                                                cursor: 'pointer',
+                                                fontSize: '0.875rem'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            Export CSV
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowImportModal(true);
+                                                setShowMenu(false);
+                                            }}
+                                            style={{
+                                                display: 'block',
+                                                width: '100%',
+                                                textAlign: 'left',
+                                                padding: '0.75rem 1rem',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: 'var(--text-primary)',
+                                                cursor: 'pointer',
+                                                fontSize: '0.875rem',
+                                                borderTop: '1px solid var(--card-border)'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            Import CSV
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                         <button
                             onClick={() => {
                                 setEditingActivity(null);

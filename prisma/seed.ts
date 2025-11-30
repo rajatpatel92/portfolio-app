@@ -48,6 +48,73 @@ async function main() {
         });
     }
     console.log('Exchange rates seeded.');
+
+    // Seed Investment Types
+    const investmentTypes = [
+        'Stock', 'ETF', 'Mutual Fund', 'Crypto', 'Bond', 'GIC', 'REIT', 'Cash'
+    ];
+    for (const name of investmentTypes) {
+        await prisma.investmentType.upsert({
+            where: { name },
+            update: {},
+            create: { name },
+        });
+    }
+    console.log('Investment types seeded.');
+
+    // Seed Account Types
+    const accountTypes = [
+        // Canada
+        { name: 'TFSA', currency: 'CAD' },
+        { name: 'RRSP', currency: 'CAD' },
+        { name: 'FHSA', currency: 'CAD' },
+        { name: 'RESP', currency: 'CAD' },
+        { name: 'LIRA', currency: 'CAD' },
+        { name: 'Non-Registered', currency: 'CAD' },
+        { name: 'Margin', currency: 'CAD' },
+        // India
+        { name: 'Demat', currency: 'INR' },
+        { name: 'PPF', currency: 'INR' },
+        { name: 'EPF', currency: 'INR' },
+        { name: 'NPS', currency: 'INR' },
+        { name: 'Savings', currency: 'INR' },
+        { name: 'NRE', currency: 'INR' },
+        { name: 'NRO', currency: 'INR' },
+        // US
+        { name: '401(k)', currency: 'USD' },
+        { name: 'Roth IRA', currency: 'USD' },
+        { name: 'Traditional IRA', currency: 'USD' },
+        { name: 'Brokerage', currency: 'USD' },
+    ];
+
+    for (const type of accountTypes) {
+        await prisma.accountType.upsert({
+            where: { name_currency: { name: type.name, currency: type.currency } },
+            update: {},
+            create: { name: type.name, currency: type.currency },
+        });
+    }
+    console.log('Account types seeded.');
+
+    // Seed Activity Types
+    const activityTypes = [
+        { name: 'BUY', behavior: 'ADD' },
+        { name: 'SELL', behavior: 'REMOVE' },
+        { name: 'DIVIDEND', behavior: 'NEUTRAL' },
+        { name: 'INTEREST', behavior: 'NEUTRAL' },
+        { name: 'SPLIT', behavior: 'NEUTRAL' },
+        { name: 'DEPOSIT', behavior: 'ADD' },
+        { name: 'WITHDRAWAL', behavior: 'REMOVE' },
+    ];
+
+    for (const type of activityTypes) {
+        await prisma.activityType.upsert({
+            where: { name: type.name },
+            update: { behavior: type.behavior },
+            create: { name: type.name, behavior: type.behavior },
+        });
+    }
+    console.log('Activity types seeded.');
 }
 
 main()
