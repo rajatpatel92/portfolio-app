@@ -398,6 +398,23 @@ export default function ActivitiesPage() {
                         >
                             Fetch Dividends
                         </button>
+                        <button
+                            onClick={() => {
+                                setEditingActivity(null);
+                                setShowAddForm(!showAddForm);
+                            }}
+                            style={{
+                                background: 'var(--primary)',
+                                color: 'white',
+                                border: 'none',
+                                padding: '0.75rem 1.5rem',
+                                borderRadius: '0.5rem',
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                            }}
+                        >
+                            {showAddForm ? 'Close Form' : '+ Add Activity'}
+                        </button>
                         <div style={{ position: 'relative' }}>
                             <button
                                 onClick={() => setShowMenu(!showMenu)}
@@ -489,23 +506,6 @@ export default function ActivitiesPage() {
                                 </>
                             )}
                         </div>
-                        <button
-                            onClick={() => {
-                                setEditingActivity(null);
-                                setShowAddForm(!showAddForm);
-                            }}
-                            style={{
-                                background: 'var(--primary)',
-                                color: 'white',
-                                border: 'none',
-                                padding: '0.75rem 1.5rem',
-                                borderRadius: '0.5rem',
-                                fontWeight: 600,
-                                cursor: 'pointer'
-                            }}
-                        >
-                            {showAddForm ? 'Close Form' : '+ Add Activity'}
-                        </button>
                     </div>
                 )}
             </header>
