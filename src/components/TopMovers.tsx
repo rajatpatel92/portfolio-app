@@ -19,7 +19,16 @@ export default function TopMovers({ constituents }: TopMoversProps) {
     const gainers = sorted.slice(0, 3).filter(c => c.dayChange.percent > 0);
     const losers = sorted.slice(-3).reverse().filter(c => c.dayChange.percent < 0);
 
-    if (gainers.length === 0 && losers.length === 0) return null;
+    if (gainers.length === 0 && losers.length === 0) {
+        return (
+            <div className={styles.card}>
+                <h3 className={styles.title}>Top Movers (1D)</h3>
+                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    Please add activity to see this list
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.card}>

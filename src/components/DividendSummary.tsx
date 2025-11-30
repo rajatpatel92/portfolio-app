@@ -15,6 +15,17 @@ export default function DividendSummary({ dividendsYTD, upcomingDividends = [], 
     const { format } = useCurrency();
     const { formatDate } = useDate();
 
+    if (totalValue === 0 && dividendsYTD === 0 && projectedDividends === 0 && upcomingDividends.length === 0) {
+        return (
+            <div className={styles.card}>
+                <h3 className={styles.title}>Dividends</h3>
+                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    Please add activity to see this list
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className={styles.card}>
             <h3 className={styles.title}>Dividends</h3>

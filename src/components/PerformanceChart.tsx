@@ -181,8 +181,21 @@ export default function PerformanceChart({
                 </div>
             </div>
 
-            <div className={styles.chartWrapper}>
+            <div className={styles.chartWrapper} style={{ position: 'relative' }}>
                 {loading && <div className={styles.loading}>Loading...</div>}
+                {!loading && chartData.length === 0 && (
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--text-secondary)',
+                        zIndex: 10
+                    }}>
+                        Please add activity to see this list
+                    </div>
+                )}
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartData}>
                         <defs>
