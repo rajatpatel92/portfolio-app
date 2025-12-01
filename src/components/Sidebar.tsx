@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -29,6 +29,11 @@ export default function Sidebar() {
     const { currency, setCurrency } = useCurrency();
     const { theme, toggleTheme } = useTheme();
     const [isOpen, setIsOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const { data: session } = useSession();
     const role = (session?.user as any)?.role || 'VIEWER';
@@ -111,12 +116,15 @@ export default function Sidebar() {
                             <option value="INR">INR (₹)</option>
                         </select>
 
+
+
                         <button
                             className={styles.themeToggle}
                             onClick={toggleTheme}
                             aria-label="Toggle Dark Mode"
                         >
-                            {theme === 'light' ? <MdDarkMode size={20} /> : <MdLightMode size={20} />}
+                            {mounted && (theme === 'light' ? <MdDarkMode size={20} /> : <MdLightMode size={20} />)}
+                            {!mounted && <div style={{ width: 20, height: 20 }} />} {/* Placeholder to prevent layout shift */}
                         </button>
 
                         <button
