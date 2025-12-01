@@ -21,6 +21,7 @@ export default function DateInput({ value, onChange, label, id, required, classN
     // Update display value when value or format changes
     useEffect(() => {
         if (value) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setInputValue(formatDate(value));
         } else {
             setInputValue('');

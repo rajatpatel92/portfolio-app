@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+const fs = require('fs');
 const YahooFinance = require('yahoo-finance2').default;
 const yahooFinance = new YahooFinance({
     suppressNotices: ['yahooSurvey']

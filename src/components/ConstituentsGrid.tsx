@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './ConstituentsGrid.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
 
@@ -94,8 +96,10 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
         );
     };
 
+    const router = useRouter();
+
     const handleRowClick = (symbol: string) => {
-        window.location.href = `/analysis/${symbol}`;
+        router.push(`/analysis/${symbol}`);
     };
 
     return (

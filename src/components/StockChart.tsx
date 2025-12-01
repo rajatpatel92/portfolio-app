@@ -32,6 +32,7 @@ export default function StockChart({ data, currency: assetCurrency, avgPriceHist
     // Fetch intraday data when range is 1D
     useEffect(() => {
         if (range === '1D' && symbol) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLoadingIntraday(true);
             fetch(`/api/market-data/intraday?symbol=${encodeURIComponent(symbol)}`)
                 .then(res => res.json())

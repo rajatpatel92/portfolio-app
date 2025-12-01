@@ -1,6 +1,8 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import styles from './page.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
 
@@ -116,9 +118,9 @@ export default function Dashboard() {
             setCustomEnd={setCustomEnd}
           />
           <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
-            <a href="/analysis" className={styles.link}>
+            <Link href="/analysis" className={styles.link}>
               Detailed Analysis &rarr;
-            </a>
+            </Link>
           </div>
         </section>
 

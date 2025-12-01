@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { MarketDataService } from '@/lib/market-data';
 import YahooFinance from 'yahoo-finance2';
@@ -10,7 +12,7 @@ const yahooFinance = new YahooFinance({
 // Helper to generate date range
 function getDates(startDate: Date, endDate: Date) {
     const dates = [];
-    let currentDate = new Date(startDate);
+    const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
         dates.push(new Date(currentDate));
         currentDate.setDate(currentDate.getDate() + 1);

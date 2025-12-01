@@ -16,17 +16,17 @@ interface CurrencyContextType {
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-    const [currency, setCurrency] = useState<CurrencyCode>('CAD');
+    const [currency, setCurrency] = useState<CurrencyCode>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('portfolio_currency');
+            if (saved && (saved === 'USD' || saved === 'CAD' || saved === 'INR')) {
+                return saved as CurrencyCode;
+            }
+        }
+        return 'CAD';
+    });
     const [rates, setRates] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
-
-    // Load from localStorage on mount
-    useEffect(() => {
-        const saved = localStorage.getItem('portfolio_currency');
-        if (saved && (saved === 'USD' || saved === 'CAD' || saved === 'INR')) {
-            setCurrency(saved as CurrencyCode);
-        }
-    }, []);
 
     // Save to localStorage when changed
     useEffect(() => {

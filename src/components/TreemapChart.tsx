@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { ResponsiveContainer, Treemap, Tooltip } from 'recharts';
@@ -12,7 +13,6 @@ const COLORS = ['#8884d8', '#83a6ed', '#8dd1e1', '#82ca9d', '#a4de6c', '#d0ed57'
 export default function TreemapChart({ data }: TreemapChartProps) {
     const { format, convert } = useCurrency();
 
-    // Transform data into hierarchy: Root -> Type -> Symbol
     const treeData: any[] = [
         {
             name: 'Portfolio',
@@ -30,49 +30,6 @@ export default function TreemapChart({ data }: TreemapChartProps) {
             }, {}))
         }
     ];
-
-    const CustomContent = (props: any) => {
-        const { root, depth, x, y, width, height, index, name, value } = props;
-
-        return (
-            <g>
-                <rect
-                    x={x}
-                    y={y}
-                    width={width}
-                    height={height}
-                    style={{
-                        fill: depth < 2 ? COLORS[index % COLORS.length] : 'rgba(255,255,255,0)',
-                        stroke: '#fff',
-                        strokeWidth: 2 / (depth + 1e-10),
-                        strokeOpacity: 1 / (depth + 1e-10),
-                    }}
-                />
-                {depth === 1 ? (
-                    <text
-                        x={x + width / 2}
-                        y={y + height / 2 + 7}
-                        textAnchor="middle"
-                        fill="#fff"
-                        fontSize={14}
-                    >
-                        {name}
-                    </text>
-                ) : null}
-                {depth === 2 && width > 50 && height > 30 ? (
-                    <text
-                        x={x + width / 2}
-                        y={y + height / 2}
-                        textAnchor="middle"
-                        fill="#fff"
-                        fontSize={12}
-                    >
-                        {name}
-                    </text>
-                ) : null}
-            </g>
-        );
-    };
 
     return (
         <ResponsiveContainer width="100%" height="100%">
@@ -98,3 +55,46 @@ export default function TreemapChart({ data }: TreemapChartProps) {
         </ResponsiveContainer>
     );
 }
+
+const CustomContent = (props: any) => {
+    const { root, depth, x, y, width, height, index, name, value } = props;
+
+    return (
+        <g>
+            <rect
+                x={x}
+                y={y}
+                width={width}
+                height={height}
+                style={{
+                    fill: depth < 2 ? COLORS[index % COLORS.length] : 'rgba(255,255,255,0)',
+                    stroke: '#fff',
+                    strokeWidth: 2 / (depth + 1e-10),
+                    strokeOpacity: 1 / (depth + 1e-10),
+                }}
+            />
+            {depth === 1 ? (
+                <text
+                    x={x + width / 2}
+                    y={y + height / 2 + 7}
+                    textAnchor="middle"
+                    fill="#fff"
+                    fontSize={14}
+                >
+                    {name}
+                </text>
+            ) : null}
+            {depth === 2 && width > 50 && height > 30 ? (
+                <text
+                    x={x + width / 2}
+                    y={y + height / 2}
+                    textAnchor="middle"
+                    fill="#fff"
+                    fontSize={12}
+                >
+                    {name}
+                </text>
+            ) : null}
+        </g>
+    );
+};

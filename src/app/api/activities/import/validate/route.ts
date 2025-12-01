@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import Papa from 'papaparse';
@@ -27,8 +28,10 @@ export async function POST(req: NextRequest) {
             }, { status: 400 });
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rows = parseResult.data as any[];
         const errors: { row: number, message: string }[] = [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const validRows: any[] = [];
 
         // Fetch reference data for validation

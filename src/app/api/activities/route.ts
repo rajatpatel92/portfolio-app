@@ -23,7 +23,7 @@ export async function POST(request: Request) {
             const name = body.name || marketData?.symbol || symbol;
 
             // Ensure Currency exists
-            let dbCurrency = await prisma.currency.findUnique({ where: { code: currencyCode } });
+            const dbCurrency = await prisma.currency.findUnique({ where: { code: currencyCode } });
             if (!dbCurrency) {
                 // Default rate to 1 if unknown, should be updated via background job or API
                 await prisma.currency.create({

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { MarketDataService } from '@/lib/market-data';
 

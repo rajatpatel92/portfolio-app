@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
@@ -38,27 +39,31 @@ export default function SettingsPage() {
     const [newAccountTypeName, setNewAccountTypeName] = useState('');
     const [newAccountTypeCurrency, setNewAccountTypeCurrency] = useState('USD');
 
-    useEffect(() => {
-        fetchPlatforms();
-        fetchAccounts();
-        fetchInvestmentTypes();
-        fetchActivityTypes();
-        fetchAccountTypes();
-    }, []);
+    async function fetchPlatforms() {
+        const res = await fetch('/api/platforms');
+        const data = await res.json();
+        if (Array.isArray(data)) setPlatforms(data);
+    }
 
-    const fetchInvestmentTypes = async () => {
+    async function fetchAccounts() {
+        const res = await fetch('/api/accounts');
+        const data = await res.json();
+        if (Array.isArray(data)) setAccounts(data);
+    }
+
+    async function fetchInvestmentTypes() {
         const res = await fetch('/api/settings/investment-types');
         const data = await res.json();
         if (Array.isArray(data)) setInvestmentTypes(data);
-    };
+    }
 
-    const fetchActivityTypes = async () => {
+    async function fetchActivityTypes() {
         const res = await fetch('/api/settings/activity-types');
         const data = await res.json();
         if (Array.isArray(data)) setActivityTypes(data);
-    };
+    }
 
-    const fetchAccountTypes = async () => {
+    async function fetchAccountTypes() {
         const res = await fetch('/api/settings/account-types');
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -67,7 +72,18 @@ export default function SettingsPage() {
                 setNewAccountType(data[0].name);
             }
         }
-    };
+    }
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchPlatforms();
+        fetchAccounts();
+        fetchInvestmentTypes();
+        fetchActivityTypes();
+        fetchAccountTypes();
+    }, []);
+
+
 
     const handleAddInvestmentType = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -153,17 +169,7 @@ export default function SettingsPage() {
         }
     };
 
-    const fetchPlatforms = async () => {
-        const res = await fetch('/api/platforms');
-        const data = await res.json();
-        if (Array.isArray(data)) setPlatforms(data);
-    };
 
-    const fetchAccounts = async () => {
-        const res = await fetch('/api/accounts');
-        const data = await res.json();
-        if (Array.isArray(data)) setAccounts(data);
-    };
 
     const handleAddPlatform = async (e: React.FormEvent) => {
         e.preventDefault();

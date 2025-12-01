@@ -13,14 +13,19 @@ interface DateContextType {
 const DateContext = createContext<DateContextType | undefined>(undefined);
 
 export function DateProvider({ children }: { children: React.ReactNode }) {
-    const [dateFormat, setDateFormat] = useState<DateFormat>('MM/DD/YYYY');
+    const [dateFormat, setDateFormat] = useState<DateFormat>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('portfolio_date_format');
+            if (saved) {
+                return saved as DateFormat;
+            }
+        }
+        return 'MM/DD/YYYY';
+    });
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        const saved = localStorage.getItem('portfolio_date_format');
-        if (saved) {
-            setDateFormat(saved as DateFormat);
-        }
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
 
