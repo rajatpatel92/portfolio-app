@@ -216,8 +216,12 @@ export class MarketDataService {
     static async getExchangeRate(from: string, to: string): Promise<number | null> {
         if (from === to) return 1;
 
-        // Try direct pair first (e.g., USDINR=X)
-        const symbol = `${from}${to}=X`;
+        // Try direct pair first
+        // User requested logic: USD -> Any = Any=X (e.g. USD -> INR = INR=X)
+        let symbol = `${from}${to}=X`;
+        if (from === 'USD') {
+            symbol = `${to}=X`;
+        }
 
         // 1. Check Cache
         try {
@@ -267,7 +271,10 @@ export class MarketDataService {
         }
 
         // Try reverse pair (e.g., INRUSD=X) and invert
-        const reverseSymbol = `${to}${from}=X`;
+        let reverseSymbol = `${to}${from}=X`;
+        if (to === 'USD') {
+            reverseSymbol = `${from}=X`;
+        }
 
         // Check Cache for Reverse
         try {

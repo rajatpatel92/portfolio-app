@@ -27,10 +27,10 @@ async function main() {
 
     // Seed Exchange Rates
     const rates = [
-        { symbol: 'USDINR=X', price: 84.45, currency: 'INR' },
-        { symbol: 'USDCAD=X', price: 1.40, currency: 'CAD' },
+        { symbol: 'INR=X', price: 89.43, currency: 'INR' }, // Updated symbol and rate
+        { symbol: 'CAD=X', price: 1.40, currency: 'CAD' }, // Updated to CAD=X
         { symbol: 'CADUSD=X', price: 0.71, currency: 'USD' },
-        { symbol: 'INRUSD=X', price: 0.012, currency: 'USD' },
+        { symbol: 'INRUSD=X', price: 0.011, currency: 'USD' }, // Updated approx reverse rate
     ];
 
     for (const rate of rates) {
@@ -43,7 +43,7 @@ async function main() {
                 change: 0,
                 changePercent: 0,
                 currency: rate.currency,
-                lastUpdated: new Date(), // Set as fresh so it's used immediately
+                lastUpdated: new Date(0), // Set as expired so it fetches fresh data immediately
             },
         });
     }
