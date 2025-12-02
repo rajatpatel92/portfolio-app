@@ -3,9 +3,9 @@
 A comprehensive, self-hosted portfolio management application designed to track your investments across multiple accounts and currencies.
 
 <p align="center">
-  <img src="/dashboard-light.png" width="45%" alt="Light Mode Dashboard" />
+  <img src="public/dashboard-light.png" width="45%" alt="Light Mode Dashboard" />
   &nbsp; &nbsp;
-  <img src="/dashboard-dark.png" width="45%" alt="Dark Mode Dashboard" />
+  <img src="public/dashboard-dark.png" width="45%" alt="Dark Mode Dashboard" />
 </p>
 
 ## Features
