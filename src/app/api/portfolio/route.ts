@@ -234,6 +234,7 @@ export async function GET() {
                 absolute: value - costBasis,
                 percent: costBasis > 0 ? ((value - costBasis) / costBasis) * 100 : 0
             };
+            console.log(`Symbol: ${symbol}, Value: ${value}, CostBasis: ${costBasis}, InceptionChange:`, inceptionChange);
 
             // Only add to constituents if we have quantity OR if we want to show closed positions (optional, sticking to > 0 for now based on previous logic)
             if (data.quantity > 0) {
@@ -255,7 +256,7 @@ export async function GET() {
                     change1M,
                     change1Y,
                     changeYTD,
-
+                    inceptionChange,
 
                     xirr: xirr, // Add XIRR
                     dividendYield: marketData?.dividendYield || 0
