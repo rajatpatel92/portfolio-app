@@ -1,4 +1,4 @@
-# Portfolio App
+# Ascend - Personal Portfolio Manager
 
 A comprehensive, self-hosted portfolio management application designed to track your investments across multiple accounts and currencies.
 
