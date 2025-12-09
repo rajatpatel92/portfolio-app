@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import styles from './page.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
 import ConstituentsGrid from '@/components/ConstituentsGrid';
-import TreemapChart from '@/components/TreemapChart';
+
 
 interface PortfolioSummary {
     allocationByType: { name: string; value: number }[];
@@ -36,16 +36,7 @@ export default function AnalysisPage() {
             </header>
 
             <div className={styles.analysisGrid}>
-                {/* Portfolio Composition Treemap */}
-                <div className={styles.chartCard} style={{ gridColumn: '1 / -1', height: '400px' }}>
-                    <h2 className={styles.sectionTitle}>Portfolio Composition</h2>
-                    <div style={{ width: '100%', height: '350px' }}>
-                        <TreemapChart
-                            data={summary.constituents}
-                            colorMetric="inceptionChange.percent"
-                        />
-                    </div>
-                </div>
+
 
                 {/* Constituents Grid */}
                 <div className={styles.gridContainer}>
