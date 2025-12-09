@@ -8,6 +8,7 @@ import { useSession } from 'next-auth/react';
 interface User {
     id: string;
     username: string;
+    name?: string;
     role: string;
     createdAt: string;
 }
@@ -16,7 +17,7 @@ export default function UserManagementPage() {
     const { data: session } = useSession();
     const [users, setUsers] = useState<User[]>([]);
     const [showForm, setShowForm] = useState(false);
-    const [formData, setFormData] = useState({ username: '', password: '', role: 'VIEWER' });
+    const [formData, setFormData] = useState({ username: '', password: '', role: 'VIEWER', name: '' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -53,7 +54,7 @@ export default function UserManagementPage() {
                 throw new Error(msg);
             }
 
-            setFormData({ username: '', password: '', role: 'VIEWER' });
+            setFormData({ username: '', password: '', role: 'VIEWER', name: '' });
             setShowForm(false);
             fetchUsers();
         } catch (err: any) {
@@ -95,6 +96,16 @@ export default function UserManagementPage() {
             {showForm && (
                 <div className={styles.formCard}>
                     <form onSubmit={handleSubmit} className={styles.form}>
+                        <div className={styles.inputGroup}>
+                            <label className={styles.label}>Name</label>
+                            <input
+                                type="text"
+                                className={styles.input}
+                                value={formData.name}
+                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="Display Name (Optional)"
+                            />
+                        </div>
                         <div className={styles.inputGroup}>
                             <label className={styles.label}>Username</label>
                             <input
@@ -139,6 +150,7 @@ export default function UserManagementPage() {
                 <table className={styles.table}>
                     <thead>
                         <tr>
+                            <th className={styles.th}>Name</th>
                             <th className={styles.th}>Username</th>
                             <th className={styles.th}>Role</th>
                             <th className={styles.th}>Created At</th>
@@ -148,6 +160,7 @@ export default function UserManagementPage() {
                     <tbody>
                         {users.map(user => (
                             <tr key={user.id}>
+                                <td className={styles.td}>{user.name || '-'}</td>
                                 <td className={styles.td}>{user.username}</td>
                                 <td className={styles.td}>{user.role}</td>
                                 <td className={styles.td}>{new Date(user.createdAt).toLocaleDateString()}</td>

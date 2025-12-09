@@ -15,6 +15,12 @@ interface Platform {
     slug: string;
 }
 
+interface User {
+    id: string;
+    username: string;
+    name?: string;
+}
+
 export default function SettingsPage() {
     const [platforms, setPlatforms] = useState<{ id: string, name: string, slug: string, currency: string }[]>([]);
     const [accounts, setAccounts] = useState<{ id: string, name: string, type: string, currency: string, platform: { name: string } }[]>([]);
@@ -31,7 +37,9 @@ export default function SettingsPage() {
 
     const [investmentTypes, setInvestmentTypes] = useState<{ id: string, name: string }[]>([]);
     const [activityTypes, setActivityTypes] = useState<{ id: string, name: string, behavior: string }[]>([]);
+
     const [accountTypes, setAccountTypes] = useState<{ id: string, name: string, currency: string }[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
 
     const [newInvestmentType, setNewInvestmentType] = useState('');
     const [newActivityType, setNewActivityType] = useState('');
@@ -74,10 +82,24 @@ export default function SettingsPage() {
         }
     }
 
+    async function fetchUsers() {
+        try {
+            const res = await fetch('/api/users');
+            if (res.ok) {
+                const data = await res.json();
+                setUsers(data);
+            }
+        } catch (err) {
+            console.error('Failed to fetch users', err);
+        }
+    }
+
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchPlatforms();
+
         fetchAccounts();
+        fetchUsers();
         fetchInvestmentTypes();
         fetchActivityTypes();
         fetchAccountTypes();
@@ -704,14 +726,18 @@ export default function SettingsPage() {
                 <div className={`${styles.card} ${styles.accounts}`}>
                     <h2 className={styles.cardTitle}>Accounts</h2>
                     <form onSubmit={handleAddAccount} className={styles.form}>
-                        <input
-                            type="text"
+                        <select
                             value={newAccountName}
                             onChange={(e) => setNewAccountName(e.target.value)}
-                            placeholder="Account Name"
-                            className={styles.input}
+                            className={styles.select}
                             style={{ flex: 2 }}
-                        />
+                            required
+                        >
+                            <option value="">Select User</option>
+                            {users.map(user => (
+                                <option key={user.id} value={user.username}>{user.name || user.username}</option>
+                            ))}
+                        </select>
                         <select
                             value={newAccountCurrency}
                             onChange={(e) => setNewAccountCurrency(e.target.value)}
@@ -750,13 +776,17 @@ export default function SettingsPage() {
                         <li key={account.id} className={styles.item}>
                             {editingId === account.id ? (
                                 <div className={styles.editForm}>
-                                    <input
+                                    <select
                                         value={editFormData.name}
                                         onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                                        className={styles.input}
-                                        placeholder="Name"
+                                        className={styles.select}
                                         style={{ flex: 2 }}
-                                    />
+                                    >
+                                        <option value="">Select User</option>
+                                        {users.map(user => (
+                                            <option key={user.id} value={user.username}>{user.name || user.username}</option>
+                                        ))}
+                                    </select>
                                     <select
                                         value={editFormData.currency}
                                         onChange={(e) => setEditFormData({ ...editFormData, currency: e.target.value })}
@@ -795,7 +825,9 @@ export default function SettingsPage() {
                             ) : (
                                 <>
                                     <div className={styles.accountInfo}>
-                                        <span className={styles.accountName}>{account.name} - {account.type}</span>
+                                        <span className={styles.accountName}>
+                                            {(users.find(u => u.username === account.name)?.name || account.name)} - {account.type}
+                                        </span>
                                         <span className={styles.accountMeta}>{account.platform.name}</span>
                                     </div>
                                     <div className={styles.itemActions}>

@@ -8,7 +8,8 @@ const prisma = new PrismaClient();
 
 export async function GET(req: Request) {
     const session = await auth();
-    if (!session || (session.user as any).role !== 'ADMIN') {
+    // Allow ADMIN and EDITOR (anyone who is not a VIEWER) to view users
+    if (!session || (session.user as any).role === 'VIEWER') {
         return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -17,6 +18,7 @@ export async function GET(req: Request) {
             select: {
                 id: true,
                 username: true,
+                name: true,
                 role: true,
                 createdAt: true,
             },
@@ -36,7 +38,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { username, password, role } = await req.json();
+        const { username, password, role, name } = await req.json();
 
         if (!username || !password || !role) {
             return new NextResponse("Missing required fields", { status: 400 });
@@ -56,7 +58,8 @@ export async function POST(req: Request) {
             data: {
                 username,
                 password: hashedPassword,
-                role
+                role,
+                name
             }
         });
 
