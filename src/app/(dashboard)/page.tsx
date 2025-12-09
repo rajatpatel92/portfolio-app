@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import styles from './page.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
@@ -30,6 +31,7 @@ interface PortfolioSummary {
 }
 
 export default function Dashboard() {
+  const { data: session } = useSession();
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const { format, convert, currency } = useCurrency();
 
@@ -56,12 +58,13 @@ export default function Dashboard() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
   const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const userName = session?.user?.name || 'Investor';
 
   return (
     <div className={styles.container}>
       {/* Header */}
       <header className={styles.header}>
-        <h1 className={styles.greeting}>{greeting}, Investor</h1>
+        <h1 className={styles.greeting}>{greeting}, {userName}</h1>
         <p className={styles.date}>{dateStr}</p>
       </header>
 
