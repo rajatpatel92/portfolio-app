@@ -44,13 +44,9 @@ export default function AccountsSettingsPage() {
     async function fetchAccountTypes() {
         const res = await fetch('/api/settings/account-types');
         const data = await res.json();
-        if (Array.isArray(data)) {
-            setAccountTypes(data);
-            if (data.length > 0 && !newAccountType) {
-                setNewAccountType(data[0].name);
-            }
-        }
+        setAccountTypes(data);
     }
+
 
     async function fetchUsers() {
         try {
@@ -206,6 +202,7 @@ export default function AccountsSettingsPage() {
                     className={styles.select}
                     style={{ flex: 1 }}
                 >
+                    <option value="">Account Type</option>
                     {accountTypes.filter(t => t.currency === newAccountCurrency).map(type => (
                         <option key={type.id} value={type.name}>{type.name}</option>
                     ))}
@@ -255,6 +252,7 @@ export default function AccountsSettingsPage() {
                                 className={styles.select}
                                 style={{ flex: 1 }}
                             >
+                                <option value="">Account Type</option>
                                 {accountTypes.filter(t => t.currency === editFormData.currency).map(type => (
                                     <option key={type.id} value={type.name}>{type.name}</option>
                                 ))}
