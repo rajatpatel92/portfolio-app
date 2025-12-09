@@ -1,8 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 
-type CurrencyCode = 'USD' | 'CAD' | 'INR';
+type CurrencyCode = string;
 
 interface CurrencyContextType {
     currency: CurrencyCode;
@@ -19,8 +20,8 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     const [currency, setCurrency] = useState<CurrencyCode>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('portfolio_currency');
-            if (saved && (saved === 'USD' || saved === 'CAD' || saved === 'INR')) {
-                return saved as CurrencyCode;
+            if (saved && SUPPORTED_CURRENCIES.some(c => c.code === saved)) {
+                return saved;
             }
         }
         return 'CAD';
@@ -38,19 +39,16 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
         const fetchRates = async () => {
             setLoading(true);
             const newRates: Record<string, number> = { [currency]: 1 };
-            const currenciesToFetch = ['USD', 'CAD', 'INR'].filter(c => c !== currency);
+            const currenciesToFetch = SUPPORTED_CURRENCIES.map(c => c.code).filter(c => c !== currency);
 
-            for (const from of currenciesToFetch) {
-                try {
-                    const res = await fetch(`/api/currencies?from=${from}&to=${currency}`);
-                    const data = await res.json();
-                    if (data.rate) {
-                        newRates[from] = data.rate;
-                    }
-                } catch (error) {
-                    console.error(`Failed to fetch rate for ${from}`, error);
+            // Fetch in parallel using the cached utility
+            await Promise.all(currenciesToFetch.map(async (from) => {
+                const rate = await getExchangeRate(from, currency);
+                if (rate !== null) {
+                    newRates[from] = rate;
                 }
-            }
+            }));
+
             setRates(newRates);
             setLoading(false);
         };

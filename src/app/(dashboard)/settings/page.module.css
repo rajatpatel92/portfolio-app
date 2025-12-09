@@ -12,14 +12,19 @@
     margin-bottom: 2rem;
 }
 
-.settingsGrid {
+/* settingsGrid removed */
+
+.grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
-    grid-template-areas:
-        "currency rates ui"
-        "platforms accounts accounts"
-        "invTypes actTypes accTypes";
+    width: 100%;
+}
+
+@media (max-width: 1024px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .card {
@@ -28,38 +33,40 @@
     border-radius: 1.5rem;
     padding: 1.5rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    height: 100%;
+    /* Ensure cards stretch if needed */
 }
 
 .currency {
-    grid-area: currency;
+    /* grid-area removed */
 }
 
 .ui {
-    grid-area: ui;
+    /* grid-area removed */
 }
 
 .rates {
-    grid-area: rates;
+    /* grid-area removed */
 }
 
 .invTypes {
-    grid-area: invTypes;
+    /* grid-area removed */
 }
 
 .actTypes {
-    grid-area: actTypes;
+    /* grid-area removed */
 }
 
 .accTypes {
-    grid-area: accTypes;
+    /* grid-area removed */
 }
 
 .platforms {
-    grid-area: platforms;
+    /* grid-area removed */
 }
 
 .accounts {
-    grid-area: accounts;
+    /* grid-area removed */
 }
 
 .cardTitle {
@@ -226,17 +233,4 @@
     color: var(--text-primary);
 }
 
-@media (max-width: 1024px) {
-    .settingsGrid {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-            "currency"
-            "rates"
-            "ui"
-            "platforms"
-            "accounts"
-            "invTypes"
-            "actTypes"
-            "accTypes";
-    }
-}
+/* Legacy media query removed */

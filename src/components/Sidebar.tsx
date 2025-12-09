@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import styles from './Sidebar.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
+import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 import { useTheme } from '@/context/ThemeContext';
 import {
     MdDashboard,
@@ -111,9 +112,11 @@ export default function Sidebar() {
                             value={currency}
                             onChange={(e) => setCurrency(e.target.value as any)}
                         >
-                            <option value="USD">USD ($)</option>
-                            <option value="CAD">CAD ($)</option>
-                            <option value="INR">INR (₹)</option>
+                            {SUPPORTED_CURRENCIES.map(c => (
+                                <option key={c.code} value={c.code}>
+                                    {c.code} ({c.symbol})
+                                </option>
+                            ))}
                         </select>
 
 

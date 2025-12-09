@@ -85,100 +85,102 @@ export default function UserManagementPage() {
     }
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <h1 className={styles.title}>User Management</h1>
-                <button className={styles.addButton} onClick={() => setShowForm(!showForm)}>
-                    {showForm ? 'Cancel' : 'Add User'}
-                </button>
-            </header>
-
-            {showForm && (
-                <div className={styles.formCard}>
-                    <form onSubmit={handleSubmit} className={styles.form}>
-                        <div className={styles.inputGroup}>
-                            <label className={styles.label}>Name</label>
-                            <input
-                                type="text"
-                                className={styles.input}
-                                value={formData.name}
-                                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                placeholder="Display Name (Optional)"
-                            />
-                        </div>
-                        <div className={styles.inputGroup}>
-                            <label className={styles.label}>Username</label>
-                            <input
-                                type="text"
-                                className={styles.input}
-                                value={formData.username}
-                                onChange={e => setFormData({ ...formData, username: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div className={styles.inputGroup}>
-                            <label className={styles.label}>Password</label>
-                            <input
-                                type="password"
-                                className={styles.input}
-                                value={formData.password}
-                                onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div className={styles.inputGroup}>
-                            <label className={styles.label}>Role</label>
-                            <select
-                                className={styles.select}
-                                value={formData.role}
-                                onChange={e => setFormData({ ...formData, role: e.target.value })}
-                            >
-                                <option value="VIEWER">Viewer</option>
-                                <option value="EDITOR">Editor</option>
-                                <option value="ADMIN">Admin</option>
-                            </select>
-                        </div>
-                        <button type="submit" className={styles.addButton} disabled={loading}>
-                            {loading ? 'Creating...' : 'Create User'}
-                        </button>
-                    </form>
-                    {error && <div style={{ color: 'var(--error)', marginTop: '1rem' }}>{error}</div>}
+        <>
+            <div className={`${styles.card} ${styles.users}`} style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h2 className={styles.cardTitle} style={{ margin: 0 }}>User Management</h2>
+                    <button className={styles.addButton} onClick={() => setShowForm(!showForm)}>
+                        {showForm ? 'Cancel' : 'Add User'}
+                    </button>
                 </div>
-            )}
 
-            <div className={styles.tableWrapper}>
-                <table className={styles.table}>
-                    <thead>
-                        <tr>
-                            <th className={styles.th}>Name</th>
-                            <th className={styles.th}>Username</th>
-                            <th className={styles.th}>Role</th>
-                            <th className={styles.th}>Created At</th>
-                            <th className={styles.th}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {users.map(user => (
-                            <tr key={user.id}>
-                                <td className={styles.td}>{user.name || '-'}</td>
-                                <td className={styles.td}>{user.username}</td>
-                                <td className={styles.td}>{user.role}</td>
-                                <td className={styles.td}>{new Date(user.createdAt).toLocaleDateString()}</td>
-                                <td className={styles.td}>
-                                    {user.id !== session.user?.id && (
-                                        <button
-                                            className={styles.deleteButton}
-                                            onClick={() => handleDelete(user.id)}
-                                        >
-                                            Delete
-                                        </button>
-                                    )}
-                                </td>
+                {showForm && (
+                    <div className={styles.formCard} style={{ marginBottom: '1rem', border: '1px solid var(--card-border)', padding: '1rem', borderRadius: '0.5rem' }}>
+                        <form onSubmit={handleSubmit} className={styles.form}>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Name</label>
+                                <input
+                                    type="text"
+                                    className={styles.input}
+                                    value={formData.name}
+                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                    placeholder="Display Name (Optional)"
+                                />
+                            </div>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Username</label>
+                                <input
+                                    type="text"
+                                    className={styles.input}
+                                    value={formData.username}
+                                    onChange={e => setFormData({ ...formData, username: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Password</label>
+                                <input
+                                    type="password"
+                                    className={styles.input}
+                                    value={formData.password}
+                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Role</label>
+                                <select
+                                    className={styles.select}
+                                    value={formData.role}
+                                    onChange={e => setFormData({ ...formData, role: e.target.value })}
+                                >
+                                    <option value="VIEWER">Viewer</option>
+                                    <option value="EDITOR">Editor</option>
+                                    <option value="ADMIN">Admin</option>
+                                </select>
+                            </div>
+                            <button type="submit" className={styles.addButton} disabled={loading}>
+                                {loading ? 'Creating...' : 'Create User'}
+                            </button>
+                        </form>
+                        {error && <div style={{ color: 'var(--error)', marginTop: '1rem' }}>{error}</div>}
+                    </div>
+                )}
+
+                <div className={styles.tableWrapper}>
+                    <table className={styles.table}>
+                        <thead>
+                            <tr>
+                                <th className={styles.th}>Name</th>
+                                <th className={styles.th}>Username</th>
+                                <th className={styles.th}>Role</th>
+                                <th className={styles.th}>Created At</th>
+                                <th className={styles.th}>Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {users.map(user => (
+                                <tr key={user.id}>
+                                    <td className={styles.td}>{user.name || '-'}</td>
+                                    <td className={styles.td}>{user.username}</td>
+                                    <td className={styles.td}>{user.role}</td>
+                                    <td className={styles.td}>{new Date(user.createdAt).toLocaleDateString()}</td>
+                                    <td className={styles.td}>
+                                        {user.id !== session.user?.id && (
+                                            <button
+                                                className={styles.deleteButton}
+                                                onClick={() => handleDelete(user.id)}
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
+        </>
     );
 }
