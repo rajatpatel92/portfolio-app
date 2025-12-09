@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
+import { getExchangeRate } from '@/lib/currencyCache';
 
 type CurrencyCode = string;
 
