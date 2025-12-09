@@ -51,7 +51,7 @@ export default function CurrencySettingsPage() {
             </div>
 
             <div className={`${styles.card} ${styles.rates}`} style={{ overflowX: 'auto' }}>
-                <h2 className={styles.cardTitle}>Live Exchange Rates <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>(Refreshed every 8 hours)</span></h2>
+                <h2 className={styles.cardTitle}>Exchange Rates <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>(Refreshed every 8 hours)</span></h2>
                 <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', minWidth: '800px' }}>
                         <thead>
