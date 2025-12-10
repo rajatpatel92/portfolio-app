@@ -42,6 +42,7 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
     const [accounts, setAccounts] = useState<{ id: string, name: string, type: string, platformId: string, currency: string }[]>([]);
     const [investmentTypes, setInvestmentTypes] = useState<{ id: string, name: string }[]>([]);
     const [activityTypes, setActivityTypes] = useState<{ id: string, name: string }[]>([]);
+    const [users, setUsers] = useState<{ id: string, username: string, name?: string }[]>([]);
 
     useEffect(() => {
         // Fetch platforms, accounts, and types
@@ -49,12 +50,14 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
             fetch('/api/platforms').then(res => res.json()),
             fetch('/api/accounts').then(res => res.json()),
             fetch('/api/settings/investment-types').then(res => res.json()),
-            fetch('/api/settings/activity-types').then(res => res.json())
-        ]).then(([platformsData, accountsData, invTypesData, actTypesData]) => {
+            fetch('/api/settings/activity-types').then(res => res.json()),
+            fetch('/api/users').then(res => res.json())
+        ]).then(([platformsData, accountsData, invTypesData, actTypesData, usersData]) => {
             if (Array.isArray(platformsData)) setPlatforms(platformsData);
             if (Array.isArray(accountsData)) setAccounts(accountsData);
             if (Array.isArray(invTypesData)) setInvestmentTypes(invTypesData);
             if (Array.isArray(actTypesData)) setActivityTypes(actTypesData);
+            if (Array.isArray(usersData)) setUsers(usersData);
         }).catch(err => console.error('Failed to fetch data', err));
     }, []);
 
@@ -336,9 +339,13 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
                         <option value="">Select Account</option>
                         {accounts
                             .filter(a => a.currency === currency)
-                            .map(a => (
-                                <option key={a.id} value={a.id}>{a.name} - {a.type}</option>
-                            ))}
+                            .map(a => {
+                                const user = users.find(u => u.username === a.name);
+                                const displayName = user?.name || a.name;
+                                return (
+                                    <option key={a.id} value={a.id}>{displayName} - {a.type}</option>
+                                );
+                            })}
                     </select>
                     {accounts.length === 0 && (
                         <p className={styles.hint}>No accounts found. Add one in Settings.</p>
