@@ -9,6 +9,7 @@ import styles from './page.module.css';
 export default function LoginPage() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
     const router = useRouter();
 
@@ -26,6 +27,7 @@ export default function LoginPage() {
             if (result?.error) {
                 setError('Invalid username or password');
             } else {
+                localStorage.setItem('rememberMe', String(rememberMe));
                 router.push('/');
                 router.refresh();
             }
@@ -69,6 +71,18 @@ export default function LoginPage() {
                             required
                         />
                     </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <input
+                            type="checkbox"
+                            id="rememberMe"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                            style={{ marginRight: '0.5rem', width: 'auto' }}
+                        />
+                        <label htmlFor="rememberMe" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Remember me</label>
+                    </div>
+
                     {error && <div className={styles.error}>{error}</div>}
                     <button type="submit" className={styles.button}>
                         Sign In
