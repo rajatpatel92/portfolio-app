@@ -102,7 +102,7 @@ async function main() {
         { name: 'SELL', behavior: 'REMOVE' },
         { name: 'DIVIDEND', behavior: 'NEUTRAL' },
         { name: 'INTEREST', behavior: 'NEUTRAL' },
-        { name: 'SPLIT', behavior: 'NEUTRAL' },
+        { name: 'SPLIT', behavior: 'SPLIT' },
         { name: 'DEPOSIT', behavior: 'ADD' },
         { name: 'WITHDRAWAL', behavior: 'REMOVE' },
     ];
