@@ -47,14 +47,27 @@ interface AnalysisData {
     avgPriceHistory: Record<string, number>;
 }
 
+interface User {
+    id: string;
+    username: string;
+    name?: string;
+}
+
 export default function AnalysisPage() {
     const { symbol } = useParams();
     const [data, setData] = useState<AnalysisData | null>(null);
     const { format, convert } = useCurrency();
     const [activeTab, setActiveTab] = useState<'overview' | 'activities'>('overview');
     const [constituents, setConstituents] = useState<string[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
 
     useEffect(() => {
+        // Fetch users for display names
+        fetch('/api/users')
+            .then(res => res.json())
+            .then(setUsers)
+            .catch(err => console.error('Failed to fetch users', err));
+
         // Fetch portfolio constituents for navigation
         fetch('/api/portfolio')
             .then(res => res.json())
@@ -98,11 +111,15 @@ export default function AnalysisPage() {
 
     // Process Account Allocations
     const totalValue = data.allocation.accounts.reduce((sum, acc) => sum + acc.value, 0);
-    const accountAllocations = data.allocation.accounts.map(acc => ({
-        name: `${acc.name} - ${acc.type}`, // Platform is not directly available in the current allocation object structure, need to check API
-        value: acc.value,
-        percent: totalValue > 0 ? (acc.value / totalValue) * 100 : 0
-    })).sort((a, b) => b.value - a.value);
+    const accountAllocations = data.allocation.accounts.map(acc => {
+        const user = users.find(u => u.username === acc.name);
+        const displayName = user?.name || acc.name;
+        return {
+            name: `${displayName} - ${acc.type}`,
+            value: acc.value,
+            percent: totalValue > 0 ? (acc.value / totalValue) * 100 : 0
+        };
+    }).sort((a, b) => b.value - a.value);
 
     const handleRefresh = async () => {
         if (!data) return;
@@ -344,7 +361,13 @@ export default function AnalysisPage() {
                                         <td>{activity.quantity}</td>
                                         <td>{format(activity.price)}</td>
                                         <td>{format(activity.quantity * activity.price)}</td>
-                                        <td>{activity.account?.name}</td>
+                                        <td>
+                                            {(() => {
+                                                const user = users.find(u => u.username === activity.account?.name);
+                                                const displayName = user?.name || activity.account?.name;
+                                                return activity.account ? `${displayName} - ${activity.account.type}` : '-';
+                                            })()}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>

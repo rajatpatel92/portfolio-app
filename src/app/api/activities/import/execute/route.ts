@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { MarketDataService } from '@/lib/market-data';
 
 export async function POST(req: NextRequest) {
     try {
@@ -29,25 +30,46 @@ export async function POST(req: NextRequest) {
             if (!existingSymbolMap.has(symbol)) {
                 // Find the first activity with this symbol to get metadata
                 const activity = activities.find((a: any) => a.Symbol === symbol);
+
+                let name = activity.Name;
+                let type = activity['Investment Type'];
+                let currency = activity.Currency;
+
+                // Fetch metadata if missing
+                if (!name) {
+                    try {
+                        const searchResults = await MarketDataService.searchSymbols(symbol);
+                        // Try exact match first, then first result
+                        const match = searchResults.find(r => r.symbol === symbol) || searchResults[0];
+
+                        if (match) {
+                            name = match.name;
+                            type = type || (match.type === 'ETF' || match.type === 'MUTUALFUND' ? 'EQUITY' : (match.type === 'CRYPTOCURRENCY' ? 'CRYPTO' : 'EQUITY'));
+
+                            // Try to get currency from price check if still missing
+                            if (!currency) {
+                                const priceData = await MarketDataService.getPrice(symbol);
+                                if (priceData) {
+                                    currency = priceData.currency;
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error(`Failed to fetch metadata for ${symbol}`, err);
+                    }
+                }
+
                 newInvestments.push({
                     symbol: symbol,
-                    name: activity.Name || symbol, // Default to symbol if Name missing
-                    type: activity['Investment Type'] || 'EQUITY', // Default to EQUITY
-                    currencyCode: activity.Currency || 'USD' // Default to USD
+                    name: name || symbol, // Fallback to symbol
+                    type: type || 'EQUITY', // Default
+                    currencyCode: currency || 'USD' // Default
                 });
             }
         }
 
         // Create missing investments
         if (newInvestments.length > 0) {
-            // We need to create Currency if it doesn't exist? 
-            // Usually Currency table is static. Assuming currencies exist.
-            // But to be safe, we might need to check. 
-            // For now, assuming standard currencies exist.
-
-            // Note: createMany is not supported for SQLite if used, but Postgres supports it.
-            // However, Investment has a relation to Currency.
-            // Let's do individual creates to be safe and simple, or Promise.all
             await Promise.all(newInvestments.map(inv =>
                 prisma.investment.create({
                     data: {
@@ -57,7 +79,7 @@ export async function POST(req: NextRequest) {
                         currency: {
                             connectOrCreate: {
                                 where: { code: inv.currencyCode },
-                                create: { code: inv.currencyCode, rateToBase: 1.0 } // Default rate
+                                create: { code: inv.currencyCode, rateToBase: 1.0 }
                             }
                         }
                     }

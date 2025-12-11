@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import Papa from 'papaparse';
 
-const REQUIRED_FIELDS = ['Date', 'Type', 'Symbol', 'Quantity', 'Price', 'Account', 'Account Type', 'Platform'];
+const REQUIRED_FIELDS = ['Date', 'Type', 'Symbol', 'Quantity', 'Price', 'Username', 'Account Type', 'Platform'];
 
 export async function POST(req: NextRequest) {
     try {
@@ -76,13 +76,13 @@ export async function POST(req: NextRequest) {
             if (row['Fee'] && isNaN(fee)) rowErrors.push(`Invalid Fee: ${row['Fee']}`);
 
             // Validate Account (Name + Type)
-            const accountName = row['Account'].trim();
+            const accountName = row['Username'].trim();
             const accountType = row['Account Type'].trim();
             const accountKey = `${accountName.toLowerCase()}|${accountType.toLowerCase()}`;
             const account = accountMap.get(accountKey);
 
             if (!account) {
-                rowErrors.push(`Account not found: ${accountName} (${accountType})`);
+                rowErrors.push(`Account/User not found: ${accountName} (${accountType})`);
             }
 
             // Validate Platform

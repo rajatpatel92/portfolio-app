@@ -36,6 +36,12 @@ interface Activity {
     };
 }
 
+interface User {
+    id: string;
+    username: string;
+    name?: string;
+}
+
 export default function ActivitiesPage() {
     const [activities, setActivities] = useState<Activity[]>([]);
     const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
@@ -56,6 +62,19 @@ export default function ActivitiesPage() {
     const [currentPage, setCurrentPage] = useState(1);
 
     const [showAddForm, setShowAddForm] = useState(false);
+    const [users, setUsers] = useState<User[]>([]);
+
+    const fetchUsers = async () => {
+        try {
+            const res = await fetch('/api/users');
+            if (res.ok) {
+                const data = await res.json();
+                setUsers(data);
+            }
+        } catch (err) {
+            console.error('Failed to fetch users', err);
+        }
+    };
 
     const fetchActivities = async () => {
         try {
@@ -71,6 +90,7 @@ export default function ActivitiesPage() {
 
     useEffect(() => {
         fetchActivities();
+        fetchUsers();
     }, []);
 
     // Reset page when filters change
@@ -114,10 +134,17 @@ export default function ActivitiesPage() {
     const activityTypes = Array.from(new Set(activities.map(a => a.type))).sort();
 
     // Derive unique accounts for the filter
-    const accountsMap = new Map<string, { id: string, name: string, type: string }>();
+    const accountsMap = new Map<string, { id: string, name: string, type: string, displayName: string }>();
     activities.forEach(a => {
         if (a.account) {
-            accountsMap.set(a.account.id, { id: a.account.id, name: a.account.name, type: a.account.type });
+            const user = users.find(u => u.username === a.account?.name);
+            const displayName = user?.name || a.account.name;
+            accountsMap.set(a.account.id, {
+                id: a.account.id,
+                name: a.account.name,
+                type: a.account.type,
+                displayName: `${displayName} - ${a.account.type}`
+            });
         }
     });
     const accounts = Array.from(accountsMap.values());
@@ -338,13 +365,12 @@ export default function ActivitiesPage() {
             Date: a.date.split('T')[0], // YYYY-MM-DD
             Type: a.type,
             Symbol: a.investment.symbol,
-            Name: a.investment.name,
             'Investment Type': a.investment.type,
             Quantity: a.quantity,
             Price: a.price,
             Fee: a.fee || 0,
             Currency: a.currency || a.investment.currencyCode || 'USD',
-            Account: a.account?.name || '',
+            Username: a.account?.name || '',
             'Account Type': a.account?.type || '',
             Platform: a.platform?.name || ''
         }));
@@ -735,7 +761,7 @@ export default function ActivitiesPage() {
                             <option value="">All Accounts</option>
                             {accounts.map(account => (
                                 <option key={account.id} value={account.id}>
-                                    {account.name} - {account.type}
+                                    {account.displayName}
                                 </option>
                             ))}
                         </select>
@@ -878,7 +904,12 @@ export default function ActivitiesPage() {
                                                 <td style={{ textAlign: 'right' }}>{format(convertedPrice)}</td>
                                                 <td style={{ textAlign: 'right', fontWeight: 600 }}>{format(convertedTotal)}</td>
                                                 <td>
-                                                    <div style={{ fontWeight: 600 }}>{activity.account ? `${activity.account.name} - ${activity.account.type}` : '-'}</div>
+                                                    <div style={{ fontWeight: 600 }}>
+                                                        {activity.account ?
+                                                            `${(users.find(u => u.username === activity.account?.name)?.name || activity.account.name)} - ${activity.account.type}`
+                                                            : '-'
+                                                        }
+                                                    </div>
                                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{activity.platform?.name || '-'}</div>
                                                 </td>
                                                 <td style={{ textAlign: 'center' }}>
