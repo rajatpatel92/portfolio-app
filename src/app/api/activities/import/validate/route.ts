@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import Papa from 'papaparse';
+import { MarketDataService } from '@/lib/market-data';
 
 const REQUIRED_FIELDS = ['Date', 'Type', 'Symbol', 'Quantity', 'Price', 'Username', 'Account Type', 'Platform'];
 
@@ -43,6 +43,28 @@ export async function POST(req: NextRequest) {
         const accountMap = new Map(accounts.map(a => [`${a.name.toLowerCase()}|${a.type.toLowerCase()}`, a]));
         const platformMap = new Map(platforms.map(p => [p.name.toLowerCase(), p]));
 
+        // Validate Symbols
+        // const uniqueSymbols = Array.from(new Set(rows.map(r => r.Symbol?.toString().trim()).filter(Boolean)));
+        // const invalidSymbols = new Set<string>();
+
+        // await Promise.all(uniqueSymbols.map(async (symbol) => {
+        //    const price = await MarketDataService.getPrice(symbol);
+        //    if (!price) {
+        //        invalidSymbols.add(symbol);
+        //    }
+        // }));
+
+        // Optimizing symbol validation: Process concurrently
+        const uniqueSymbols = Array.from(new Set(rows.map(r => r.Symbol?.toString().trim()).filter(s => s)));
+        const invalidSymbols = new Set<string>();
+
+        await Promise.all(uniqueSymbols.map(async (symbol) => {
+            const data = await MarketDataService.getPrice(symbol);
+            if (!data) {
+                invalidSymbols.add(symbol);
+            }
+        }));
+
         // Validate each row
         rows.forEach((row, index) => {
             const rowNum = index + 1; // 1-based index for user friendliness
@@ -58,6 +80,12 @@ export async function POST(req: NextRequest) {
             if (rowErrors.length > 0) {
                 errors.push({ row: rowNum, message: rowErrors.join(', ') });
                 return;
+            }
+
+            // Validate Symbol
+            const symbol = row['Symbol'].trim();
+            if (invalidSymbols.has(symbol)) {
+                rowErrors.push(`Symbol '${symbol}' might be invalid or delisted or not supported by yahoo api`);
             }
 
             // Validate Date

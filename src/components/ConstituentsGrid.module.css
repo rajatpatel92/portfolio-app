@@ -128,3 +128,25 @@
 .neutral {
     color: var(--text-secondary);
 }
+
+.symbolRow {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.symbolText {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.nameText {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.sharesText {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.125rem;
+}

@@ -134,8 +134,10 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                                 style={{ cursor: 'pointer' }}
                             >
                                 <td className={styles.td}>
-                                    <div className={styles.symbol}>{item.symbol}</div>
-                                    {item.name !== item.symbol && <div className={styles.name}>{item.name}</div>}
+                                    <div className={styles.symbolRow}>
+                                        <span className={styles.symbolText}>{item.symbol}</span>
+                                    </div>
+                                    <div className={styles.sharesText}>{item.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })} Shares</div>
                                 </td>
                                 <td className={`${styles.td} ${styles.right}`}>
                                     <div>{format(convert(item.bookValue, item.currency))}</div>
@@ -178,6 +180,6 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div >
     );
 }

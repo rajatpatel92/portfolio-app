@@ -116,6 +116,30 @@ export async function POST(req: NextRequest) {
                 });
             })
         );
+        // 3. Trigger Market Data Refresh
+        // Prefetch data so the UI is snappy when the user navigates away
+        try {
+            console.log(`Prefetching market data for ${uniqueSymbols.size} symbols...`);
+            await Promise.all(Array.from(uniqueSymbols).map(symbol =>
+                MarketDataService.refreshMarketData(symbol)
+            ));
+
+            // 4. Auto-Detect Splits
+            // We check only the imported symbols to save time
+            console.log(`Checking for missing splits for ${uniqueSymbols.size} symbols...`);
+            // We can run this in background or await it. 
+            // Better to await so user knows it's done, but parallelize per symbol.
+            // SplitService.detectAndApply checks history, so it's a bit heavy.
+            // But for a few symbols it's fine.
+            const { SplitService } = await import('@/lib/split-detector');
+            await Promise.all(Array.from(uniqueSymbols).map(symbol =>
+                SplitService.detectAndApply(symbol)
+            ));
+
+        } catch (error) {
+            console.error('Error post-processing import:', error);
+            // Don't fail the import if refresh/split check fails
+        }
 
         return NextResponse.json({
             success: true,

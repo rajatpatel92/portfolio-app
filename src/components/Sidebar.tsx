@@ -41,8 +41,8 @@ export default function Sidebar() {
 
     const navItems = [
         { name: 'Dashboard', href: '/', icon: <MdDashboard size={20} /> },
-        { name: 'Activities', href: '/activities', icon: <MdFormatListBulleted size={20} /> },
         { name: 'Analysis', href: '/analysis', icon: <MdShowChart size={20} /> },
+        { name: 'Activities', href: '/activities', icon: <MdFormatListBulleted size={20} /> },
     ];
 
     if (role === 'ADMIN' || role === 'EDITOR') {

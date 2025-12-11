@@ -20,7 +20,7 @@ export async function GET(request: Request, props: { params: Promise<{ symbol: s
                         platform: true,
                         account: true
                     },
-                    orderBy: { date: 'desc' }
+                    orderBy: { date: 'asc' }
                 }
             }
         });
@@ -48,6 +48,7 @@ export async function GET(request: Request, props: { params: Promise<{ symbol: s
         if (!behaviorMap.has('BUY')) behaviorMap.set('BUY', 'ADD');
         if (!behaviorMap.has('SELL')) behaviorMap.set('SELL', 'REMOVE');
         if (!behaviorMap.has('DIVIDEND')) behaviorMap.set('DIVIDEND', 'NEUTRAL');
+        if (!behaviorMap.has('STOCK_SPLIT')) behaviorMap.set('STOCK_SPLIT', 'SPLIT');
 
         let firstBuyDate: Date | null = null;
 
@@ -91,6 +92,17 @@ export async function GET(request: Request, props: { params: Promise<{ symbol: s
                     if (accountAllocation[accId]) {
                         accountAllocation[accId].quantity -= activity.quantity;
                     }
+                }
+            } else if (behavior === 'SPLIT') {
+                const multiplier = activity.quantity; // Quantity holds the ratio
+                if (multiplier > 0) {
+                    totalQuantity *= multiplier;
+                    // Do NOT change totalCost (Cost Basis). Total Investment remains same, just more shares.
+
+                    // Update Account Allocations
+                    Object.values(accountAllocation).forEach(acc => {
+                        acc.quantity *= multiplier;
+                    });
                 }
             } else if (activity.type === 'DIVIDEND') {
                 totalDividends += amount;
@@ -156,6 +168,12 @@ export async function GET(request: Request, props: { params: Promise<{ symbol: s
                             const avgCost = currentTotalCost / currentTotalQty;
                             currentTotalCost -= activity.quantity * avgCost;
                             currentTotalQty -= activity.quantity;
+                        }
+                    } else if (behavior === 'SPLIT') {
+                        const multiplier = activity.quantity;
+                        if (multiplier > 0) {
+                            currentTotalQty *= multiplier;
+                            // Total Cost remains same
                         }
                     }
 

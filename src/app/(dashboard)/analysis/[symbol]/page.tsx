@@ -241,7 +241,7 @@ export default function AnalysisPage() {
                             </div>
                             <div className={styles.statCard}>
                                 <div className={styles.statLabel}>Quantity</div>
-                                <div className={styles.statValue}>{data.stats.quantity}</div>
+                                <div className={styles.statValue}>{data.stats.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
                             </div>
                             <div className={styles.statCard}>
                                 <div className={styles.statLabel}>Avg Price</div>
