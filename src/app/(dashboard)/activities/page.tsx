@@ -10,6 +10,7 @@ import { useSession } from 'next-auth/react';
 import DateInput from '@/components/DateInput';
 import Papa from 'papaparse';
 import BulkUploadModal from '@/components/BulkUploadModal';
+import BulkEditModal from '@/components/BulkEditModal';
 import { formatQuantity } from '@/lib/format';
 
 interface Activity {
@@ -229,6 +230,7 @@ export default function ActivitiesPage() {
 
     const [selectedActivities, setSelectedActivities] = useState<Set<string>>(new Set());
     const [showImportModal, setShowImportModal] = useState(false);
+    const [showBulkEditModal, setShowBulkEditModal] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
 
     const handleBatchDelete = async () => {
@@ -397,20 +399,36 @@ export default function ActivitiesPage() {
                 {role !== 'VIEWER' && (
                     <div style={{ display: 'flex', gap: '1rem' }}>
                         {selectedActivities.size > 0 && (
-                            <button
-                                onClick={handleBatchDelete}
-                                style={{
-                                    background: 'var(--danger)',
-                                    color: 'white',
-                                    border: 'none',
-                                    padding: '0.75rem 1.5rem',
-                                    borderRadius: '0.5rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                Delete Selected ({selectedActivities.size})
-                            </button>
+                            <>
+                                <button
+                                    onClick={() => setShowBulkEditModal(true)}
+                                    style={{
+                                        background: 'var(--primary)',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '0.75rem 1.5rem',
+                                        borderRadius: '0.5rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Edit Selected ({selectedActivities.size})
+                                </button>
+                                <button
+                                    onClick={handleBatchDelete}
+                                    style={{
+                                        background: 'var(--danger)',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '0.75rem 1.5rem',
+                                        borderRadius: '0.5rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Delete Selected ({selectedActivities.size})
+                                </button>
+                            </>
                         )}
                         <button
                             onClick={handleFetchDividends}
@@ -703,6 +721,21 @@ export default function ActivitiesPage() {
                         onSuccess={() => {
                             fetchActivities();
                             setShowImportModal(false);
+                        }}
+                    />
+                )
+            }
+            {
+                showBulkEditModal && (
+                    <BulkEditModal
+                        count={selectedActivities.size}
+                        selectedIds={Array.from(selectedActivities)}
+                        uniqueSymbolsCount={new Set(activities.filter(a => selectedActivities.has(a.id)).map(a => a.investment.symbol)).size}
+                        onClose={() => setShowBulkEditModal(false)}
+                        onSuccess={() => {
+                            fetchActivities();
+                            setSelectedActivities(new Set());
+                            setShowBulkEditModal(false);
                         }}
                     />
                 )
