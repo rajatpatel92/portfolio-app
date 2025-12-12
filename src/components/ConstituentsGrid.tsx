@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './ConstituentsGrid.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
+import { formatQuantity } from '@/lib/format';
 
 interface ChangeData {
     absolute: number;
@@ -137,7 +138,7 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                                     <div className={styles.symbolRow}>
                                         <span className={styles.symbolText}>{item.symbol}</span>
                                     </div>
-                                    <div className={styles.sharesText}>{item.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })} Shares</div>
+                                    <div className={styles.sharesText}>{formatQuantity(item.quantity)} Shares</div>
                                 </td>
                                 <td className={`${styles.td} ${styles.right}`}>
                                     <div>{format(convert(item.bookValue, item.currency))}</div>

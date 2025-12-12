@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useCurrency } from '@/context/CurrencyContext';
 import PortfolioChart from '@/components/PortfolioChart';
 import StockChart from '@/components/StockChart';
+import { formatQuantity } from '@/lib/format';
 import styles from './page.module.css';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
@@ -241,7 +242,7 @@ export default function AnalysisPage() {
                             </div>
                             <div className={styles.statCard}>
                                 <div className={styles.statLabel}>Quantity</div>
-                                <div className={styles.statValue}>{data.stats.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
+                                <div className={styles.statValue}>{formatQuantity(data.stats.quantity)}</div>
                             </div>
                             <div className={styles.statCard}>
                                 <div className={styles.statLabel}>Avg Price</div>
@@ -358,7 +359,7 @@ export default function AnalysisPage() {
                                     <tr key={activity.id}>
                                         <td>{new Date(activity.date).toLocaleDateString()}</td>
                                         <td>{activity.type}</td>
-                                        <td>{activity.quantity}</td>
+                                        <td>{formatQuantity(activity.quantity)}</td>
                                         <td>{format(activity.price)}</td>
                                         <td>{format(activity.quantity * activity.price)}</td>
                                         <td>

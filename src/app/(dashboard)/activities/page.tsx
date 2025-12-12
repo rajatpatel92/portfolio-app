@@ -10,6 +10,7 @@ import { useSession } from 'next-auth/react';
 import DateInput from '@/components/DateInput';
 import Papa from 'papaparse';
 import BulkUploadModal from '@/components/BulkUploadModal';
+import { formatQuantity } from '@/lib/format';
 
 interface Activity {
     id: string;
@@ -900,7 +901,7 @@ export default function ActivitiesPage() {
                                                         {activity.type}
                                                     </span>
                                                 </td>
-                                                <td style={{ textAlign: 'right' }}>{activity.quantity}</td>
+                                                <td style={{ textAlign: 'right' }}>{formatQuantity(activity.quantity)}</td>
                                                 <td style={{ textAlign: 'right' }}>{format(convertedPrice)}</td>
                                                 <td style={{ textAlign: 'right', fontWeight: 600 }}>{format(convertedTotal)}</td>
                                                 <td>
