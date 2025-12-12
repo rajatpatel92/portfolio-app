@@ -3,6 +3,7 @@
 
 import styles from './TopMovers.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
+import Link from 'next/link';
 
 interface TopMoversProps {
     constituents: any[];
@@ -41,13 +42,15 @@ export default function TopMovers({ constituents }: TopMoversProps) {
                         <ul className={styles.list}>
                             {gainers.map(c => (
                                 <li key={c.symbol} className={styles.item}>
-                                    <div className={styles.symbolRow}>
-                                        <span className={styles.symbol}>{c.symbol}</span>
-                                        <span className={styles.price}>{format(c.price)}</span>
-                                    </div>
-                                    <div className={`${styles.change} ${styles.positive}`}>
-                                        +{c.dayChange.percent.toFixed(2)}%
-                                    </div>
+                                    <Link href={`/analysis/${c.symbol}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div className={styles.symbolRow}>
+                                            <span className={styles.symbol}>{c.symbol}</span>
+                                            <span className={styles.price}>{format(c.price)}</span>
+                                        </div>
+                                        <div className={`${styles.change} ${styles.positive}`}>
+                                            +{c.dayChange.percent.toFixed(2)}%
+                                        </div>
+                                    </Link>
                                 </li>
                             ))}
                         </ul>
@@ -61,13 +64,15 @@ export default function TopMovers({ constituents }: TopMoversProps) {
                         <ul className={styles.list}>
                             {losers.map(c => (
                                 <li key={c.symbol} className={styles.item}>
-                                    <div className={styles.symbolRow}>
-                                        <span className={styles.symbol}>{c.symbol}</span>
-                                        <span className={styles.price}>{format(c.price)}</span>
-                                    </div>
-                                    <div className={`${styles.change} ${styles.negative}`}>
-                                        {c.dayChange.percent.toFixed(2)}%
-                                    </div>
+                                    <Link href={`/analysis/${c.symbol}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div className={styles.symbolRow}>
+                                            <span className={styles.symbol}>{c.symbol}</span>
+                                            <span className={styles.price}>{format(c.price)}</span>
+                                        </div>
+                                        <div className={`${styles.change} ${styles.negative}`}>
+                                            {c.dayChange.percent.toFixed(2)}%
+                                        </div>
+                                    </Link>
                                 </li>
                             ))}
                         </ul>
