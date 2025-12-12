@@ -35,28 +35,29 @@ export async function POST(req: NextRequest) {
                 let type = activity['Investment Type'];
                 let currency = activity.Currency;
 
-                // Fetch metadata if missing
-                if (!name) {
-                    try {
+                // Fetch metadata if missing OR to verify native currency
+                // We always try to get the native currency to ensure we set up the Investment correctly
+                // even if the user imported it with a different transaction currency (e.g. CAD for a US stock)
+                try {
+                    // 1. Get basic metadata (Name, Type)
+                    if (!name) {
                         const searchResults = await MarketDataService.searchSymbols(symbol);
-                        // Try exact match first, then first result
                         const match = searchResults.find(r => r.symbol === symbol) || searchResults[0];
-
                         if (match) {
                             name = match.name;
                             type = type || (match.type === 'ETF' || match.type === 'MUTUALFUND' ? 'EQUITY' : (match.type === 'CRYPTOCURRENCY' ? 'CRYPTO' : 'EQUITY'));
-
-                            // Try to get currency from price check if still missing
-                            if (!currency) {
-                                const priceData = await MarketDataService.getPrice(symbol);
-                                if (priceData) {
-                                    currency = priceData.currency;
-                                }
-                            }
                         }
-                    } catch (err) {
-                        console.error(`Failed to fetch metadata for ${symbol}`, err);
                     }
+
+                    // 2. Get Native Currency (Crucial for conversion logic)
+                    const priceData = await MarketDataService.getPrice(symbol);
+                    if (priceData && priceData.currency) {
+                        // If we found a native currency, use it!
+                        // This overrides the activity currency for the Investment definition
+                        currency = priceData.currency;
+                    }
+                } catch (err) {
+                    console.error(`Failed to fetch metadata for ${symbol}`, err);
                 }
 
                 newInvestments.push({
