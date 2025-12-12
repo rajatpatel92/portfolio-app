@@ -12,6 +12,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
 import { MdRefresh, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import Link from 'next/link';
+import SymbolSkeleton from '@/components/SymbolSkeleton';
 
 // ... imports
 
@@ -83,14 +84,30 @@ export default function AnalysisPage() {
 
     useEffect(() => {
         if (symbol) {
+            const cacheKey = `analysis_${symbol}`;
+
+            // 1. Try cache
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) {
+                try {
+                    setData(JSON.parse(cached));
+                } catch (e) {
+                    console.error('Failed to parse cached analysis', e);
+                }
+            }
+
+            // 2. Fetch fresh
             fetch(`/api/analysis/${symbol}`)
                 .then(res => res.json())
-                .then(setData)
+                .then(newData => {
+                    setData(newData);
+                    localStorage.setItem(cacheKey, JSON.stringify(newData));
+                })
                 .catch(err => console.error('Failed to fetch analysis', err));
         }
     }, [symbol]);
 
-    if (!data) return <div className={styles.loading}>Loading...</div>;
+    if (!data) return <SymbolSkeleton />;
 
     if ('error' in data) {
         return <div className={styles.error}>Error: {(data as any).error}</div>;

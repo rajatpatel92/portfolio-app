@@ -7,6 +7,10 @@ import { useCurrency } from '@/context/CurrencyContext';
 import ConstituentsGrid from '@/components/ConstituentsGrid';
 
 
+import AnalysisSkeleton from '@/components/AnalysisSkeleton';
+
+// ... other imports
+
 interface PortfolioSummary {
     allocationByType: { name: string; value: number }[];
     allocationByAsset: { name: string; value: number }[];
@@ -18,13 +22,27 @@ export default function AnalysisPage() {
     const { format, convert } = useCurrency();
 
     useEffect(() => {
+        // 1. Try to load from cache immediately
+        const cached = localStorage.getItem('portfolio_summary');
+        if (cached) {
+            try {
+                setSummary(JSON.parse(cached));
+            } catch (e) {
+                console.error('Failed to parse cached summary', e);
+            }
+        }
+
+        // 2. Fetch fresh data
         fetch('/api/portfolio')
             .then(res => res.json())
-            .then(data => setSummary(data))
+            .then(data => {
+                setSummary(data);
+                localStorage.setItem('portfolio_summary', JSON.stringify(data));
+            })
             .catch(err => console.error('Failed to fetch portfolio', err));
     }, []);
 
-    if (!summary) return <div className={styles.loading}>Loading...</div>;
+    if (!summary) return <AnalysisSkeleton />;
 
     return (
         <div className={styles.container}>

@@ -8,10 +8,10 @@ import styles from './page.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
 
 import PortfolioChart from '@/components/PortfolioChart';
-
 import PerformanceChart from '@/components/PerformanceChart';
 import TopMovers from '@/components/TopMovers';
 import DividendSummary from '@/components/DividendSummary';
+import DashboardSkeleton from '@/components/DashboardSkeleton';
 
 interface PortfolioSummary {
   totalValue: number;
@@ -41,13 +41,28 @@ export default function Dashboard() {
   const [customEnd, setCustomEnd] = useState('');
 
   useEffect(() => {
+    // 1. Try to load from cache immediately
+    const cached = localStorage.getItem('portfolio_summary');
+    if (cached) {
+      try {
+        setSummary(JSON.parse(cached));
+      } catch (e) {
+        console.error('Failed to parse cached summary', e);
+      }
+    }
+
+    // 2. Fetch fresh data in background
     fetch('/api/portfolio')
       .then(res => res.json())
-      .then(data => setSummary(data))
+      .then(data => {
+        setSummary(data);
+        // Update cache
+        localStorage.setItem('portfolio_summary', JSON.stringify(data));
+      })
       .catch(err => console.error('Failed to fetch portfolio', err));
   }, []);
 
-  if (!summary) return <div className={styles.loading}>Loading...</div>;
+  if (!summary) return <DashboardSkeleton />;
 
   const totalValue = convert(summary.totalValue, 'USD'); // Assuming API returns USD
   const dayChange = convert(summary.dayChange, 'USD');
