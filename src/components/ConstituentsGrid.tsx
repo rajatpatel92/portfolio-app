@@ -105,9 +105,7 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
 
     return (
         <div className={styles.container}>
-            <div className={styles.header}>
-                <h2>Portfolio Constituents</h2>
-            </div>
+
 
             <div className={styles.tableWrapper}>
                 <table className={styles.table}>
