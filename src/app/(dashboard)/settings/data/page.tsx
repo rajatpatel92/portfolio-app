@@ -8,7 +8,7 @@ import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 export default function MasterDataSettingsPage() {
     const [platforms, setPlatforms] = useState<{ id: string, name: string, slug: string, currency: string }[]>([]);
     const [investmentTypes, setInvestmentTypes] = useState<{ id: string, name: string }[]>([]);
-    const [activityTypes, setActivityTypes] = useState<{ id: string, name: string, behavior: string }[]>([]);
+    const [activityTypes, setActivityTypes] = useState<{ id: string, name: string, behavior: string, isSystem?: boolean }[]>([]);
     const [accountTypes, setAccountTypes] = useState<{ id: string, name: string, currency: string }[]>([]);
 
     const [newPlatformName, setNewPlatformName] = useState('');
@@ -383,8 +383,14 @@ export default function MasterDataSettingsPage() {
                                         <>
                                             <span>{type.name} <small style={{ color: 'var(--text-secondary)' }}>({type.behavior})</small></span>
                                             <div className={styles.itemActions}>
-                                                <button onClick={() => startEditing(type)} className={styles.editButton}>Edit</button>
-                                                <button onClick={() => handleDeleteActivityType(type.id)} className={styles.deleteButton}>Delete</button>
+                                                {type.isSystem ? (
+                                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', padding: '0.25rem 0.5rem', background: 'var(--bg-secondary)', borderRadius: '4px' }}>System</span>
+                                                ) : (
+                                                    <>
+                                                        <button onClick={() => startEditing(type)} className={styles.editButton}>Edit</button>
+                                                        <button onClick={() => handleDeleteActivityType(type.id)} className={styles.deleteButton}>Delete</button>
+                                                    </>
+                                                )}
                                             </div>
                                         </>
                                     )}

@@ -1,18 +1,19 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
-
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const client_1 = require("@prisma/client");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const prisma = new client_1.PrismaClient();
 async function main() {
     const adminUsername = 'admin';
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-
     const existingAdmin = await prisma.user.findUnique({
         where: { username: adminUsername },
     });
-
     if (!existingAdmin) {
-        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+        const hashedPassword = await bcryptjs_1.default.hash(adminPassword, 10);
         await prisma.user.create({
             data: {
                 username: adminUsername,
@@ -21,10 +22,10 @@ async function main() {
             },
         });
         console.log(`Admin user created with username: ${adminUsername}`);
-    } else {
+    }
+    else {
         console.log('Admin user already exists.');
     }
-
     // Seed Exchange Rates
     const rates = [
         { symbol: 'INR=X', price: 89.43, currency: 'INR' }, // Updated symbol and rate
@@ -32,7 +33,6 @@ async function main() {
         { symbol: 'CADUSD=X', price: 0.71, currency: 'USD' },
         { symbol: 'INRUSD=X', price: 0.011, currency: 'USD' }, // Updated approx reverse rate
     ];
-
     for (const rate of rates) {
         await prisma.marketDataCache.upsert({
             where: { symbol: rate.symbol },
@@ -48,7 +48,6 @@ async function main() {
         });
     }
     console.log('Exchange rates seeded.');
-
     // Seed Investment Types
     const investmentTypes = [
         'Stock', 'ETF', 'Mutual Fund', 'Crypto', 'Bond', 'GIC', 'REIT', 'Cash'
@@ -61,7 +60,6 @@ async function main() {
         });
     }
     console.log('Investment types seeded.');
-
     // Seed Account Types
     const accountTypes = [
         // Canada
@@ -86,7 +84,6 @@ async function main() {
         { name: 'Traditional IRA', currency: 'USD' },
         { name: 'Brokerage', currency: 'USD' },
     ];
-
     for (const type of accountTypes) {
         await prisma.accountType.upsert({
             where: { name_currency: { name: type.name, currency: type.currency } },
@@ -95,7 +92,6 @@ async function main() {
         });
     }
     console.log('Account types seeded.');
-
     // Seed Activity Types
     const activityTypes = [
         { name: 'BUY', behavior: 'ADD', isSystem: true },
@@ -106,7 +102,6 @@ async function main() {
         { name: 'DEPOSIT', behavior: 'ADD', isSystem: true },
         { name: 'WITHDRAWAL', behavior: 'REMOVE', isSystem: true },
     ];
-
     for (const type of activityTypes) {
         await prisma.activityType.upsert({
             where: { name: type.name },
@@ -116,12 +111,11 @@ async function main() {
     }
     console.log('Activity types seeded.');
 }
-
 main()
     .catch((e) => {
-        console.error(e);
-        process.exit(1);
-    })
+    console.error(e);
+    process.exit(1);
+})
     .finally(async () => {
-        await prisma.$disconnect();
-    });
+    await prisma.$disconnect();
+});

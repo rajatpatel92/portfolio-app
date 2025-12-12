@@ -9,6 +9,12 @@ export async function PUT(
         const { id } = await params;
         const { name, behavior } = await request.json();
 
+        // Check if system type
+        const existing = await prisma.activityType.findUnique({ where: { id } });
+        if (existing?.isSystem) {
+            return NextResponse.json({ error: 'Cannot modify system activity types' }, { status: 403 });
+        }
+
         if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
 
         const updated = await prisma.activityType.update({
@@ -28,6 +34,13 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params;
+
+        // Check if system type
+        const existing = await prisma.activityType.findUnique({ where: { id } });
+        if (existing?.isSystem) {
+            return NextResponse.json({ error: 'Cannot delete system activity types' }, { status: 403 });
+        }
+
         await prisma.activityType.delete({
             where: { id }
         });
