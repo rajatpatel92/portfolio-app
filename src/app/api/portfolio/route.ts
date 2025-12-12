@@ -225,7 +225,7 @@ export async function GET() {
                             exDate: exDate.toISOString(),
                             rate: marketData.dividendRate || 0,
                             quantity: data.quantity,
-                            estimatedAmount: (marketData.dividendRate || 0) * data.quantity
+                            estimatedAmount: ((marketData.dividendRate || 0) * data.quantity) * rateToUSD
                         };
                     }
                 }
@@ -243,8 +243,8 @@ export async function GET() {
                     costBasisUSD: data.quantity > 0 ? costBasis * rateToUSD : 0,
                     dayChangeUSD: data.quantity > 0 ? dayChange * rateToUSD : 0,
                     symbolCashFlows,
-                    dividendsYTD: localDividendsYTD,
-                    projectedDividends: (data.quantity > 0 && marketData?.dividendRate) ? (marketData.dividendRate * data.quantity) : 0,
+                    dividendsYTD: localDividendsYTD * rateToUSD,
+                    projectedDividends: ((data.quantity > 0 && marketData?.dividendRate) ? (marketData.dividendRate * data.quantity) : 0) * rateToUSD,
                     constituent: data.quantity > 0 ? {
                         symbol,
                         name: data.investment.name,

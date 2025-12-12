@@ -13,7 +13,7 @@ interface DividendSummaryProps {
 }
 
 export default function DividendSummary({ dividendsYTD, upcomingDividends = [], totalValue, projectedDividends }: DividendSummaryProps) {
-    const { format } = useCurrency();
+    const { format, convert } = useCurrency();
     const { formatDate } = useDate();
 
     if (totalValue === 0 && dividendsYTD === 0 && projectedDividends === 0 && upcomingDividends.length === 0) {
@@ -35,7 +35,7 @@ export default function DividendSummary({ dividendsYTD, upcomingDividends = [], 
                 <div className={styles.statItem}>
                     <div className={styles.label}>Received YTD</div>
                     <div className={styles.valueRow}>
-                        <span className={styles.value}>{format(dividendsYTD)}</span>
+                        <span className={styles.value}>{format(convert(dividendsYTD, 'USD'))}</span>
                         <span className={styles.yieldPill}>
                             {totalValue > 0 ? ((dividendsYTD / totalValue) * 100).toFixed(2) : '0.00'}%
                         </span>
@@ -45,7 +45,7 @@ export default function DividendSummary({ dividendsYTD, upcomingDividends = [], 
                 <div className={styles.statItem}>
                     <div className={styles.label}>Projected Annual</div>
                     <div className={styles.valueRow}>
-                        <span className={styles.value}>{format(projectedDividends)}</span>
+                        <span className={styles.value}>{format(convert(projectedDividends, 'USD'))}</span>
                         <span className={styles.yieldPill}>
                             {totalValue > 0 ? ((projectedDividends / totalValue) * 100).toFixed(2) : '0.00'}%
                         </span>
@@ -64,7 +64,7 @@ export default function DividendSummary({ dividendsYTD, upcomingDividends = [], 
                                     <span className={styles.date}>{formatDate(div.exDate)}</span>
                                 </div>
                                 <div className={styles.amount}>
-                                    Est. {format(div.estimatedAmount)}
+                                    Est. {format(convert(div.estimatedAmount, 'USD'))}
                                 </div>
                             </li>
                         ))}
@@ -73,6 +73,6 @@ export default function DividendSummary({ dividendsYTD, upcomingDividends = [], 
                     <div className={styles.empty}>No upcoming dividends found</div>
                 )}
             </div>
-        </div >
+        </div>
     );
 }
