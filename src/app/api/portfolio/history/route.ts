@@ -45,8 +45,10 @@ export async function GET(request: Request) {
                 case '3M': startDate.setMonth(startDate.getMonth() - 3); break;
                 case '6M': startDate.setMonth(startDate.getMonth() - 6); break;
                 case '1Y': startDate.setFullYear(startDate.getFullYear() - 1); break;
+                case '5Y': startDate.setFullYear(startDate.getFullYear() - 5); break;
+                case '10Y': startDate.setFullYear(startDate.getFullYear() - 10); break;
                 case 'YTD': startDate.setMonth(0, 1); break;
-                case 'ALL': startDate.setFullYear(startDate.getFullYear() - 5); break; // Cap at 5 years
+                case 'ALL': startDate.setFullYear(startDate.getFullYear() - 20); break; // Cap at 20 years
                 default: startDate.setMonth(startDate.getMonth() - 1);
             }
         }

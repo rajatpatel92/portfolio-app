@@ -19,7 +19,7 @@ interface StockChartProps {
     symbol?: string;
 }
 
-const RANGES = ['1D', '1W', '1M', '6M', 'YTD', '1Y', 'ALL'];
+const RANGES = ['1D', '1W', '1M', '6M', 'YTD', '1Y', '5Y', '10Y', 'ALL'];
 
 export default function StockChart({ data, currency: assetCurrency, avgPriceHistory, symbol }: StockChartProps) {
     const { format, convert } = useCurrency();
@@ -96,6 +96,8 @@ export default function StockChart({ data, currency: assetCurrency, avgPriceHist
             case '6M': startDate.setMonth(now.getMonth() - 6); break;
             case 'YTD': startDate = new Date(now.getFullYear(), 0, 1); break;
             case '1Y': startDate.setFullYear(now.getFullYear() - 1); break;
+            case '5Y': startDate.setFullYear(now.getFullYear() - 5); break;
+            case '10Y': startDate.setFullYear(now.getFullYear() - 10); break;
             case 'ALL': return allData;
             default: return allData;
         }
@@ -139,6 +141,8 @@ export default function StockChart({ data, currency: assetCurrency, avgPriceHist
             case '6M': return '6-months';
             case 'YTD': return 'YTD';
             case '1Y': return '1-year';
+            case '5Y': return '5-years';
+            case '10Y': return '10-years';
             case 'ALL': return 'All-time';
             case 'CUSTOM': return 'Custom';
             default: return '';

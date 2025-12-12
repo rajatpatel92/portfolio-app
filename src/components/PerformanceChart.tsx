@@ -30,7 +30,7 @@ interface PerformanceChartProps {
     setCustomEnd: (date: string) => void;
 }
 
-const RANGES = ['1D', '1W', '1M', '3M', '6M', '1Y', 'YTD', 'ALL'];
+const RANGES = ['1D', '1W', '1M', '3M', '6M', '1Y', 'YTD', '5Y', '10Y', 'ALL'];
 
 export default function PerformanceChart({
     range,
@@ -111,6 +111,8 @@ export default function PerformanceChart({
             case '6M': return '6-months';
             case '1Y': return '1-year';
             case 'YTD': return 'YTD';
+            case '5Y': return '5-years';
+            case '10Y': return '10-years';
             case 'ALL': return 'All-time';
             case 'CUSTOM': return 'Custom';
             default: return '';

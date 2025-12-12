@@ -174,6 +174,13 @@ export async function GET(request: Request, props: { params: Promise<{ symbol: s
                         if (multiplier > 0) {
                             currentTotalQty *= multiplier;
                             // Total Cost remains same
+
+                            // Retroactively adjust all previously calculated average prices
+                            // because the historical chart is likely split-adjusted, 
+                            // so we must express past average costs in "current share" equivalents.
+                            for (const prevDate in avgPriceHistory) {
+                                avgPriceHistory[prevDate] = avgPriceHistory[prevDate] / multiplier;
+                            }
                         }
                     }
 

@@ -32,7 +32,7 @@ interface PortfolioChartProps {
     setCustomEnd: (date: string) => void;
 }
 
-const RANGES = ['1D', '1W', '1M', '3M', '6M', '1Y', 'YTD', 'ALL'];
+const RANGES = ['1D', '1W', '1M', '3M', '6M', '1Y', 'YTD', '5Y', '10Y', 'ALL'];
 
 export default function PortfolioChart({
     range,

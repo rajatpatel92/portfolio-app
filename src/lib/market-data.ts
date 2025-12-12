@@ -426,7 +426,7 @@ export class MarketDataService {
             // 2. Fetch from API
             const endDate = new Date();
             const startDate = new Date();
-            startDate.setFullYear(startDate.getFullYear() - 1); // Fetch up to 1 year back
+            startDate.setFullYear(startDate.getFullYear() - 20); // Fetch up to 20 years back
             startDate.setDate(startDate.getDate() - 7); // Add buffer
 
             const queryOptions = {
@@ -549,7 +549,7 @@ export class MarketDataService {
             // 2. Fetch History (Chart)
             const endDate = new Date();
             const startDate = new Date();
-            startDate.setFullYear(startDate.getFullYear() - 1);
+            startDate.setFullYear(startDate.getFullYear() - 20); // Support up to 20y for ALL/10Y
             startDate.setDate(startDate.getDate() - 7);
 
             const queryOptions = {
