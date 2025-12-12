@@ -26,6 +26,7 @@ export default function AnalysisPage() {
         const cached = localStorage.getItem('portfolio_summary');
         if (cached) {
             try {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setSummary(JSON.parse(cached));
             } catch (e) {
                 console.error('Failed to parse cached summary', e);

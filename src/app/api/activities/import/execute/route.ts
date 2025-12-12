@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
             let finalCurrency = activity.Currency || investment.currencyCode;
             let finalPrice = activity.parsedPrice;
             let finalFee = activity.parsedFee;
-            let finalQuantity = activity.parsedQuantity; // Quantity doesn't change with currency, but good to preserve
+            const finalQuantity = activity.parsedQuantity; // Quantity doesn't change with currency, but good to preserve
 
             // CHECK CURRENCY MISMATCH
             if (finalCurrency !== investment.currencyCode) {

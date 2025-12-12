@@ -1,0 +1,217 @@
+
+> portfolio-app@0.1.0 lint
+> eslint
+
+
+/Users/rajat/Repositories/portfolio-app/prisma/seed.js
+  6:18  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  7:36  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/Users/rajat/Repositories/portfolio-app/scripts/auto-detect-splits.ts
+  47:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  62:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/rajat/Repositories/portfolio-app/src/app/(dashboard)/analysis/[symbol]/page.tsx
+   7:8   warning  'PortfolioChart' is defined but never used         @typescript-eslint/no-unused-vars
+  11:19  warning  'ChartJS' is defined but never used                @typescript-eslint/no-unused-vars
+  11:28  warning  'ArcElement' is defined but never used             @typescript-eslint/no-unused-vars
+  11:40  warning  'Tooltip' is defined but never used                @typescript-eslint/no-unused-vars
+  11:49  warning  'Legend' is defined but never used                 @typescript-eslint/no-unused-vars
+  12:10  warning  'Pie' is defined but never used                    @typescript-eslint/no-unused-vars
+  61:21  warning  'convert' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  62:23  warning  'setActiveTab' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/app/(dashboard)/analysis/page.tsx
+  22:13  warning  'format' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  22:21  warning  'convert' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+  29:17  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/rajat/Repositories/portfolio-app/src/app/(dashboard)/analysis/page.tsx:29:17
+  27 |         if (cached) {
+  28 |             try {
+> 29 |                 setSummary(JSON.parse(cached));
+     |                 ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  30 |             } catch (e) {
+  31 |                 console.error('Failed to parse cached summary', e);
+  32 |             }  react-hooks/set-state-in-effect
+
+/Users/rajat/Repositories/portfolio-app/src/app/(dashboard)/page.tsx
+  36:28  warning  'currency' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  48:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/rajat/Repositories/portfolio-app/src/app/(dashboard)/page.tsx:48:9
+  46 |     if (cached) {
+  47 |       try {
+> 48 |         setSummary(JSON.parse(cached));
+     |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  49 |       } catch (e) {
+  50 |         console.error('Failed to parse cached summary', e);
+  51 |       }  react-hooks/set-state-in-effect
+
+/Users/rajat/Repositories/portfolio-app/src/app/(dashboard)/settings/accounts/page.tsx
+   30:36  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+   64:9   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/rajat/Repositories/portfolio-app/src/app/(dashboard)/settings/accounts/page.tsx:64:9
+  62 |
+  63 |     useEffect(() => {
+> 64 |         fetchAccounts();
+     |         ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  65 |         fetchPlatforms();
+  66 |         fetchAccountTypes();
+  67 |         fetchUsers();  react-hooks/set-state-in-effect
+  114:33  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+  153:33  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+  157:55  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+
+/Users/rajat/Repositories/portfolio-app/src/app/(dashboard)/settings/data/page.tsx
+   27:36  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-explicit-any
+   54:9   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/rajat/Repositories/portfolio-app/src/app/(dashboard)/settings/data/page.tsx:54:9
+  52 |
+  53 |     useEffect(() => {
+> 54 |         fetchPlatforms();
+     |         ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  55 |         fetchInvestmentTypes();
+  56 |         fetchActivityTypes();
+  57 |         fetchAccountTypes();  react-hooks/set-state-in-effect
+  179:33  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-explicit-any
+  264:33  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-explicit-any
+  268:55  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-explicit-any
+
+/Users/rajat/Repositories/portfolio-app/src/app/(dashboard)/settings/page.tsx
+   4:8   warning  'Link' is defined but never used           @typescript-eslint/no-unused-vars
+  16:11  warning  'role' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  16:36  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/Users/rajat/Repositories/portfolio-app/src/app/api/accounts/[id]/route.ts
+  22:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/app/api/activities/import/execute/route.ts
+  100:9   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  116:17  error    'finalQuantity' is never reassigned. Use 'const' instead                                               prefer-const
+
+/Users/rajat/Repositories/portfolio-app/src/app/api/analysis/[symbol]/route.ts
+  3:10  warning  'auth' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/app/api/platforms/[id]/route.ts
+  22:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/app/api/platforms/route.ts
+   8:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  31:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/app/api/portfolio/route.ts
+  3:10  warning  'auth' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/app/api/settings/account-types/[id]/route.ts
+  20:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  35:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/app/api/settings/account-types/route.ts
+  10:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  27:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/app/api/settings/activity-types/[id]/route.ts
+  26:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  48:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/app/api/settings/activity-types/route.ts
+  10:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  27:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/app/api/settings/investment-types/[id]/route.ts
+  20:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  35:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/app/api/settings/investment-types/route.ts
+  10:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  24:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/app/api/users/route.ts
+  9:27  warning  'req' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/app/login/page.tsx
+   6:8   warning  'Image' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  34:18  warning  'err' is defined but never used                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+  44:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/rajat/Repositories/portfolio-app/src/components/AddActivityForm.tsx
+  26:12  warning  'loading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/components/BulkUploadModal.tsx
+  5:43  warning  'FaExclamationTriangle' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/components/ConstituentsGrid.tsx
+  41:12  warning  'showPercent' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  41:25  warning  'setShowPercent' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  43:30  warning  'currency' is assigned a value but never used        @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/components/DateInput.tsx
+  3:38  warning  'useRef' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/components/PortfolioChart.tsx
+   5:5   warning  'LineChart' is defined but never used          @typescript-eslint/no-unused-vars
+   6:5   warning  'Line' is defined but never used               @typescript-eslint/no-unused-vars
+  48:30  warning  'currency' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/components/Sidebar.tsx
+   6:8   warning  'Image' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+  24:5   warning  'MdTrendingUp' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+  36:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/rajat/Repositories/portfolio-app/src/components/Sidebar.tsx:36:9
+  34 |
+  35 |     useEffect(() => {
+> 36 |         setMounted(true);
+     |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  37 |     }, []);
+  38 |
+  39 |     const { data: session } = useSession();  react-hooks/set-state-in-effect
+  79:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @next/next/no-img-element
+
+/Users/rajat/Repositories/portfolio-app/src/components/StockChart.tsx
+  30:12  warning  'loadingIntraday' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/components/TreemapChart.tsx
+   75:31  warning  'colorVal' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  113:13  warning  'root' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  113:47  warning  'index' is assigned a value but never used     @typescript-eslint/no-unused-vars
+
+/Users/rajat/Repositories/portfolio-app/src/lib/portfolio-helper.ts
+  61:71  warning  '_amount' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 72 problems (19 errors, 53 warnings)
+  1 error and 1 warning potentially fixable with the `--fix` option.
+

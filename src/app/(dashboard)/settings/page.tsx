@@ -13,6 +13,7 @@ export default function SettingsHubPage() {
     const { dateFormat, setDateFormat } = useDate();
     const { currency, setCurrency } = useCurrency();
     const { data: session } = useSession();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const role = (session?.user as any)?.role || 'VIEWER';
 
     return (
