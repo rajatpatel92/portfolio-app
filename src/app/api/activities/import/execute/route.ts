@@ -95,25 +95,63 @@ export async function POST(req: NextRequest) {
         });
         const investmentMap = new Map(allInvestments.map(i => [i.symbol, i]));
 
-        // 2. Create Activities
-        const createdActivities = await prisma.$transaction(
-            activities.map((activity: any) => {
-                const investment = investmentMap.get(activity.Symbol);
-                if (!investment) throw new Error(`Investment not found for ${activity.Symbol}`);
+        // 2. Pre-process Activities (Currency Conversion)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const processedActivities: any[] = [];
 
-                return prisma.activity.create({
-                    data: {
-                        date: new Date(activity.parsedDate),
-                        type: activity.Type,
-                        quantity: activity.parsedQuantity,
-                        price: activity.parsedPrice,
-                        fee: activity.parsedFee,
-                        currency: activity.Currency || investment.currencyCode,
-                        investmentId: investment.id,
-                        accountId: activity.accountId,
-                        platformId: activity.platformId
+        // We handle this outside the transaction because we make external API calls
+        console.log('Pre-processing activities for currency conversion...');
+
+        // Group by Date+CurrencyPair to batch requests if we were smarter, but sequential/parallel per activity is fine for now
+        // Or parallelize execution
+
+        await Promise.all(activities.map(async (activity: any) => {
+            const investment = investmentMap.get(activity.Symbol);
+            if (!investment) throw new Error(`Investment not found for ${activity.Symbol}`); // Should not happen
+
+            let finalCurrency = activity.Currency || investment.currencyCode;
+            let finalPrice = activity.parsedPrice;
+            let finalFee = activity.parsedFee;
+            let finalQuantity = activity.parsedQuantity; // Quantity doesn't change with currency, but good to preserve
+
+            // CHECK CURRENCY MISMATCH
+            if (finalCurrency !== investment.currencyCode) {
+                console.log(`Currency mismatch for ${activity.Symbol}: Inv ${investment.currencyCode} vs Act ${finalCurrency}. Converting...`);
+                try {
+                    const rate = await MarketDataService.getHistoricalExchangeRate(finalCurrency, investment.currencyCode, new Date(activity.parsedDate));
+
+                    if (rate) {
+                        console.log(`Conversion Rate (${finalCurrency}->${investment.currencyCode}) on ${activity.parsedDate}: ${rate}`);
+                        finalPrice = finalPrice * rate;
+                        finalFee = finalFee * rate;
+                        finalCurrency = investment.currencyCode; // Update to native currency
+                    } else {
+                        console.warn(`Could not find exchange rate for ${finalCurrency}->${investment.currencyCode} on ${activity.parsedDate}. Keeping original currency.`);
+                        // We keep original currency, causing potentially mixed currency data which relies on the downstream display logic to handle (or show mixed).
+                        // Ideally we failed? No, better to import as-is than fail.
                     }
-                });
+                } catch (e) {
+                    console.error('Error converting currency:', e);
+                }
+            }
+
+            processedActivities.push({
+                date: new Date(activity.parsedDate),
+                type: activity.Type,
+                quantity: finalQuantity,
+                price: finalPrice,
+                fee: finalFee,
+                currency: finalCurrency,
+                investmentId: investment.id,
+                accountId: activity.accountId,
+                platformId: activity.platformId
+            });
+        }));
+
+        // 3. Create Activities
+        const createdActivities = await prisma.$transaction(
+            processedActivities.map((data: any) => {
+                return prisma.activity.create({ data });
             })
         );
         // 3. Trigger Market Data Refresh

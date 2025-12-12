@@ -337,6 +337,76 @@ export class MarketDataService {
         return null;
     }
 
+    /**
+     * Get historical exchange rate for a specific date
+     */
+    static async getHistoricalExchangeRate(from: string, to: string, date: Date): Promise<number | null> {
+        if (from === to) return 1;
+
+        const getRateForSymbol = async (ticker: string): Promise<number | null> => {
+            try {
+                // Fetch window around date to handle weekends/holidays
+                const startDate = new Date(date);
+                startDate.setDate(startDate.getDate() - 4); // Look back 4 days
+                const endDate = new Date(date);
+                endDate.setDate(endDate.getDate() + 1); // Look forward 1 day
+
+                const result = await yahooFinance.chart(ticker, {
+                    period1: startDate,
+                    period2: endDate,
+                    interval: '1d'
+                }) as any;
+
+                const quotes = result?.quotes || [];
+                if (quotes.length === 0) return null;
+
+                // Find the quote closest to but usually before or on the transaction date
+                // Since we sort by date, we can just grab the valid one closest to our target date
+                // Reverse iterate to find the latest valid quote on or before the target date
+                const targetTime = date.getTime();
+
+                // Sort quotes just in case
+                quotes.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+                let bestQuote = null;
+                for (const q of quotes) {
+                    const qTime = new Date(q.date).getTime();
+                    if (qTime <= targetTime + (24 * 60 * 60 * 1000)) { // Allow same day (considering timezones)
+                        if (q.close || q.adjClose) {
+                            bestQuote = q;
+                        }
+                    }
+                }
+
+                // If we didn't find one before, maybe one slightly after (e.g. strict weekend boundary)?
+                // Strict logic: Closest one available.
+                if (!bestQuote && quotes.length > 0) bestQuote = quotes[quotes.length - 1];
+
+                return bestQuote ? (bestQuote.close || bestQuote.adjClose) : null;
+
+            } catch (e) {
+                // console.warn(`Failed history rate for ${ticker}`, e);
+                return null;
+            }
+        };
+
+        // Try direct pair
+        let symbol = `${from}${to}=X`;
+        if (from === 'USD') symbol = `${to}=X`;
+
+        const rate = await getRateForSymbol(symbol);
+        if (rate) return rate;
+
+        // Try reverse pair
+        let reverseSymbol = `${to}${from}=X`;
+        if (to === 'USD') reverseSymbol = `${from}=X`;
+
+        const reverseRate = await getRateForSymbol(reverseSymbol);
+        if (reverseRate) return 1 / reverseRate;
+
+        return null; // Both failed
+    }
+
 
     /**
      * Get historical prices for performance calculation with caching (24h)
