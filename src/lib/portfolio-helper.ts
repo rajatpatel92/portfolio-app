@@ -58,7 +58,7 @@ export async function getHoldingsAtDate(symbol: string, date: Date): Promise<Rec
  * @param amount 
  * @returns true if duplicate exists
  */
-export async function checkDividendExists(symbol: string, date: Date, amount: number): Promise<boolean> {
+export async function checkDividendExists(symbol: string, date: Date, _amount: number): Promise<boolean> {
     const existing = await prisma.activity.findFirst({
         where: {
             investment: {

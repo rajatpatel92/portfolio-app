@@ -267,7 +267,7 @@ export class MarketDataService {
 
                 return price;
             }
-        } catch (e) {
+        } catch {
             // Ignore and try reverse
         }
 
@@ -384,7 +384,7 @@ export class MarketDataService {
 
                 return bestQuote ? (bestQuote.close || bestQuote.adjClose) : null;
 
-            } catch (e) {
+            } catch {
                 // console.warn(`Failed history rate for ${ticker}`, e);
                 return null;
             }
