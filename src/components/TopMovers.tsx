@@ -10,7 +10,7 @@ interface TopMoversProps {
 }
 
 export default function TopMovers({ constituents }: TopMoversProps) {
-    const { format } = useCurrency();
+    const { format, convert } = useCurrency();
 
     // Filter out items with 0 change to avoid noise, unless we have very few items
     const activeConstituents = constituents.filter(c => c.dayChange.percent !== 0);
@@ -45,7 +45,7 @@ export default function TopMovers({ constituents }: TopMoversProps) {
                                     <Link href={`/analysis/${c.symbol}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div className={styles.symbolRow}>
                                             <span className={styles.symbol}>{c.symbol}</span>
-                                            <span className={styles.price}>{format(c.price)}</span>
+                                            <span className={styles.price}>{format(convert(c.price, c.currency))}</span>
                                         </div>
                                         <div className={`${styles.change} ${styles.positive}`}>
                                             +{c.dayChange.percent.toFixed(2)}%
@@ -67,7 +67,7 @@ export default function TopMovers({ constituents }: TopMoversProps) {
                                     <Link href={`/analysis/${c.symbol}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div className={styles.symbolRow}>
                                             <span className={styles.symbol}>{c.symbol}</span>
-                                            <span className={styles.price}>{format(c.price)}</span>
+                                            <span className={styles.price}>{format(convert(c.price, c.currency))}</span>
                                         </div>
                                         <div className={`${styles.change} ${styles.negative}`}>
                                             {c.dayChange.percent.toFixed(2)}%

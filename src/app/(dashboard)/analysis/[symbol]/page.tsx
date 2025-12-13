@@ -219,14 +219,14 @@ export default function AnalysisPage() {
                     </div>
 
                     <div className={styles.price}>
-                        {format(data.stats.marketPrice)}
+                        {format(convert(data.stats.marketPrice, data.currency))}
                     </div>
                 </div>
                 <div className={styles.headerRight}>
                     <div className={`${styles.return} ${isPositive ? styles.positive : styles.negative}`}>
                         <div className={styles.returnLabel}>Total Return</div>
                         <div className={styles.returnValue}>
-                            {isPositive ? '+' : ''}{format(data.stats.absoluteReturn)} ({data.stats.percentReturn.toFixed(2)}%)
+                            {isPositive ? '+' : ''}{format(convert(data.stats.absoluteReturn, data.currency))} ({data.stats.percentReturn.toFixed(2)}%)
                         </div>
                     </div>
                 </div>
@@ -251,11 +251,11 @@ export default function AnalysisPage() {
                         <section className={styles.statsGrid}>
                             <div className={styles.statCard}>
                                 <div className={styles.statLabel}>Total Investment</div>
-                                <div className={styles.statValue}>{format(data.stats.totalInvestment)}</div>
+                                <div className={styles.statValue}>{format(convert(data.stats.totalInvestment, data.currency))}</div>
                             </div>
                             <div className={styles.statCard}>
                                 <div className={styles.statLabel}>Current Value</div>
-                                <div className={styles.statValue}>{format(data.stats.currentValue)}</div>
+                                <div className={styles.statValue}>{format(convert(data.stats.currentValue, data.currency))}</div>
                             </div>
                             <div className={styles.statCard}>
                                 <div className={styles.statLabel}>Quantity</div>
@@ -263,20 +263,19 @@ export default function AnalysisPage() {
                             </div>
                             <div className={styles.statCard}>
                                 <div className={styles.statLabel}>Avg Price</div>
-                                <div className={styles.statValue}>{format(data.stats.avgPrice)}</div>
+                                <div className={styles.statValue}>{format(convert(data.stats.avgPrice, data.currency))}</div>
                             </div>
                             <div className={styles.statCard}>
                                 <div className={styles.statLabel}>52W High</div>
-                                <div className={styles.statValue}>{data.stats.fiftyTwoWeekHigh ? format(data.stats.fiftyTwoWeekHigh) : '-'}</div>
+                                <div className={styles.statValue}>{data.stats.fiftyTwoWeekHigh ? format(convert(data.stats.fiftyTwoWeekHigh, data.currency)) : '-'}</div>
                             </div>
                             <div className={styles.statCard}>
                                 <div className={styles.statLabel}>52W Low</div>
-                                <div className={styles.statValue}>{data.stats.fiftyTwoWeekLow ? format(data.stats.fiftyTwoWeekLow) : '-'}</div>
+                                <div className={styles.statValue}>{data.stats.fiftyTwoWeekLow ? format(convert(data.stats.fiftyTwoWeekLow, data.currency)) : '-'}</div>
                             </div>
-                            {/* ... other cards ... */}
                             <div className={styles.statCard}>
                                 <div className={styles.statLabel}>Dividend Amount</div>
-                                <div className={styles.statValue}>{data.stats.totalDividends !== undefined ? format(data.stats.totalDividends) : format(0)}</div>
+                                <div className={styles.statValue}>{data.stats.totalDividends !== undefined ? format(convert(data.stats.totalDividends, data.currency)) : format(0)}</div>
                             </div>
                             <div className={styles.statCard}>
                                 <div className={styles.statLabel}>Dividend Yield</div>
@@ -285,7 +284,7 @@ export default function AnalysisPage() {
 
                             <div className={styles.statCard}>
                                 <div className={styles.statLabel}>Total Fees</div>
-                                <div className={styles.statValue}>{format(data.stats.totalFees)}</div>
+                                <div className={styles.statValue}>{format(convert(data.stats.totalFees, data.currency))}</div>
                             </div>
                             <div className={styles.statCard}>
                                 <div className={styles.statLabel}>Investment Age</div>
