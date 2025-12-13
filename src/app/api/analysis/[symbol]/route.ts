@@ -56,11 +56,12 @@ export async function GET(request: Request, props: { params: Promise<{ symbol: s
 
         for (const activity of investment.activities) {
             const behavior = behaviorMap.get(activity.type) || 'NEUTRAL';
-            const amount = activity.quantity * activity.price;
+            const absQty = Math.abs(activity.quantity);
+            const amount = absQty * activity.price;
             totalFees += activity.fee || 0;
 
             if (behavior === 'ADD') {
-                totalQuantity += activity.quantity;
+                totalQuantity += absQty;
                 totalCost += amount;
                 if (!firstBuyDate || new Date(activity.date) < firstBuyDate) {
                     firstBuyDate = new Date(activity.date);
@@ -77,24 +78,24 @@ export async function GET(request: Request, props: { params: Promise<{ symbol: s
                             type: activity.account.type
                         };
                     }
-                    accountAllocation[accId].quantity += activity.quantity;
+                    accountAllocation[accId].quantity += absQty;
                 }
 
             } else if (behavior === 'REMOVE') {
-                totalQuantity -= activity.quantity;
+                totalQuantity -= absQty;
                 // Pro-rata cost basis reduction? Or FIFO?
                 // For simple average cost:
-                const avgCost = totalQuantity > 0 ? totalCost / (totalQuantity + activity.quantity) : 0;
-                totalCost -= activity.quantity * avgCost;
+                const avgCost = totalQuantity > 0 ? totalCost / (totalQuantity + absQty) : 0;
+                totalCost -= absQty * avgCost;
 
                 if (activity.account) {
                     const accId = activity.account.id;
                     if (accountAllocation[accId]) {
-                        accountAllocation[accId].quantity -= activity.quantity;
+                        accountAllocation[accId].quantity -= absQty;
                     }
                 }
             } else if (behavior === 'SPLIT') {
-                const multiplier = activity.quantity; // Quantity holds the ratio
+                const multiplier = absQty; // Quantity holds the ratio
                 if (multiplier > 0) {
                     totalQuantity *= multiplier;
                     // Do NOT change totalCost (Cost Basis). Total Investment remains same, just more shares.
@@ -157,20 +158,21 @@ export async function GET(request: Request, props: { params: Promise<{ symbol: s
                     if (activityDate > date) break;
 
                     const behavior = behaviorMap.get(activity.type) || 'NEUTRAL';
-                    const amount = activity.quantity * activity.price;
+                    const absQty = Math.abs(activity.quantity);
+                    const amount = absQty * activity.price;
 
                     if (behavior === 'ADD') {
-                        currentTotalQty += activity.quantity;
+                        currentTotalQty += absQty;
                         currentTotalCost += amount;
                     } else if (behavior === 'REMOVE') {
                         // Reduce cost proportionally
                         if (currentTotalQty > 0) {
                             const avgCost = currentTotalCost / currentTotalQty;
-                            currentTotalCost -= activity.quantity * avgCost;
-                            currentTotalQty -= activity.quantity;
+                            currentTotalCost -= absQty * avgCost;
+                            currentTotalQty -= absQty;
                         }
                     } else if (behavior === 'SPLIT') {
-                        const multiplier = activity.quantity;
+                        const multiplier = absQty;
                         if (multiplier > 0) {
                             currentTotalQty *= multiplier;
                             // Total Cost remains same
@@ -198,7 +200,7 @@ export async function GET(request: Request, props: { params: Promise<{ symbol: s
         return NextResponse.json({
             symbol,
             name: investment.name,
-            currency: investment.currencyCode,
+            currency: marketData?.currency || investment.currencyCode || 'USD',
             stats: {
                 quantity: totalQuantity,
                 avgPrice,
