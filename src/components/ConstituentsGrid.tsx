@@ -112,17 +112,17 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                 <table className={styles.table}>
                     <thead>
                         <tr>
-                            <th className={styles.th} onClick={() => handleSort('name')}>Asset</th>
-                            <th className={`${styles.th} ${styles.right}`} onClick={() => handleSort('bookValue')}>Book Value</th>
-                            <th className={`${styles.th} ${styles.right}`} onClick={() => handleSort('value')}>Current Value</th>
-                            <th className={`${styles.th} ${styles.right}`} onClick={() => handleSort('dayChange.absolute')}>Day</th>
-                            <th className={`${styles.th} ${styles.right}`} onClick={() => handleSort('change1W.absolute')}>1W</th>
-                            <th className={`${styles.th} ${styles.right}`} onClick={() => handleSort('change1M.absolute')}>1M</th>
-                            <th className={`${styles.th} ${styles.right}`} onClick={() => handleSort('change1Y.absolute')}>1Y</th>
-                            <th className={`${styles.th} ${styles.right}`} onClick={() => handleSort('changeYTD.absolute')}>YTD</th>
-                            <th className={`${styles.th} ${styles.right}`} onClick={() => handleSort('inceptionChange.absolute')}>ALL</th>
-                            <th className={`${styles.th} ${styles.right}`} onClick={() => handleSort('dividendYield')}>Yield</th>
-                            <th className={`${styles.th} ${styles.right}`} onClick={() => handleSort('xirr')}>XIRR</th>
+                            <th className={styles.th} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('name')}>Asset</th>
+                            <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('bookValue')}>Book Value</th>
+                            <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('value')}>Current Value</th>
+                            <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('dayChange.absolute')}>Day</th>
+                            <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('change1W.absolute')}>1W</th>
+                            <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('change1M.absolute')}>1M</th>
+                            <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('change1Y.absolute')}>1Y</th>
+                            <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('changeYTD.absolute')}>YTD</th>
+                            <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('inceptionChange.absolute')}>ALL</th>
+                            <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('dividendYield')}>Yield</th>
+                            <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('xirr')}>XIRR</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -185,6 +185,53 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                             ))}
                         </AnimatePresence>
                     </tbody>
+                    {data.length > 0 && (
+                        <tfoot>
+                            <tr className={styles.tr} style={{ fontWeight: 'bold', background: 'var(--card-bg)', position: 'sticky', bottom: 0, zIndex: 20, boxShadow: '0 -1px 0 var(--card-border)' }}>
+                                <td className={styles.td}>TOTAL</td>
+                                <td className={`${styles.td} ${styles.right}`}>
+                                    {format(data.reduce((sum, item) => sum + convert(item.bookValue, item.currency), 0))}
+                                </td>
+                                <td className={`${styles.td} ${styles.right}`}>
+                                    {format(data.reduce((sum, item) => sum + convert(item.value, item.currency), 0))}
+                                </td>
+                                <td className={`${styles.td} ${styles.right}`}>
+                                    {(() => {
+                                        const totalAbs = data.reduce((sum, item) => sum + convert(item.dayChange.absolute, item.currency), 0);
+                                        const totalVal = data.reduce((sum, item) => sum + convert(item.value, item.currency), 0);
+                                        const prevVal = totalVal - totalAbs;
+                                        const pct = prevVal !== 0 ? (totalAbs / prevVal) * 100 : 0;
+                                        return (
+                                            <div className={getColorClass(totalAbs)}>
+                                                <div>{format(totalAbs)}</div>
+                                                <div className={styles.percent}>({pct.toFixed(2)}%)</div>
+                                            </div>
+                                        );
+                                    })()}
+                                </td>
+                                {/* Spacers for 1W/1M/1Y/YTD */}
+                                <td className={styles.td}></td>
+                                <td className={styles.td}></td>
+                                <td className={styles.td}></td>
+                                <td className={styles.td}></td>
+                                <td className={`${styles.td} ${styles.right}`}>
+                                    {(() => {
+                                        const totalAbs = data.reduce((sum, item) => sum + convert(item.inceptionChange.absolute, item.currency), 0);
+                                        const totalBook = data.reduce((sum, item) => sum + convert(item.bookValue, item.currency), 0);
+                                        const pct = totalBook !== 0 ? (totalAbs / totalBook) * 100 : 0;
+                                        return (
+                                            <div className={getColorClass(totalAbs)}>
+                                                <div>{format(totalAbs)}</div>
+                                                <div className={styles.percent}>({pct.toFixed(2)}%)</div>
+                                            </div>
+                                        );
+                                    })()}
+                                </td>
+                                <td className={styles.td}></td>
+                                <td className={styles.td}></td>
+                            </tr>
+                        </tfoot>
+                    )}
                 </table>
             </div>
         </div >

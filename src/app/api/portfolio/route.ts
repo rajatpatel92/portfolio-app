@@ -31,63 +31,105 @@ export async function GET() {
         if (!behaviorMap.has('SELL')) behaviorMap.set('SELL', 'REMOVE');
         if (!behaviorMap.has('DIVIDEND')) behaviorMap.set('DIVIDEND', 'NEUTRAL');
 
+        // Fetch Users for Display Name mapping
+        const users = await prisma.user.findMany();
+        const userMap = new Map<string, string>();
+        users.forEach(u => {
+            if (u.name) {
+                userMap.set(u.username.toLowerCase(), u.name);
+            }
+        });
+
         // 2. Calculate holdings
         const holdingsMap = new Map<string, {
-            quantity: number;
-            investment: typeof activities[0]['investment'];
-            platforms: Map<string, number>; // Platform Name -> Quantity
-            accounts: Map<string, { quantity: number, platformName: string, accountType: string }>; // Account Name -> { Quantity, Platform, Type }
+            quantity: number,
+            investment: any,
+            platforms: Map<string, number>,
+            accounts: Map<string, { quantity: number, platformName: string, accountType: string, costBasis: number, cashFlows: Transaction[], firstBuyDate: Date | null }>
         }>();
 
         for (const activity of activities) {
-            const { symbol } = activity.investment;
-            const current = holdingsMap.get(symbol) || {
-                quantity: 0,
-                investment: activity.investment,
-                platforms: new Map(),
-                accounts: new Map()
-            };
+            const symbol = activity.investment.symbol;
+            if (!holdingsMap.has(symbol)) {
+                holdingsMap.set(symbol, {
+                    quantity: 0,
+                    investment: activity.investment,
+                    platforms: new Map(),
+                    accounts: new Map()
+                });
+            }
 
+            const current = holdingsMap.get(symbol)!;
             const platformName = activity.platform?.name || 'Unknown';
-            const accountName = activity.account?.name || 'Unassigned';
+
+            // Resolve Account Name to Display Name if available
+            let accountName = activity.account?.name || 'Unassigned';
+            // Check if account name matches a username (case-insensitive)
+            const displayName = userMap.get(accountName.toLowerCase());
+            if (displayName) {
+                accountName = displayName;
+            }
+
             const accountType = activity.account?.type || 'Unassigned';
-
             const behavior = behaviorMap.get(activity.type) || 'NEUTRAL';
-
             const absQty = Math.abs(activity.quantity);
+
+            // Per-Account Cash Flow tracking
+            const amount = absQty * activity.price;
+            const fee = activity.fee || 0;
+
+            // Generate Unique Key for Account aggregation
+            // User might have multiple accounts with same Name but different Type
+            const accountKey = `${accountName}:${accountType}`;
+
+            // Get account data or init
+            let acc = current.accounts.get(accountKey);
+            if (!acc) {
+                acc = { quantity: 0, platformName, accountType, costBasis: 0, cashFlows: [], firstBuyDate: null };
+                current.accounts.set(accountKey, acc);
+            }
 
             if (behavior === 'ADD') {
                 current.quantity += absQty;
+                // Cost Basis Aggruction Add: (Qty * Price) + Fee
+                const cost = (absQty * activity.price) + fee;
                 current.platforms.set(platformName, (current.platforms.get(platformName) || 0) + absQty);
-                current.accounts.set(accountName, {
-                    quantity: (current.accounts.get(accountName)?.quantity || 0) + absQty,
-                    platformName,
-                    accountType
-                });
+
+                acc.quantity += absQty;
+                acc.costBasis += cost;
+                acc.cashFlows.push({ amount: -(amount + fee), date: activity.date });
+
+                // Track First Buy Date
+                if (!acc.firstBuyDate || new Date(activity.date) < new Date(acc.firstBuyDate)) {
+                    acc.firstBuyDate = activity.date;
+                }
+
             } else if (behavior === 'REMOVE') {
+                const prevQty = current.quantity;
                 current.quantity -= absQty;
                 current.platforms.set(platformName, Math.max(0, (current.platforms.get(platformName) || 0) - absQty));
-                current.accounts.set(accountName, {
-                    quantity: Math.max(0, (current.accounts.get(accountName)?.quantity || 0) - absQty),
-                    platformName,
-                    accountType
-                });
+
+                const proportion = acc.quantity > 0 ? (absQty / acc.quantity) : 0;
+                const costToRemove = acc.costBasis * proportion;
+
+                acc.quantity = Math.max(0, acc.quantity - absQty);
+                acc.costBasis = Math.max(0, acc.costBasis - costToRemove);
+                acc.cashFlows.push({ amount: (amount - fee), date: activity.date });
+
+            } else if (activity.type === 'DIVIDEND') {
+                // Dividends are cash inflows for the account
+                acc.cashFlows.push({ amount: (amount - fee), date: activity.date });
+
             } else if (behavior === 'SPLIT') {
-                // For SPLIT, quantity acts as the multiplier (e.g., 3 for 3:1 split)
-                // We use Math.abs just in case, though split ratio should be positive
                 const multiplier = absQty;
                 if (multiplier > 0) {
                     current.quantity *= multiplier;
-                    // Apply split to platform and account quantities as well
                     for (const [pName, pQty] of current.platforms.entries()) {
                         current.platforms.set(pName, pQty * multiplier);
                     }
-                    for (const [aName, aData] of current.accounts.entries()) {
-                        current.accounts.set(aName, {
-                            quantity: aData.quantity * multiplier,
-                            platformName: aData.platformName,
-                            accountType: aData.accountType
-                        });
+                    for (const [_, aData] of current.accounts.entries()) {
+                        // Split doesn't affect cash flows (no money changed hands), just share count
+                        aData.quantity *= multiplier;
                     }
                 }
             }
@@ -271,13 +313,37 @@ export async function GET() {
                         inceptionChange,
                         xirr,
                         dividendYield: marketData?.dividendYield || 0,
-                        accountTypes: Array.from(data.accounts.values())
-                            .filter(a => a.quantity > 0)
-                            .map(a => a.accountType || 'Unassigned')
-                            .filter((value, index, self) => self.indexOf(value) === index), // Unique
-                        accountNames: Array.from(data.accounts.entries())
-                            .filter(([_, val]) => val.quantity > 0)
-                            .map(([name]) => name)
+                        accountTypes: Array.from(new Set(Array.from(data.accounts.values()).map(a => a.accountType || 'Unassigned'))),
+                        accountNames: Array.from(new Set(Array.from(data.accounts.keys()).map(k => k.split(':')[0]))),
+
+                        accountsBreakdown: Object.fromEntries(
+                            Array.from(data.accounts.entries())
+                                .filter(([_, val]) => val.quantity > 0)
+                                .map(([key, val]) => {
+                                    // Parse name from composite key if needed
+                                    const [accName] = key.split(':');
+
+                                    // Calculate Account XIRR
+                                    // Add current value as final inflow
+                                    const accountValueUSD = val.quantity * price * rateToUSD;
+                                    const finalCashFlows = [...val.cashFlows, { amount: val.quantity * price, date: new Date() }];
+                                    // Note: val.cashFlows are in native currency. 
+                                    // calculateXIRR expects consistent currency.
+                                    // Since all history is native, we use native final value for XIRR calc.
+                                    const accXirr = calculateXIRR(finalCashFlows);
+
+                                    return [key, {
+                                        name: accName, // Explicit Account Name
+                                        quantity: val.quantity,
+                                        value: accountValueUSD, // USD
+                                        costBasis: val.costBasis * rateToUSD, // USD
+                                        accountType: val.accountType || 'Unassigned',
+                                        platformName: val.platformName,
+                                        xirr: accXirr,
+                                        firstBuyDate: val.firstBuyDate
+                                    }];
+                                })
+                        )
                     } : null,
                     upcomingDividend
                 };
@@ -334,14 +400,15 @@ export async function GET() {
                 }
 
                 // Allocation by Account & Account Type
-                for (const [accountName, accData] of data.accounts.entries()) {
+                for (const [accountKey, accData] of data.accounts.entries()) {
                     if (accData.quantity > 0) {
                         const accountValue = accData.quantity * price;
                         const accountValueUSD = accountValue * rateToUSD;
 
-                        // By Account Name
-                        const existing = allocationByAccount[accountName] || { value: 0, platformName: accData.platformName };
-                        allocationByAccount[accountName] = {
+                        // By Account Name (Aggregate by Name, stripping type)
+                        const [realAccountName] = accountKey.split(':');
+                        const existing = allocationByAccount[realAccountName] || { value: 0, platformName: accData.platformName };
+                        allocationByAccount[realAccountName] = {
                             value: existing.value + accountValueUSD,
                             platformName: accData.platformName
                         };
