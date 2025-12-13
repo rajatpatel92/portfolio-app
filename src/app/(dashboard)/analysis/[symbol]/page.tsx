@@ -336,7 +336,7 @@ export default function AnalysisPage() {
                                             <div key={item.name} className={styles.allocationRow}>
                                                 <div className={styles.allocationLabel}>
                                                     <span>{item.name}</span>
-                                                    <span>{item.percent.toFixed(2)}%</span>
+                                                    <span>{format(convert(item.value, data.currency))} ({item.percent.toFixed(2)}%)</span>
                                                 </div>
                                                 <div className={styles.progressBar}>
                                                     <div
