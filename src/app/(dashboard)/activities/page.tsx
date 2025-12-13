@@ -12,6 +12,7 @@ import Papa from 'papaparse';
 import BulkUploadModal from '@/components/BulkUploadModal';
 import BulkEditModal from '@/components/BulkEditModal';
 import { formatQuantity } from '@/lib/format';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Activity {
     id: string;
@@ -896,72 +897,79 @@ export default function ActivitiesPage() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    paginatedActivities.map((activity) => {
-                                        const fromCurrency = activity.investment.currencyCode || 'USD';
-                                        const convertedPrice = convert(activity.price, fromCurrency);
-                                        // const convertedFee = convert(activity.fee || 0, fromCurrency); // Fee removed from display
+                                    <AnimatePresence mode="popLayout">
+                                        {paginatedActivities.map((activity) => {
+                                            const fromCurrency = activity.investment.currencyCode || 'USD';
+                                            const convertedPrice = convert(activity.price, fromCurrency);
+                                            // const convertedFee = convert(activity.fee || 0, fromCurrency); // Fee removed from display
 
-                                        let total = activity.quantity * activity.price;
-                                        if (activity.type === 'BUY') {
-                                            total += (activity.fee || 0);
-                                        } else if (activity.type === 'SELL') {
-                                            total -= (activity.fee || 0);
-                                        }
+                                            let total = activity.quantity * activity.price;
+                                            if (activity.type === 'BUY') {
+                                                total += (activity.fee || 0);
+                                            } else if (activity.type === 'SELL') {
+                                                total -= (activity.fee || 0);
+                                            }
 
-                                        const convertedTotal = convert(total, fromCurrency);
+                                            const convertedTotal = convert(total, fromCurrency);
 
-                                        return (
-                                            <tr
-                                                key={activity.id}
-                                                className={styles.row}
-                                                onClick={() => role !== 'VIEWER' && handleEdit(activity)}
-                                                style={{ cursor: role !== 'VIEWER' ? 'pointer' : 'default' }}
-                                            >
-                                                <td onClick={(e) => e.stopPropagation()}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedActivities.has(activity.id)}
-                                                        onChange={() => toggleActivitySelection(activity.id)}
-                                                    />
-                                                </td>
-                                                <td>{formatDate(activity.date)}</td>
-                                                <td>
-                                                    <div style={{ fontWeight: 600 }}>{activity.investment.symbol}</div>
-                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{activity.investment.name}</div>
-                                                </td>
-                                                <td>
-                                                    <span className={`${styles.badge} ${styles[activity.type]}`}>
-                                                        {activity.type}
-                                                    </span>
-                                                </td>
-                                                <td style={{ textAlign: 'right' }}>{formatQuantity(activity.quantity)}</td>
-                                                <td style={{ textAlign: 'right' }}>{format(convertedPrice)}</td>
-                                                <td style={{ textAlign: 'right', fontWeight: 600 }}>{format(convertedTotal)}</td>
-                                                <td>
-                                                    <div style={{ fontWeight: 600 }}>
-                                                        {activity.account ?
-                                                            `${(users.find(u => u.username === activity.account?.name)?.name || activity.account.name)} - ${activity.account.type}`
-                                                            : '-'
-                                                        }
-                                                    </div>
-                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{activity.platform?.name || '-'}</div>
-                                                </td>
-                                                <td style={{ textAlign: 'center' }}>
-                                                    {role !== 'VIEWER' && (
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleDelete(activity.id);
-                                                            }}
-                                                            style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.25rem' }}
-                                                        >
-                                                            &times;
-                                                        </button>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
+                                            return (
+                                                <motion.tr
+                                                    key={activity.id}
+                                                    layout
+                                                    initial={{ opacity: 0, scale: 0.95 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, transition: { duration: 0.05 } }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className={styles.row}
+                                                    onClick={() => role !== 'VIEWER' && handleEdit(activity)}
+                                                    style={{ cursor: role !== 'VIEWER' ? 'pointer' : 'default' }}
+                                                >
+                                                    <td onClick={(e) => e.stopPropagation()}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedActivities.has(activity.id)}
+                                                            onChange={() => toggleActivitySelection(activity.id)}
+                                                        />
+                                                    </td>
+                                                    <td>{formatDate(activity.date)}</td>
+                                                    <td>
+                                                        <div style={{ fontWeight: 600 }}>{activity.investment.symbol}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{activity.investment.name}</div>
+                                                    </td>
+                                                    <td>
+                                                        <span className={`${styles.badge} ${styles[activity.type]}`}>
+                                                            {activity.type}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ textAlign: 'right' }}>{formatQuantity(activity.quantity)}</td>
+                                                    <td style={{ textAlign: 'right' }}>{format(convertedPrice)}</td>
+                                                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{format(convertedTotal)}</td>
+                                                    <td>
+                                                        <div style={{ fontWeight: 600 }}>
+                                                            {activity.account ?
+                                                                `${(users.find(u => u.username === activity.account?.name)?.name || activity.account.name)} - ${activity.account.type}`
+                                                                : '-'
+                                                            }
+                                                        </div>
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{activity.platform?.name || '-'}</div>
+                                                    </td>
+                                                    <td style={{ textAlign: 'center' }}>
+                                                        {role !== 'VIEWER' && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDelete(activity.id);
+                                                                }}
+                                                                style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.25rem' }}
+                                                            >
+                                                                &times;
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </motion.tr>
+                                            );
+                                        })}
+                                    </AnimatePresence>
                                 )}
                             </tbody>
                         </table>

@@ -4,6 +4,7 @@
 import styles from './TopMovers.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TopMoversProps {
     constituents: any[];
@@ -40,19 +41,29 @@ export default function TopMovers({ constituents }: TopMoversProps) {
                     <h4 className={styles.subtitle}>Gainers</h4>
                     {gainers.length > 0 ? (
                         <ul className={styles.list}>
-                            {gainers.map(c => (
-                                <li key={c.symbol} className={styles.item}>
-                                    <Link href={`/analysis/${c.symbol}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div className={styles.symbolRow}>
-                                            <span className={styles.symbol}>{c.symbol}</span>
-                                            <span className={styles.price}>{format(convert(c.price, c.currency))}</span>
-                                        </div>
-                                        <div className={`${styles.change} ${styles.positive}`}>
-                                            +{c.dayChange.percent.toFixed(2)}%
-                                        </div>
-                                    </Link>
-                                </li>
-                            ))}
+                            <AnimatePresence mode="popLayout">
+                                {gainers.map(c => (
+                                    <motion.li
+                                        key={c.symbol}
+                                        className={styles.item}
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, transition: { duration: 0.05 } }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <Link href={`/analysis/${c.symbol}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div className={styles.symbolRow}>
+                                                <span className={styles.symbol}>{c.symbol}</span>
+                                                <span className={styles.price}>{format(convert(c.price, c.currency))}</span>
+                                            </div>
+                                            <div className={`${styles.change} ${styles.positive}`}>
+                                                +{c.dayChange.percent.toFixed(2)}%
+                                            </div>
+                                        </Link>
+                                    </motion.li>
+                                ))}
+                            </AnimatePresence>
                         </ul>
                     ) : (
                         <div className={styles.empty}>No gainers today</div>
@@ -62,19 +73,29 @@ export default function TopMovers({ constituents }: TopMoversProps) {
                     <h4 className={styles.subtitle}>Losers</h4>
                     {losers.length > 0 ? (
                         <ul className={styles.list}>
-                            {losers.map(c => (
-                                <li key={c.symbol} className={styles.item}>
-                                    <Link href={`/analysis/${c.symbol}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div className={styles.symbolRow}>
-                                            <span className={styles.symbol}>{c.symbol}</span>
-                                            <span className={styles.price}>{format(convert(c.price, c.currency))}</span>
-                                        </div>
-                                        <div className={`${styles.change} ${styles.negative}`}>
-                                            {c.dayChange.percent.toFixed(2)}%
-                                        </div>
-                                    </Link>
-                                </li>
-                            ))}
+                            <AnimatePresence mode="popLayout">
+                                {losers.map(c => (
+                                    <motion.li
+                                        key={c.symbol}
+                                        className={styles.item}
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, transition: { duration: 0.05 } }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <Link href={`/analysis/${c.symbol}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div className={styles.symbolRow}>
+                                                <span className={styles.symbol}>{c.symbol}</span>
+                                                <span className={styles.price}>{format(convert(c.price, c.currency))}</span>
+                                            </div>
+                                            <div className={`${styles.change} ${styles.negative}`}>
+                                                {c.dayChange.percent.toFixed(2)}%
+                                            </div>
+                                        </Link>
+                                    </motion.li>
+                                ))}
+                            </AnimatePresence>
                         </ul>
                     ) : (
                         <div className={styles.empty}>No losers today</div>
