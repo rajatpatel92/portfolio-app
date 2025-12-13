@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import styles from './ConstituentsGrid.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
 import { formatQuantity } from '@/lib/format';
@@ -125,57 +126,64 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                         </tr>
                     </thead>
                     <tbody>
-                        {sortedData.map((item) => (
-                            <tr
-                                key={item.symbol}
-                                className={styles.tr}
-                                onClick={() => handleRowClick(item.symbol)}
-                                style={{ cursor: 'pointer' }}
-                            >
-                                <td className={styles.td}>
-                                    <div className={styles.symbolRow}>
-                                        <span className={styles.symbolText}>{item.symbol}</span>
-                                    </div>
-                                    <div className={styles.sharesText}>{formatQuantity(item.quantity)} Shares</div>
-                                </td>
-                                <td className={`${styles.td} ${styles.right}`}>
-                                    <div>{format(convert(item.bookValue, item.currency))}</div>
-                                    <div className={styles.subtext}>
-                                        {format(convert(item.avgPrice, item.currency))} / unit
-                                    </div>
-                                </td>
-                                <td className={`${styles.td} ${styles.right}`}>
-                                    <div>{format(convert(item.value, item.currency))}</div>
-                                    <div className={styles.subtext}>
-                                        {format(convert(item.price, item.currency))} / unit
-                                    </div>
-                                </td>
-                                <td className={`${styles.td} ${styles.right}`}>
-                                    {renderChange(item.dayChange, item.currency)}
-                                </td>
-                                <td className={`${styles.td} ${styles.right}`}>
-                                    {renderChange(item.change1W, item.currency)}
-                                </td>
-                                <td className={`${styles.td} ${styles.right}`}>
-                                    {renderChange(item.change1M, item.currency)}
-                                </td>
-                                <td className={`${styles.td} ${styles.right}`}>
-                                    {renderChange(item.change1Y, item.currency)}
-                                </td>
-                                <td className={`${styles.td} ${styles.right}`}>
-                                    {renderChange(item.changeYTD, item.currency)}
-                                </td>
-                                <td className={`${styles.td} ${styles.right}`}>
-                                    {renderChange(item.inceptionChange, item.currency)}
-                                </td>
-                                <td className={`${styles.td} ${styles.right}`}>
-                                    {item.dividendYield ? `${(item.dividendYield * 100).toFixed(2)}%` : '-'}
-                                </td>
-                                <td className={`${styles.td} ${styles.right} ${getColorClass(item.xirr || 0)}`}>
-                                    {item.xirr ? `${(item.xirr * 100).toFixed(2)}%` : '-'}
-                                </td>
-                            </tr>
-                        ))}
+                        <AnimatePresence mode="popLayout">
+                            {sortedData.map((item) => (
+                                <motion.tr
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, transition: { duration: 0.05 } }}
+                                    transition={{ duration: 0.2 }}
+                                    key={item.symbol}
+                                    className={styles.tr}
+                                    onClick={() => handleRowClick(item.symbol)}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <td className={styles.td}>
+                                        <div className={styles.symbolRow}>
+                                            <span className={styles.symbolText}>{item.symbol}</span>
+                                        </div>
+                                        <div className={styles.sharesText}>{formatQuantity(item.quantity)} Shares</div>
+                                    </td>
+                                    <td className={`${styles.td} ${styles.right}`}>
+                                        <div>{format(convert(item.bookValue, item.currency))}</div>
+                                        <div className={styles.subtext}>
+                                            {format(convert(item.avgPrice, item.currency))} / unit
+                                        </div>
+                                    </td>
+                                    <td className={`${styles.td} ${styles.right}`}>
+                                        <div>{format(convert(item.value, item.currency))}</div>
+                                        <div className={styles.subtext}>
+                                            {format(convert(item.price, item.currency))} / unit
+                                        </div>
+                                    </td>
+                                    <td className={`${styles.td} ${styles.right}`}>
+                                        {renderChange(item.dayChange, item.currency)}
+                                    </td>
+                                    <td className={`${styles.td} ${styles.right}`}>
+                                        {renderChange(item.change1W, item.currency)}
+                                    </td>
+                                    <td className={`${styles.td} ${styles.right}`}>
+                                        {renderChange(item.change1M, item.currency)}
+                                    </td>
+                                    <td className={`${styles.td} ${styles.right}`}>
+                                        {renderChange(item.change1Y, item.currency)}
+                                    </td>
+                                    <td className={`${styles.td} ${styles.right}`}>
+                                        {renderChange(item.changeYTD, item.currency)}
+                                    </td>
+                                    <td className={`${styles.td} ${styles.right}`}>
+                                        {renderChange(item.inceptionChange, item.currency)}
+                                    </td>
+                                    <td className={`${styles.td} ${styles.right}`}>
+                                        {item.dividendYield ? `${(item.dividendYield * 100).toFixed(2)}%` : '-'}
+                                    </td>
+                                    <td className={`${styles.td} ${styles.right} ${getColorClass(item.xirr || 0)}`}>
+                                        {item.xirr ? `${(item.xirr * 100).toFixed(2)}%` : '-'}
+                                    </td>
+                                </motion.tr>
+                            ))}
+                        </AnimatePresence>
                     </tbody>
                 </table>
             </div>

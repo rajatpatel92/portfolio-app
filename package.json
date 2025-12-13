@@ -12,6 +12,7 @@
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^3.0.3",
     "chart.js": "^4.5.1",
+    "framer-motion": "^12.23.26",
     "next": "16.0.3",
     "next-auth": "^5.0.0-beta.30",
     "papaparse": "^5.5.3",
@@ -19,7 +20,7 @@
     "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.0",
     "react-icons": "^5.5.0",
-    "recharts": "^3.5.0",
+    "recharts": "^3.5.1",
     "yahoo-finance2": "^3.10.2"
   },
   "devDependencies": {

@@ -36,7 +36,7 @@ export async function GET() {
             quantity: number;
             investment: typeof activities[0]['investment'];
             platforms: Map<string, number>; // Platform Name -> Quantity
-            accounts: Map<string, { quantity: number, platformName: string }>; // Account Name -> { Quantity, Platform }
+            accounts: Map<string, { quantity: number, platformName: string, accountType: string }>; // Account Name -> { Quantity, Platform, Type }
         }>();
 
         for (const activity of activities) {
@@ -50,6 +50,7 @@ export async function GET() {
 
             const platformName = activity.platform?.name || 'Unknown';
             const accountName = activity.account?.name || 'Unassigned';
+            const accountType = activity.account?.type || 'Unassigned';
 
             const behavior = behaviorMap.get(activity.type) || 'NEUTRAL';
 
@@ -60,14 +61,16 @@ export async function GET() {
                 current.platforms.set(platformName, (current.platforms.get(platformName) || 0) + absQty);
                 current.accounts.set(accountName, {
                     quantity: (current.accounts.get(accountName)?.quantity || 0) + absQty,
-                    platformName
+                    platformName,
+                    accountType
                 });
             } else if (behavior === 'REMOVE') {
                 current.quantity -= absQty;
                 current.platforms.set(platformName, Math.max(0, (current.platforms.get(platformName) || 0) - absQty));
                 current.accounts.set(accountName, {
                     quantity: Math.max(0, (current.accounts.get(accountName)?.quantity || 0) - absQty),
-                    platformName
+                    platformName,
+                    accountType
                 });
             } else if (behavior === 'SPLIT') {
                 // For SPLIT, quantity acts as the multiplier (e.g., 3 for 3:1 split)
@@ -82,7 +85,8 @@ export async function GET() {
                     for (const [aName, aData] of current.accounts.entries()) {
                         current.accounts.set(aName, {
                             quantity: aData.quantity * multiplier,
-                            platformName: aData.platformName
+                            platformName: aData.platformName,
+                            accountType: aData.accountType
                         });
                     }
                 }
@@ -99,6 +103,7 @@ export async function GET() {
         const allocationByType: Record<string, number> = {};
         const allocationByPlatform: Record<string, number> = {};
         const allocationByAccount: Record<string, { value: number, platformName: string }> = {};
+        const allocationByAccountType: Record<string, number> = {};
         const allocationByAsset: { name: string; value: number }[] = [];
         const constituents: any[] = [];
         const upcomingDividends: any[] = [];
@@ -265,7 +270,14 @@ export async function GET() {
                         changeYTD,
                         inceptionChange,
                         xirr,
-                        dividendYield: marketData?.dividendYield || 0
+                        dividendYield: marketData?.dividendYield || 0,
+                        accountTypes: Array.from(data.accounts.values())
+                            .filter(a => a.quantity > 0)
+                            .map(a => a.accountType || 'Unassigned')
+                            .filter((value, index, self) => self.indexOf(value) === index), // Unique
+                        accountNames: Array.from(data.accounts.entries())
+                            .filter(([_, val]) => val.quantity > 0)
+                            .map(([name]) => name)
                     } : null,
                     upcomingDividend
                 };
@@ -321,16 +333,22 @@ export async function GET() {
                     }
                 }
 
-                // Allocation by Account
+                // Allocation by Account & Account Type
                 for (const [accountName, accData] of data.accounts.entries()) {
                     if (accData.quantity > 0) {
                         const accountValue = accData.quantity * price;
                         const accountValueUSD = accountValue * rateToUSD;
+
+                        // By Account Name
                         const existing = allocationByAccount[accountName] || { value: 0, platformName: accData.platformName };
                         allocationByAccount[accountName] = {
                             value: existing.value + accountValueUSD,
                             platformName: accData.platformName
                         };
+
+                        // By Account Type
+                        const accType = accData.accountType || 'Unassigned';
+                        allocationByAccountType[accType] = (allocationByAccountType[accType] || 0) + accountValueUSD;
                     }
                 }
 
@@ -360,18 +378,23 @@ export async function GET() {
         const allocationByTypeArray = Object.entries(allocationByType).map(([name, value]) => ({
             name,
             value
-        }));
+        })).sort((a, b) => b.value - a.value);
 
         const allocationByPlatformArray = Object.entries(allocationByPlatform).map(([name, value]) => ({
             name,
             value
-        }));
+        })).sort((a, b) => b.value - a.value);
 
         const allocationByAccountArray = Object.entries(allocationByAccount).map(([name, data]) => ({
             name,
             value: data.value,
             platformName: data.platformName
-        }));
+        })).sort((a, b) => b.value - a.value);
+
+        const allocationByAccountTypeArray = Object.entries(allocationByAccountType).map(([name, value]) => ({
+            name,
+            value
+        })).sort((a, b) => b.value - a.value);
 
         // Calculate Total Growth Percent
         const totalGrowth = totalValue - totalCostBasis;
@@ -387,16 +410,16 @@ export async function GET() {
             allocationByType: allocationByTypeArray,
             allocationByPlatform: allocationByPlatformArray,
             allocationByAccount: allocationByAccountArray,
-
-
+            allocationByAccountType: allocationByAccountTypeArray,
             constituents,
             dividendsYTD,
             projectedDividends,
             upcomingDividends: upcomingDividends.sort((a, b) => new Date(a.exDate).getTime() - new Date(b.exDate).getTime())
         });
-
     } catch (error) {
         console.error('Error calculating portfolio:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+
