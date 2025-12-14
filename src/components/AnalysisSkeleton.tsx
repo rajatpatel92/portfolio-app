@@ -1,4 +1,4 @@
-import styles from '@/app/(dashboard)/analysis/page.module.css';
+import styles from '@/app/(dashboard)/analysis/allocation/page.module.css';
 import Skeleton from './Skeleton';
 
 export default function AnalysisSkeleton() {

@@ -102,7 +102,7 @@ export class MarketDataService {
 
             // 2. Fetch from API
             // We need 'summaryProfile' for sector/country and 'summaryDetail' for 52w stats
-            const quote = await yahooFinance.quoteSummary(symbol, { modules: ['price', 'summaryProfile', 'summaryDetail', 'topHoldings', 'calendarEvents'] }) as any;
+            const quote = await yahooFinance.quoteSummary(symbol, { modules: ['price', 'summaryProfile', 'summaryDetail', 'topHoldings', 'calendarEvents', 'defaultKeyStatistics'] }) as any;
 
             if (!quote || !quote.price) return null;
 
@@ -407,15 +407,10 @@ export class MarketDataService {
         return null; // Both failed
     }
 
-
-    /**
-     * Get historical prices for performance calculation with caching (24h)
-     * Returns map of period -> price
-     */
     /**
      * Helper to process raw quotes into a history object with period snapshots
      */
-    private static processHistory(quotes: any[]): Record<string, number> {
+    static processHistory(quotes: any[]): Record<string, number> {
         if (!quotes || quotes.length === 0) return {};
 
         const prices: Record<string, number> = {};
@@ -541,6 +536,41 @@ export class MarketDataService {
             return {};
         }
     }
+
+    /**
+     * Get full daily history for a symbol from a start date.
+     * Essential for Portfolio Unitization.
+     */
+    static async getDailyHistory(symbol: string, fromDate?: Date): Promise<Record<string, number>> {
+        try {
+            const endDate = new Date();
+            const startDate = fromDate || new Date(new Date().setFullYear(endDate.getFullYear() - 5)); // Default 5Y
+
+            const queryOptions = {
+                period1: startDate,
+                period2: endDate,
+                interval: '1d' as const,
+            };
+
+            const result = await yahooFinance.chart(symbol, queryOptions) as any;
+            const quotes = result?.quotes || [];
+
+            const prices: Record<string, number> = {};
+            for (const quote of quotes) {
+                const price = quote.close || quote.adjClose;
+                if (quote.date && price && price > 0) {
+                    const dateStr = new Date(quote.date).toISOString().split('T')[0];
+                    prices[dateStr] = price;
+                }
+            }
+            return prices;
+        } catch (error) {
+            console.error(`Error fetching daily history for ${symbol}:`, error);
+            return {};
+        }
+    }
+
+
     /**
      * Refresh all market data for a symbol (Price, Profile, History)
      * This is intended to be called in the background

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import styles from './Sidebar.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
 import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
@@ -21,9 +22,21 @@ import {
     MdLightMode,
     MdLogout,
     MdPeople,
-    MdTrendingUp
+    MdTrendingUp,
+    MdPieChart,
+    MdCompareArrows,
+    MdTimeline,
+    MdExpandMore,
+    MdChevronRight
 } from 'react-icons/md';
 import { signOut } from 'next-auth/react';
+
+interface NavItem {
+    name: string;
+    href: string;
+    icon: React.ReactNode;
+    children?: NavItem[];
+}
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -31,6 +44,7 @@ export default function Sidebar() {
     const { theme, toggleTheme } = useTheme();
     const [isOpen, setIsOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -40,9 +54,18 @@ export default function Sidebar() {
     const { data: session } = useSession();
     const role = (session?.user as any)?.role || 'VIEWER';
 
-    const navItems = [
+    const navItems: NavItem[] = [
         { name: 'Dashboard', href: '/', icon: <MdDashboard size={20} /> },
-        { name: 'Analysis', href: '/analysis', icon: <MdShowChart size={20} /> },
+        {
+            name: 'Analysis',
+            href: '/analysis', // acts as ID for partial match
+            icon: <MdShowChart size={20} />,
+            children: [
+                { name: 'Allocation', href: '/analysis/allocation', icon: <MdPieChart size={20} /> },
+                { name: 'Comparison', href: '/analysis/comparison', icon: <MdCompareArrows size={20} /> },
+                { name: 'Evolution', href: '/analysis/evolution', icon: <MdTimeline size={20} /> }
+            ]
+        },
         { name: 'Activities', href: '/activities', icon: <MdFormatListBulleted size={20} /> },
     ];
 
@@ -53,6 +76,24 @@ export default function Sidebar() {
     if (role === 'ADMIN') {
         navItems.push({ name: 'Users', href: '/settings/users', icon: <MdPeople size={20} /> });
     }
+
+    // Auto-expand menu if active child
+    useEffect(() => {
+        navItems.forEach(item => {
+            if (item.children) {
+                const isChildActive = item.children.some(child => pathname === child.href || pathname?.startsWith(child.href));
+                if (isChildActive) {
+                    setExpandedMenus(prev => prev.includes(item.name) ? prev : [...prev, item.name]);
+                }
+            }
+        });
+    }, [pathname]);
+
+    const toggleMenu = (name: string) => {
+        setExpandedMenus(prev =>
+            prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+        );
+    };
 
     return (
         <>
@@ -93,17 +134,82 @@ export default function Sidebar() {
                 </div>
 
                 <nav className={styles.nav}>
-                    {navItems.map((item) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`${styles.link} ${pathname === item.href ? styles.active : ''}`}
-                            onClick={() => setIsOpen(false)} // Close on navigation
-                        >
-                            <span className={styles.iconWrapper}>{item.icon}</span>
-                            {item.name}
-                        </Link>
-                    ))}
+                    {navItems.map((item) => {
+                        const isActive = pathname === item.href;
+                        // Removed auto-active logic for parent to reduce clutter
+                        const isChildActive = item.children?.some(c => pathname === c.href || pathname?.startsWith(c.href));
+                        const isExpanded = expandedMenus.includes(item.name);
+
+                        if (item.children) {
+                            return (
+                                <div key={item.name}>
+                                    <div
+                                        className={`${styles.link} ${isExpanded ? styles.expanded : ''}`} // Separate class for expanded state if needed, or just plain
+                                        onClick={() => toggleMenu(item.name)}
+                                        style={{
+                                            cursor: 'pointer',
+                                            justifyContent: 'space-between',
+                                            color: isChildActive ? 'var(--primary-color)' : undefined // Subtle highlight if child active
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <span className={styles.iconWrapper}>{item.icon}</span>
+                                            {item.name}
+                                        </div>
+                                        <motion.div
+                                            animate={{ rotate: isExpanded ? 180 : 0 }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            <MdExpandMore size={20} />
+                                        </motion.div>
+                                    </div>
+
+                                    <AnimatePresence initial={false}>
+                                        {isExpanded && (
+                                            <motion.div
+                                                initial="collapsed"
+                                                animate="open"
+                                                exit="collapsed"
+                                                variants={{
+                                                    open: { opacity: 1, height: "auto" },
+                                                    collapsed: { opacity: 0, height: 0 }
+                                                }}
+                                                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                                style={{ overflow: 'hidden' }}
+                                            >
+                                                <div style={{ paddingLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', paddingBottom: '0.5rem' }}>
+                                                    {item.children.map(child => (
+                                                        <Link
+                                                            key={child.href}
+                                                            href={child.href}
+                                                            className={`${styles.link} ${pathname === child.href ? styles.active : ''}`}
+                                                            onClick={() => setIsOpen(false)}
+                                                            style={{ fontSize: '0.9rem' }}
+                                                        >
+                                                            <span className={styles.iconWrapper}>{child.icon}</span>
+                                                            {child.name}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            );
+                        }
+
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={`${styles.link} ${isActive ? styles.active : ''}`}
+                                onClick={() => setIsOpen(false)} // Close on navigation
+                            >
+                                <span className={styles.iconWrapper}>{item.icon}</span>
+                                {item.name}
+                            </Link>
+                        );
+                    })}
                 </nav>
 
                 <div className={styles.footer}>
