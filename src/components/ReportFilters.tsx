@@ -5,16 +5,17 @@ import { useState, useEffect } from 'react';
 import styles from './ReportFilters.module.css';
 import { MdFilterList, MdClose } from 'react-icons/md';
 
-interface FilterState {
+export interface FilterOptions {
     accountTypes: string[];
     investmentTypes: string[];
 }
 
 interface ReportFiltersProps {
-    onChange: (filters: FilterState) => void;
+    onChange: (filters: FilterOptions) => void;
+    initialFilters?: FilterOptions;
 }
 
-export default function ReportFilters({ onChange }: ReportFiltersProps) {
+export default function ReportFilters({ onChange, initialFilters }: ReportFiltersProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     // Available Options
@@ -22,8 +23,8 @@ export default function ReportFilters({ onChange }: ReportFiltersProps) {
     const [availableInvTypes, setAvailableInvTypes] = useState<string[]>([]);
 
     // Selected Options
-    const [selectedAccTypes, setSelectedAccTypes] = useState<string[]>([]);
-    const [selectedInvTypes, setSelectedInvTypes] = useState<string[]>([]);
+    const [selectedAccTypes, setSelectedAccTypes] = useState<string[]>(initialFilters?.accountTypes || []);
+    const [selectedInvTypes, setSelectedInvTypes] = useState<string[]>(initialFilters?.investmentTypes || []);
 
     useEffect(() => {
         // Fetch Metadata to populate filters

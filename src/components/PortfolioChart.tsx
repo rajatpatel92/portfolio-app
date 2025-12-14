@@ -30,6 +30,7 @@ interface PortfolioChartProps {
     setCustomStart: (date: string) => void;
     customEnd: string;
     setCustomEnd: (date: string) => void;
+    externalData?: HistoryPoint[]; // New prop for controlled mode
 }
 
 const RANGES = ['1D', '1W', '1M', '3M', '6M', '1Y', 'YTD', '5Y', '10Y', 'ALL'];
@@ -40,7 +41,8 @@ export default function PortfolioChart({
     customStart,
     setCustomStart,
     customEnd,
-    setCustomEnd
+    setCustomEnd,
+    externalData
 }: PortfolioChartProps) {
     const [data, setData] = useState<HistoryPoint[]>([]);
     // Local state removed
@@ -48,7 +50,13 @@ export default function PortfolioChart({
     const { format, convert, currency } = useCurrency();
     const { formatDate } = useDate();
 
+    // Use external data if provided, otherwise local state
+    const displayData = externalData || data;
+
     useEffect(() => {
+        // Skip fetch if external data is provided
+        if (externalData) return;
+
         const fetchData = async () => {
             setLoading(true);
             try {
@@ -72,47 +80,51 @@ export default function PortfolioChart({
         if (range !== 'CUSTOM' || (customStart && customEnd)) {
             fetchData();
         }
-    }, [range, customStart, customEnd]);
+    }, [range, customStart, customEnd, externalData]);
 
-    // Convert data to selected currency
-    const chartData = data.map(point => ({
+    // Convert data to selected currency (only if not external, as external data is already converted)
+    const chartData = displayData.map(point => ({
         ...point,
-        value: convert(point.value, 'USD'), // API returns USD
-        invested: convert(point.invested, 'USD')
+        value: externalData ? point.value : convert(point.value, 'USD'), // API returns USD
+        invested: externalData ? point.invested : convert(point.invested, 'USD')
     }));
 
-    // Calculate change (Profit/Loss Change)
-    let changeValue = 0;
-    let changePercent = 0;
+    // Calculate Average Contribution
+    let totalContribution = 0;
+    let avgContribution = 0;
+    let periodMonths = 0;
+
     if (chartData.length > 0) {
         const startPoint = chartData[0];
         const endPoint = chartData[chartData.length - 1];
 
-        const startProfit = startPoint.value - startPoint.invested;
-        const endProfit = endPoint.value - endPoint.invested;
+        // Invested represents Cumulative Net Flow
+        totalContribution = endPoint.invested - startPoint.invested;
 
-        changeValue = endProfit - startProfit;
+        const startDate = new Date(startPoint.date);
+        const endDate = new Date(endPoint.date);
 
-        // For percentage: Change in Profit / Start Value (or Invested)
-        // If ALL time, we want Total Return % = (Total Profit / Total Invested)
-        if (range === 'ALL') {
-            changePercent = endPoint.invested !== 0 ? (endProfit / endPoint.invested) * 100 : 0;
-        } else {
-            // For periods, we want Return on Start Value
-            changePercent = startPoint.value !== 0 ? (changeValue / startPoint.value) * 100 : 0;
+        // Calculate months difference
+        const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        periodMonths = diffDays / 30.44; // Average days in month
+
+        if (periodMonths >= 1) {
+            avgContribution = totalContribution / periodMonths;
         }
     }
-
-    const isPositive = changeValue >= 0;
 
     return (
         <div className={styles.container}>
             <div className={styles.header}>
                 <div>
-                    <h3>Portfolio Evolution</h3>
+                    <h3>{range === 'ALL' ? 'Portfolio Evolution' : 'Portfolio Evolution'}</h3>
                     {chartData.length > 0 && (
-                        <div className={`${styles.change} ${isPositive ? styles.positive : styles.negative}`}>
-                            {format(changeValue)} ({changePercent.toFixed(2)}%)
+                        <div className={styles.change} style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 'normal' }}>
+                            {periodMonths >= 1
+                                ? `Avg. Contribution: ${format(avgContribution)}/mo`
+                                : `Total Contribution: ${format(totalContribution)}`
+                            }
                         </div>
                     )}
                 </div>

@@ -10,7 +10,7 @@ interface CurrencyContextType {
     currency: CurrencyCode;
     setCurrency: (code: CurrencyCode) => void;
     convert: (amount: number, fromCurrency: string) => number;
-    format: (amount: number) => string;
+    format: (amount: number, options?: Intl.NumberFormatOptions) => string;
     rates: Record<string, number>;
     loading: boolean;
 }
@@ -63,10 +63,11 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
         return rate ? amount * rate : amount; // Fallback to 1:1 if rate missing
     };
 
-    const format = (amount: number): string => {
+    const format = (amount: number, options?: Intl.NumberFormatOptions): string => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: currency,
+            ...options
         }).format(amount);
     };
 
