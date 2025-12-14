@@ -112,41 +112,60 @@ export default function ComparePage() {
         ]
     };
 
-    const options = {
+    const options: any = {
         responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            mode: 'index' as const,
+            intersect: false,
+        },
         plugins: {
             legend: {
                 position: 'top' as const,
-                labels: { color: '#9ca3af' }
+                labels: {
+                    color: '#9ca3af' // text-gray-400
+                }
             },
             tooltip: {
                 mode: 'index' as const,
                 intersect: false,
                 callbacks: {
-                    label: (context: any) => {
+                    label: function (context: any) {
                         let label = context.dataset.label || '';
-                        if (label) label += ': ';
+                        if (label) {
+                            label += ': ';
+                        }
                         if (context.parsed.y !== null) {
-                            label += context.parsed.y.toFixed(2);
+                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
                         }
                         return label;
                     }
                 }
             }
         },
-        interaction: {
-            mode: 'nearest' as const,
-            axis: 'x',
-            intersect: false
-        },
         scales: {
-            y: {
-                grid: { color: '#374151' },
-                ticks: { color: '#9ca3af' }
-            },
             x: {
-                grid: { display: false },
-                ticks: { color: '#9ca3af', maxTicksLimit: 8 }
+                type: 'time',
+                time: {
+                    unit: 'month'
+                },
+                grid: {
+                    color: '#374151' // gray-700
+                },
+                ticks: {
+                    color: '#9ca3af'
+                }
+            },
+            y: {
+                grid: {
+                    color: '#374151'
+                },
+                ticks: {
+                    color: '#9ca3af',
+                    callback: function (value: any) {
+                        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact' }).format(value);
+                    }
+                }
             }
         }
     };
