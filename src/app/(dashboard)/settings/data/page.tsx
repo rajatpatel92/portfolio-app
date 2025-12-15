@@ -7,13 +7,10 @@ import { useSession } from 'next-auth/react';
 import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 
 export default function MasterDataSettingsPage() {
-    const [platforms, setPlatforms] = useState<{ id: string, name: string, slug: string, currency: string }[]>([]);
     const [investmentTypes, setInvestmentTypes] = useState<{ id: string, name: string }[]>([]);
     const [activityTypes, setActivityTypes] = useState<{ id: string, name: string, behavior: string, isSystem?: boolean }[]>([]);
     const [accountTypes, setAccountTypes] = useState<{ id: string, name: string, currency: string }[]>([]);
 
-    const [newPlatformName, setNewPlatformName] = useState('');
-    const [newPlatformCurrency, setNewPlatformCurrency] = useState('USD');
     const [newInvestmentType, setNewInvestmentType] = useState('');
     const [newActivityType, setNewActivityType] = useState('');
     const [newActivityBehavior, setNewActivityBehavior] = useState('ADD');
@@ -26,12 +23,6 @@ export default function MasterDataSettingsPage() {
 
     const { data: session } = useSession();
     const role = (session?.user as any)?.role || 'VIEWER';
-
-    async function fetchPlatforms() {
-        const res = await fetch('/api/platforms');
-        const data = await res.json();
-        if (Array.isArray(data)) setPlatforms(data);
-    }
 
     async function fetchInvestmentTypes() {
         const res = await fetch('/api/settings/investment-types');
@@ -53,7 +44,6 @@ export default function MasterDataSettingsPage() {
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        fetchPlatforms();
         fetchInvestmentTypes();
         fetchActivityTypes();
         fetchAccountTypes();
@@ -144,39 +134,7 @@ export default function MasterDataSettingsPage() {
         }
     };
 
-    const handleAddPlatform = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newPlatformName) return;
 
-        try {
-            const res = await fetch('/api/platforms', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newPlatformName, currency: newPlatformCurrency }),
-            });
-            if (res.ok) {
-                setNewPlatformName('');
-                fetchPlatforms();
-            }
-        } catch (error) {
-            console.error('Failed to add platform', error);
-        }
-    };
-
-    const handleDeletePlatform = async (id: string) => {
-        if (!confirm('Are you sure? This cannot be undone.')) return;
-        try {
-            const res = await fetch(`/api/platforms/${id}`, { method: 'DELETE' });
-            if (res.ok) {
-                fetchPlatforms();
-            } else {
-                const err = await res.json();
-                alert(err.error || 'Failed to delete platform');
-            }
-        } catch (error) {
-            console.error('Failed to delete platform', error);
-        }
-    };
 
     const startEditing = (item: any) => {
         setEditingId(item.id);
@@ -239,22 +197,7 @@ export default function MasterDataSettingsPage() {
         }
     };
 
-    const handleUpdatePlatform = async () => {
-        if (!editFormData.name) return;
-        try {
-            const res = await fetch(`/api/platforms/${editingId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: editFormData.name, currency: editFormData.currency }),
-            });
-            if (res.ok) {
-                cancelEditing();
-                fetchPlatforms();
-            }
-        } catch (error) {
-            console.error('Failed to update platform', error);
-        }
-    };
+
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const renderGroupedList = (items: any[], renderItem: (item: any) => React.ReactNode) => {
@@ -464,74 +407,6 @@ export default function MasterDataSettingsPage() {
                     </div>
                 </>
             )}
-
-            {/* Platforms */}
-            <div className={`${styles.card} ${styles.platforms}`}>
-                <h2 className={styles.cardTitle}>Platforms</h2>
-                <form onSubmit={handleAddPlatform} className={styles.form}>
-                    <input
-                        type="text"
-                        value={newPlatformName}
-                        onChange={(e) => setNewPlatformName(e.target.value)}
-                        placeholder="New Platform Name"
-                        className={styles.input}
-                        style={{ flex: 2 }}
-                    />
-                    <select
-                        value={newPlatformCurrency}
-                        onChange={(e) => setNewPlatformCurrency(e.target.value)}
-                        className={styles.select}
-                        style={{ flex: 1 }}
-                    >
-                        {SUPPORTED_CURRENCIES.map(c => (
-                            <option key={c.code} value={c.code}>{c.code}</option>
-                        ))}
-                    </select>
-                    <button type="submit" className={styles.button}>Add</button>
-                </form>
-
-                {renderGroupedList(platforms, (platform) => (
-                    <li key={platform.id} className={styles.item}>
-                        {editingId === platform.id ? (
-                            <div className={styles.editForm}>
-                                <input
-                                    value={editFormData.name}
-                                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                                    className={styles.input}
-                                    style={{ flex: 2 }}
-                                />
-                                <select
-                                    value={editFormData.currency}
-                                    onChange={(e) => setEditFormData({ ...editFormData, currency: e.target.value })}
-                                    className={styles.select}
-                                    style={{ flex: 1 }}
-                                >
-                                    {SUPPORTED_CURRENCIES.map(c => (
-                                        <option key={c.code} value={c.code}>{c.code}</option>
-                                    ))}
-                                </select>
-                                <div className={styles.editActions}>
-                                    <button onClick={handleUpdatePlatform} className={styles.saveButton}>Save</button>
-                                    <button onClick={cancelEditing} className={styles.cancelButton}>Cancel</button>
-                                </div>
-                            </div>
-                        ) : (
-                            <>
-                                <span>{platform.name}</span>
-                                <div className={styles.itemActions}>
-                                    <button onClick={() => startEditing(platform)} className={styles.editButton}>Edit</button>
-                                    <button
-                                        onClick={() => handleDeletePlatform(platform.id)}
-                                        className={styles.deleteButton}
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </li>
-                ))}
-            </div>
         </div>
     );
 }
