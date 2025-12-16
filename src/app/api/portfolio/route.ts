@@ -150,6 +150,7 @@ export async function GET() {
         const constituents: any[] = [];
         const upcomingDividends: any[] = [];
         let dividendsYTD = 0;
+        let totalLifetimeDividends = 0;
         let projectedDividends = 0;
 
         // Global Cash Flows for Portfolio XIRR
@@ -181,6 +182,7 @@ export async function GET() {
                 let totalBuyCost = 0;
                 let totalBuyQty = 0;
                 let localDividendsYTD = 0;
+                let localLifetimeDividends = 0;
                 const symbolCashFlows: Transaction[] = [];
 
                 const symbolActivities = activities.filter((a: any) => a.investment.symbol === symbol);
@@ -201,6 +203,9 @@ export async function GET() {
                     } else if (activity.type === 'DIVIDEND') {
                         const netAmount = amount - fee;
                         symbolCashFlows.push({ amount: netAmount, date: activity.date });
+
+                        // Lifetime Dividends (for Total Return)
+                        localLifetimeDividends += netAmount;
 
                         const activityYear = new Date(activity.date).getFullYear();
                         if (activityYear === new Date().getFullYear()) {
@@ -291,6 +296,7 @@ export async function GET() {
                     dayChangeUSD: data.quantity > 0 ? dayChange * rateToUSD : 0,
                     symbolCashFlows,
                     dividendsYTD: localDividendsYTD * rateToUSD,
+                    lifetimeDividends: localLifetimeDividends * rateToUSD,
                     projectedDividends: ((data.quantity > 0 && marketData?.dividendRate) ? (marketData.dividendRate * data.quantity) : 0) * rateToUSD,
                     constituent: data.quantity > 0 ? {
                         symbol,
@@ -370,6 +376,7 @@ export async function GET() {
                 dayChangeUSD,
                 symbolCashFlows,
                 dividendsYTD: localDividendsYTD,
+                lifetimeDividends: localLifetimeDividends,
                 projectedDividends: localProjected,
                 constituent,
                 upcomingDividend,
@@ -382,6 +389,7 @@ export async function GET() {
 
             // Sum Dividends
             dividendsYTD += localDividendsYTD;
+            totalLifetimeDividends += localLifetimeDividends;
             projectedDividends += localProjected;
 
             if (data.quantity > 0) {
@@ -467,8 +475,10 @@ export async function GET() {
         })).sort((a, b) => b.value - a.value);
 
         // Calculate Total Growth Percent
-        const totalGrowth = totalValue - totalCostBasis;
+        const totalGrowth = (totalValue - totalCostBasis) + totalLifetimeDividends;
         const totalGrowthPercent = totalCostBasis > 0 ? (totalGrowth / totalCostBasis) * 100 : 0;
+
+        console.log(`[PortfolioAPI] Total Value: ${totalValue.toFixed(2)}, Cost Basis: ${totalCostBasis.toFixed(2)}, Lifetime Divs: ${totalLifetimeDividends.toFixed(2)}, Growth: ${totalGrowth.toFixed(2)}`);
 
         return NextResponse.json({
             totalValue,
