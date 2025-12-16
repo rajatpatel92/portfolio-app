@@ -97,6 +97,7 @@ async function main() {
     console.log('Account types seeded.');
 
     // Seed Activity Types
+    // Seed Activity Types
     const activityTypes = [
         { name: 'BUY', behavior: 'ADD', isSystem: true },
         { name: 'SELL', behavior: 'REMOVE', isSystem: true },
@@ -115,6 +116,24 @@ async function main() {
         });
     }
     console.log('Activity types seeded.');
+
+    // Seed Benchmarks
+    const benchmarks = [
+        { symbol: '^GSPC', name: 'S&P 500', isSystem: true },
+        { symbol: '^IXIC', name: 'NASDAQ Composite', isSystem: true },
+        { symbol: '^GSPTSE', name: 'S&P/TSX Composite', isSystem: true },
+        { symbol: 'BTC-USD', name: 'Bitcoin', isSystem: true },
+        { symbol: 'XEQT.TO', name: 'iShares Core Equity (XEQT)', isSystem: true },
+    ];
+
+    for (const b of benchmarks) {
+        await prisma.benchmark.upsert({
+            where: { symbol: b.symbol },
+            update: {},
+            create: b,
+        });
+    }
+    console.log('Benchmarks seeded.');
 }
 
 main()
