@@ -9,15 +9,26 @@ export async function POST(req: Request) {
         const { timeRange, benchmarkSymbol, filters } = body;
 
         // Determine Start Date
-        const startDate = new Date();
-        switch (timeRange) {
-            case '1M': startDate.setMonth(startDate.getMonth() - 1); break;
-            case '6M': startDate.setMonth(startDate.getMonth() - 6); break;
-            case 'YTD': startDate.setMonth(0, 1); break;
-            case '1Y': startDate.setFullYear(startDate.getFullYear() - 1); break;
-            case '5Y': startDate.setFullYear(startDate.getFullYear() - 5); break;
-            case 'ALL': startDate.setFullYear(startDate.getFullYear() - 20); break; // Max 20y
-            default: startDate.setFullYear(startDate.getFullYear() - 1);
+        let startDate = new Date();
+        if (timeRange === 'ALL') {
+            const firstActivity = await prisma.activity.findFirst({
+                orderBy: { date: 'asc' },
+                select: { date: true }
+            });
+            if (firstActivity) {
+                startDate = new Date(firstActivity.date);
+            } else {
+                startDate.setFullYear(startDate.getFullYear() - 1); // Default if no data
+            }
+        } else {
+            switch (timeRange) {
+                case '1M': startDate.setMonth(startDate.getMonth() - 1); break;
+                case '6M': startDate.setMonth(startDate.getMonth() - 6); break;
+                case 'YTD': startDate.setMonth(0, 1); break;
+                case '1Y': startDate.setFullYear(startDate.getFullYear() - 1); break;
+                case '5Y': startDate.setFullYear(startDate.getFullYear() - 5); break;
+                default: startDate.setFullYear(startDate.getFullYear() - 1);
+            }
         }
 
         // Build Filter Query

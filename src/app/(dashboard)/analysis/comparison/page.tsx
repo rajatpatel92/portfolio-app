@@ -43,20 +43,29 @@ export default function ComparePage() {
     const [portfolioData, setPortfolioData] = useState<any[]>([]);
     const [benchmarkData, setBenchmarkData] = useState<any[]>([]);
 
+    // New State for Enhanced Data
+    const [summary, setSummary] = useState({ portfolioReturn: 0, benchmarkReturn: 0 });
+    const [performers, setPerformers] = useState<{ top: any[], bottom: any[] }>({ top: [], bottom: [] });
+    const [availableBenchmarks, setAvailableBenchmarks] = useState<any[]>([]);
+
     // Controls
     const [timeRange, setTimeRange] = useState('1Y');
     const [benchmark, setBenchmark] = useState('^GSPC'); // S&P 500
     const [filters, setFilters] = useState<any>(null);
 
-    const BENCHMARKS = [
-        { symbol: '^GSPC', name: 'S&P 500' },
-        { symbol: '^IXIC', name: 'NASDAQ Composite' },
-        { symbol: '^GSPTSE', name: 'S&P/TSX Composite' }, // Canadian
-        { symbol: 'XEQT.TO', name: 'iShares Core Equity (XEQT)' }, // User Favorites
-        { symbol: 'BTC-USD', name: 'Bitcoin' },
-    ];
-
     const RANGES = ['1M', '6M', 'YTD', '1Y', '5Y', 'ALL'];
+
+    // Fetch Available Benchmarks
+    useEffect(() => {
+        fetch('/api/benchmarks')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setAvailableBenchmarks(data);
+                }
+            })
+            .catch(err => console.error('Failed to load benchmarks', err));
+    }, []);
 
     useEffect(() => {
         if (!filters) return; // Wait for init
@@ -78,6 +87,10 @@ export default function ComparePage() {
                 if (data.portfolio) {
                     setPortfolioData(data.portfolio);
                     setBenchmarkData(data.benchmark);
+
+                    // Set enhanced data
+                    if (data.summary) setSummary(data.summary);
+                    if (data.performers) setPerformers(data.performers);
                 }
             } catch (err) {
                 console.error(err);
@@ -88,6 +101,7 @@ export default function ComparePage() {
 
         fetchData();
     }, [timeRange, benchmark, filters]);
+
 
     // Chart Config
     const chartData = {
@@ -103,10 +117,9 @@ export default function ComparePage() {
                 pointRadius: 0,
             },
             {
-                label: BENCHMARKS.find(b => b.symbol === benchmark)?.name || 'Benchmark',
+                label: availableBenchmarks.find(b => b.symbol === benchmark)?.name || 'Benchmark',
                 data: benchmarkData.map(d => d.normalized),
                 borderColor: '#f59e0b', // Amber 500
-                // borderDash removed for solid line
                 tension: 0.4,
                 pointRadius: 0,
                 fill: false
@@ -125,7 +138,7 @@ export default function ComparePage() {
             legend: {
                 position: 'top' as const,
                 labels: {
-                    color: '#9ca3af' // text-gray-400
+                    color: '#9ca3af'
                 }
             },
             tooltip: {
@@ -152,7 +165,7 @@ export default function ComparePage() {
                     unit: 'month'
                 },
                 grid: {
-                    color: '#374151' // gray-700
+                    color: '#374151'
                 },
                 ticks: {
                     color: '#9ca3af'
@@ -172,6 +185,10 @@ export default function ComparePage() {
         }
     };
 
+    // Helper for color
+    const getValColor = (val: number) => val >= 0 ? styles.positive : styles.negative;
+    const formatPct = (val: number) => `${val > 0 ? '+' : ''}${val.toFixed(2)}%`;
+
     return (
         <div className={styles.container}>
             <header className={styles.header}>
@@ -181,13 +198,12 @@ export default function ComparePage() {
                 </div>
 
                 <div className={styles.controls}>
-                    {/* Benchmark Select */}
                     <select
                         className={styles.select}
                         value={benchmark}
                         onChange={(e) => setBenchmark(e.target.value)}
                     >
-                        {BENCHMARKS.map(b => (
+                        {availableBenchmarks.map(b => (
                             <option key={b.symbol} value={b.symbol}>{b.name}</option>
                         ))}
                     </select>
@@ -196,24 +212,75 @@ export default function ComparePage() {
                 </div>
             </header>
 
-            <div className={styles.card}>
-                <div className={styles.chartHeader}>
-                    <div className={styles.ranges}>
-                        {RANGES.map(r => (
-                            <button
-                                key={r}
-                                className={`${styles.rangeBtn} ${timeRange === r ? styles.active : ''}`}
-                                onClick={() => setTimeRange(r)}
-                            >
-                                {r}
-                            </button>
-                        ))}
+            <div className={styles.grid}>
+                {/* Main Method: Chart */}
+                <div className={styles.chartCard}>
+                    <div className={styles.chartHeader}>
+                        <div className={styles.summary}>
+                            <div className={styles.summaryItem}>
+                                <span className={styles.summaryLabel}>Portfolio Return</span>
+                                <span className={`${styles.summaryValue} ${getValColor(summary.portfolioReturn)}`}>
+                                    {formatPct(summary.portfolioReturn)}
+                                </span>
+                            </div>
+                            <div className={styles.summaryItem}>
+                                <span className={styles.summaryLabel}>Benchmark Return</span>
+                                <span className={`${styles.summaryValue} ${getValColor(summary.benchmarkReturn)}`}>
+                                    {formatPct(summary.benchmarkReturn)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className={styles.ranges}>
+                            {RANGES.map(r => (
+                                <button
+                                    key={r}
+                                    className={`${styles.rangeBtn} ${timeRange === r ? styles.active : ''}`}
+                                    onClick={() => setTimeRange(r)}
+                                >
+                                    {r}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className={styles.chartWrapper}>
+                        {isLoading && <div className={styles.loadingOverlay}>Loading...</div>}
+                        <Line data={chartData} options={options} />
                     </div>
                 </div>
 
-                <div className={styles.chartWrapper}>
-                    {isLoading && <div className={styles.loadingOverlay}>Loading...</div>}
-                    <Line data={chartData} options={options} />
+                {/* Right Column: Performers */}
+                <div className={styles.statsColumn}>
+                    <div className={styles.statsCard}>
+                        <h3 className={styles.statsTitle}>Top Performers</h3>
+                        <div className={styles.performerList}>
+                            {performers.top.length === 0 && <span className={styles.performerName}>No data</span>}
+                            {performers.top.map((p, i) => (
+                                <div key={i} className={styles.performerItem}>
+                                    <span className={styles.performerName}>{p.symbol}</span>
+                                    <span className={`${styles.performerValue} ${styles.positive}`}>
+                                        +{p.return.toFixed(2)}%
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className={styles.statsCard}>
+                        <h3 className={styles.statsTitle}>Bottom Performers</h3>
+                        <div className={styles.performerList}>
+                            {performers.bottom.length === 0 && <span className={styles.performerName}>No data</span>}
+                            {performers.bottom.map((p, i) => (
+                                <div key={i} className={styles.performerItem}>
+                                    <span className={styles.performerName}>{p.symbol}</span>
+                                    <span className={`${styles.performerValue} ${styles.negative}`}>
+                                        {p.return.toFixed(2)}%
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

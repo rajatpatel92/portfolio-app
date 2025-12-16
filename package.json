@@ -15,6 +15,7 @@
     "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.26",
+    "lucide-react": "^0.561.0",
     "next": "16.0.3",
     "next-auth": "^5.0.0-beta.30",
     "papaparse": "^5.5.3",

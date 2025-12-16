@@ -125,7 +125,13 @@ export class PortfolioAnalytics {
         benchmarkSymbol: string,
         startDate: Date,
         targetCurrency: string = 'CAD'
-    ): Promise<{ portfolio: DailyPerformance[], benchmark: { date: string, value: number, normalized: number }[], debug: string[] }> {
+    ): Promise<{
+        portfolio: DailyPerformance[],
+        benchmark: { date: string, value: number, normalized: number }[],
+        summary: { portfolioReturn: number, benchmarkReturn: number },
+        performers: { top: { symbol: string, return: number }[], bottom: { symbol: string, return: number }[] },
+        debug: string[]
+    }> {
 
         const debug: string[] = [];
         const log = (msg: string) => { console.log(msg); debug.push(msg); };
@@ -354,7 +360,65 @@ export class PortfolioAnalytics {
             });
         }
 
-        return { portfolio: dailyPerf, benchmark: benchmarkData, debug };
+        // Calculate Summary Stats
+        const portfolioStart = dailyPerf.find(d => d.marketValue > 0) || dailyPerf[0];
+        const portfolioEnd = dailyPerf[dailyPerf.length - 1];
+
+        const portfolioReturn = portfolioStart && portfolioEnd.nav ? ((portfolioEnd.nav - portfolioStart.nav) / portfolioStart.nav) * 100 : 0;
+
+        let benchmarkReturn = 0;
+        const validBenchmark = benchmarkData.filter(d => d.value > 0);
+        if (validBenchmark.length > 0) {
+            const start = validBenchmark[0].value;
+            const end = validBenchmark[validBenchmark.length - 1].value;
+            benchmarkReturn = ((end - start) / start) * 100;
+        }
+
+        // Calculate Top/Bottom Performers (Simple approach: Price change over period)
+        // We need price history for ALL assets in the portfolio for the period.
+        // We already have `priceMaps` populated for looked up assets.
+        const performanceMap: { symbol: string, return: number }[] = [];
+
+        // Only consider assets currently held or held during period?
+        // Let's look at all symbols involved.
+        for (const sym of symbols) {
+            if (sym === benchmarkSymbol) continue;
+
+            const priceMap = priceMaps[sym];
+            if (!priceMap) continue;
+
+            const dates = Object.keys(priceMap).sort();
+            // Filter dates within range
+            const relevantDates = dates.filter(d => d >= startIso);
+
+            if (relevantDates.length < 2) continue;
+
+            const startPrice = priceMap[relevantDates[0]];
+            const endPrice = priceMap[relevantDates[relevantDates.length - 1]];
+
+            if (startPrice > 0) {
+                const ret = ((endPrice - startPrice) / startPrice) * 100;
+                performanceMap.push({ symbol: sym, return: ret });
+            }
+        }
+
+        const sortedPerformers = performanceMap.sort((a, b) => b.return - a.return);
+        const top5 = sortedPerformers.slice(0, 5);
+        const bottom5 = sortedPerformers.slice(-5).reverse();
+
+        return {
+            portfolio: dailyPerf,
+            benchmark: benchmarkData,
+            summary: {
+                portfolioReturn,
+                benchmarkReturn
+            },
+            performers: {
+                top: top5,
+                bottom: bottom5
+            },
+            debug
+        };
     }
 
     private static computeHoldingsState(activities: Activity[]) {

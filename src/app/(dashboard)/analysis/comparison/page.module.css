@@ -1,7 +1,9 @@
 .container {
     padding: 2rem;
-    max-width: 1400px;
-    margin: 0 auto;
+    width: 100%;
+    /* Full width */
+    max-width: 100%;
+    /* Override standard limitation */
 }
 
 .header {
@@ -44,18 +46,70 @@
     background-size: 0.65rem auto;
 }
 
-.card {
+/* Charts & Stats Grid */
+.grid {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    gap: 1.5rem;
+}
+
+@media (max-width: 1200px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.chartCard {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: 1rem;
     padding: 1.5rem;
     position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.statsColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .chartHeader {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 1rem;
+}
+
+.summary {
+    display: flex;
+    gap: 2rem;
+}
+
+.summaryItem {
+    display: flex;
+    flex-direction: column;
+}
+
+.summaryLabel {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.summaryValue {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.positive {
+    color: var(--success-color, #10b981);
+}
+
+.negative {
+    color: var(--danger-color, #ef4444);
 }
 
 .ranges {
@@ -92,6 +146,7 @@
     height: 500px;
     width: 100%;
     position: relative;
+    flex-grow: 1;
 }
 
 .loadingOverlay {
@@ -106,4 +161,42 @@
     font-weight: 600;
     z-index: 10;
     border-radius: 0.5rem;
+}
+
+.statsCard {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+}
+
+.statsTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.performerList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.performerItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.performerName {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.performerValue {
+    font-size: 0.9rem;
+    font-weight: 600;
 }

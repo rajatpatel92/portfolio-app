@@ -14,6 +14,13 @@
 
 /* settingsGrid removed */
 
+.settingsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
+}
+
 .grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -25,6 +32,30 @@
     .grid {
         grid-template-columns: 1fr;
     }
+}
+
+.actionBtn {
+    display: inline-block;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--card-border);
+    border-radius: 0.5rem;
+    color: var(--text-primary);
+    text-align: center;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+    height: 38px;
+    /* Match select height approx */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.actionBtn:hover {
+    background: var(--hover-bg);
+    border-color: var(--primary-color);
 }
 
 .card {
