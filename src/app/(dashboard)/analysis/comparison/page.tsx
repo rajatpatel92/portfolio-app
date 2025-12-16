@@ -14,9 +14,10 @@ import {
     Title,
     Tooltip,
     Legend,
-    Filler
+    Filler,
+    TimeScale
 } from 'chart.js';
-import { format } from 'path';
+import 'chartjs-adapter-date-fns';
 
 ChartJS.register(
     CategoryScale,
@@ -26,7 +27,8 @@ ChartJS.register(
     Title,
     Tooltip,
     Legend,
-    Filler
+    Filler,
+    TimeScale
 );
 
 interface PerformanceData {
