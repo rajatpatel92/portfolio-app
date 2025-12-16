@@ -337,6 +337,9 @@ export async function GET() {
                                         quantity: val.quantity,
                                         value: accountValueUSD, // USD
                                         costBasis: val.costBasis * rateToUSD, // USD
+                                        // Native Values for accurate reconstruction
+                                        valueNative: val.quantity * price,
+                                        costBasisNative: val.costBasis,
                                         accountType: val.accountType || 'Unassigned',
                                         platformName: val.platformName,
                                         xirr: accXirr,

@@ -105,8 +105,8 @@ export default function AnalysisPage() {
                         if (globalFilters.accountTypes.includes(acc.accountType)) {
                             hasValidAccount = true;
                             newQuantity += acc.quantity;
-                            newValue += acc.value;
-                            newCostBasis += acc.costBasis;
+                            newValue += (acc.valueNative ?? (acc.quantity * item.price));
+                            newCostBasis += (acc.costBasisNative ?? acc.costBasis);
                             newBreakdown[key] = acc; // Keep this slice
 
                             if (acc.xirr !== null && acc.value > 0) {
@@ -236,8 +236,8 @@ export default function AnalysisPage() {
 
                         if (match) {
                             newQuantity += acc.quantity;
-                            newValue += acc.value;
-                            newCostBasis += acc.costBasis;
+                            newValue += (acc.valueNative ?? (acc.quantity * item.price));
+                            newCostBasis += (acc.costBasisNative ?? acc.costBasis);
                             if (acc.xirr !== null && acc.value > 0) {
                                 weightedXirrSum += (acc.xirr * acc.value);
                                 totalWeight += acc.value;
