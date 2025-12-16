@@ -1,14 +1,13 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import styles from './page.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
 import ConstituentsGrid from '@/components/ConstituentsGrid';
 import AllocationChart from '@/components/AllocationChart';
 import AnalysisSkeleton from '@/components/AnalysisSkeleton';
-
-// ... other imports
+import ReportFilters, { FilterOptions } from '@/components/ReportFilters';
 
 interface PortfolioSummary {
     allocationByType: { name: string; value: number }[];
@@ -20,9 +19,10 @@ interface PortfolioSummary {
 
 export default function AnalysisPage() {
     const [summary, setSummary] = useState<PortfolioSummary | null>(null);
-    const { format, convert } = useCurrency();
-
-    const [filters, setFilters] = useState<{
+    // Global Filters (Layer 1)
+    const [globalFilters, setGlobalFilters] = useState<FilterOptions | null>(null);
+    // Interactive Filters (Layer 2)
+    const [interactiveFilters, setInteractiveFilters] = useState<{
         investmentType: string | null;
         accountType: string | null;
         accountName: string | null;
@@ -33,11 +33,10 @@ export default function AnalysisPage() {
     });
 
     useEffect(() => {
-        // 1. Try to load from cache immediately
+        // 1. Try to load from cache
         const cached = localStorage.getItem('portfolio_summary');
         if (cached) {
             try {
-                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setSummary(JSON.parse(cached));
             } catch (e) {
                 console.error('Failed to parse cached summary', e);
@@ -56,7 +55,7 @@ export default function AnalysisPage() {
 
     const handleInvestmentSelect = (type: string | null, e?: React.MouseEvent) => {
         const isMulti = e?.ctrlKey || e?.metaKey;
-        setFilters(prev => {
+        setInteractiveFilters(prev => {
             const next = isMulti ? { ...prev } : { investmentType: null, accountType: null, accountName: null };
             next.investmentType = type === prev.investmentType ? null : type;
             return next;
@@ -65,7 +64,7 @@ export default function AnalysisPage() {
 
     const handleAccountTypeSelect = (type: string | null, e?: React.MouseEvent) => {
         const isMulti = e?.ctrlKey || e?.metaKey;
-        setFilters(prev => {
+        setInteractiveFilters(prev => {
             const next = isMulti ? { ...prev } : { investmentType: null, accountType: null, accountName: null };
             next.accountType = type === prev.accountType ? null : type;
             return next;
@@ -74,218 +73,287 @@ export default function AnalysisPage() {
 
     const handleAccountNameSelect = (name: string | null, e?: React.MouseEvent) => {
         const isMulti = e?.ctrlKey || e?.metaKey;
-        setFilters(prev => {
+        setInteractiveFilters(prev => {
             const next = isMulti ? { ...prev } : { investmentType: null, accountType: null, accountName: null };
             next.accountName = name === prev.accountName ? null : name;
             return next;
         });
     };
 
-    if (!summary) return <AnalysisSkeleton />;
+    // --- Layer 1: Global Filter Processing ---
+    // Returns constituents recalculated based on global filters (available for charts)
+    const globalConstituents = useMemo(() => {
+        if (!summary || !globalFilters) return [];
 
-    const filteredConstituents = summary.constituents
-        .filter(item => {
-            // 1. Initial High-Level Filter (Optimization)
-            if (filters.investmentType && item.type !== filters.investmentType) return false;
-            // For account filters, we can't just return false yet if we want to support multi-account aggregation later, 
-            // but for now, if the item has NO exposure to the filter, we can drop it.
-            if (filters.accountType && !item.accountTypes?.includes(filters.accountType)) return false;
+        return summary.constituents
+            .map(item => {
+                // Filter 1: Investment Type (Top Level)
+                if (!globalFilters.investmentTypes.includes(item.type)) return null;
 
-            // Relaxed check for Account Name to handle potential data definition mismatches
-            if (filters.accountName) {
-                const hasName = item.accountNames?.some((n: string) => String(n).trim() === String(filters.accountName).trim());
-                if (!hasName) return false;
-            }
-            return true;
-        })
-        .map(item => {
-            // 2. If no granular filters, return item as is
-            if (!filters.accountType && !filters.accountName) return item;
+                // Filter 2: Account Types (Breakdown Level)
+                let newQuantity = 0;
+                let newValue = 0;
+                let newCostBasis = 0;
+                let weightedXirrSum = 0;
+                let totalWeight = 0;
 
-            // 3. Recalculate based on breakdown
-            let newQuantity = 0;
-            let newValue = 0;
-            let newCostBasis = 0;
+                const newBreakdown: any = {};
+                let hasValidAccount = false;
 
-            // XIRR Aggregation (Weighted Average by Value)
-            let weightedXirrSum = 0;
-            let totalWeight = 0;
+                if (item.accountsBreakdown) {
+                    Object.entries(item.accountsBreakdown).forEach(([key, acc]: [string, any]) => {
+                        if (globalFilters.accountTypes.includes(acc.accountType)) {
+                            hasValidAccount = true;
+                            newQuantity += acc.quantity;
+                            newValue += acc.value;
+                            newCostBasis += acc.costBasis;
+                            newBreakdown[key] = acc; // Keep this slice
 
-            // Determine earliest buy date for this filtered view
-            let earliestFilteredBuyDate: Date | null = null;
-
-            if (item.accountsBreakdown) {
-                Object.entries(item.accountsBreakdown).forEach(([key, acc]: [string, any]) => {
-                    let match = true;
-                    if (filters.accountType && acc.accountType !== filters.accountType) match = false;
-
-                    if (filters.accountName) {
-                        const filterName = String(filters.accountName).trim();
-                        const accName = String(acc.name).trim();
-                        // Robust Match: Check explicit name property OR key prefix
-                        const nameMatches = accName === filterName;
-                        const keyMatches = key.startsWith(filterName + ':');
-                        if (!nameMatches && !keyMatches) match = false;
-                    }
-
-                    if (match) {
-                        newQuantity += acc.quantity;
-                        newValue += acc.value;
-                        newCostBasis += acc.costBasis;
-
-                        if (acc.xirr !== null && acc.value > 0) {
-                            weightedXirrSum += (acc.xirr * acc.value);
-                            totalWeight += acc.value;
-                        }
-
-                        if (acc.firstBuyDate) {
-                            const date = new Date(acc.firstBuyDate);
-                            if (!earliestFilteredBuyDate || date < earliestFilteredBuyDate) {
-                                earliestFilteredBuyDate = date;
+                            if (acc.xirr !== null && acc.value > 0) {
+                                weightedXirrSum += (acc.xirr * acc.value);
+                                totalWeight += acc.value;
                             }
                         }
-                    }
+                    });
+                }
+
+                if (!hasValidAccount || newQuantity === 0) return null;
+
+                const aggregatedXirr = totalWeight > 0 ? weightedXirrSum / totalWeight : null;
+
+                // Scale metrics proportional to quantity/value retained
+                // If 100% retained, ratio is 1.
+                const quantityRatio = item.quantity > 0 ? (newQuantity / item.quantity) : 0;
+
+                const scaleMetric = (metric: any) => {
+                    if (!metric) return metric;
+                    return {
+                        ...metric,
+                        absolute: metric.absolute * quantityRatio
+                        // Percent remains same for asset
+                    };
+                };
+
+                return {
+                    ...item,
+                    quantity: newQuantity,
+                    value: newValue,
+                    bookValue: newCostBasis,
+                    accountsBreakdown: newBreakdown, // Important: pass filtered breakdown for next layer
+
+                    // Scaled Metrics
+                    dayChange: scaleMetric(item.dayChange),
+                    change1W: scaleMetric(item.change1W),
+                    change1M: scaleMetric(item.change1M),
+                    change1Y: scaleMetric(item.change1Y),
+                    changeYTD: scaleMetric(item.changeYTD),
+
+                    // Recalculate Inception (Total Gain) for this slice
+                    inceptionChange: {
+                        absolute: newValue - newCostBasis,
+                        percent: newCostBasis > 0 ? ((newValue - newCostBasis) / newCostBasis) * 100 : 0
+                    },
+                    xirr: aggregatedXirr
+                };
+            })
+            .filter(Boolean);
+    }, [summary, globalFilters]);
+
+    // --- Dynamic Allocations for Charts (Based on Layer 1) ---
+    const chartAllocations = useMemo(() => {
+        const byType = new Map<string, number>();
+        const byAccountType = new Map<string, number>();
+        const byAccount = new Map<string, number>();
+
+        globalConstituents.forEach((item: any) => {
+            // Type Allocation
+            byType.set(item.type, (byType.get(item.type) || 0) + item.value);
+
+            // Account & AccountType Allocation (from breakdown)
+            if (item.accountsBreakdown) {
+                Object.values(item.accountsBreakdown).forEach((acc: any) => {
+                    byAccountType.set(acc.accountType, (byAccountType.get(acc.accountType) || 0) + acc.value);
+                    byAccount.set(acc.name, (byAccount.get(acc.name) || 0) + acc.value);
                 });
             }
+        });
 
-            // 4. Return new object
-            // Avoid creating object if no quantity found
-            if (newQuantity === 0) return null;
+        const mapToObj = (map: Map<string, number>) => Array.from(map.entries()).map(([name, value]) => ({ name, value }));
 
-            const aggregatedXirr = totalWeight > 0 ? weightedXirrSum / totalWeight : null;
+        return {
+            allocationByType: mapToObj(byType),
+            allocationByAccountType: mapToObj(byAccountType),
+            allocationByAccount: mapToObj(byAccount)
+        };
+    }, [globalConstituents]);
 
-            const now = new Date();
-            const date1W = new Date(now); date1W.setDate(now.getDate() - 7);
-            const date1M = new Date(now); date1M.setMonth(now.getMonth() - 1);
-            const date1Y = new Date(now); date1Y.setFullYear(now.getFullYear() - 1);
-            const dateYTD = new Date(now.getFullYear(), 0, 1);
 
-            const scaleChange = (change: any, periodStartDate: Date) => {
-                // If the position (in this filtered slice) didn't exist at the start of the period, 
-                // showing a change is misleading/incorrect.
-                // FIX: Only suppress if we are SURE it is too young. If date is missing (e.g. data anomaly), default to showing.
-                if (!change || (earliestFilteredBuyDate && earliestFilteredBuyDate > periodStartDate)) return null;
+    // --- Layer 2: Interactive Filter Processing (For Table) ---
+    const finalConstituents = useMemo(() => {
+        // Start with Global Filtered data
+        return globalConstituents
+            .filter((item: any) => {
+                // Interactive Filter 1: Investment Type
+                if (interactiveFilters.investmentType && item.type !== interactiveFilters.investmentType) return false;
 
-                const ratio = item.quantity > 0 ? (newQuantity / item.quantity) : 0;
-                return {
-                    ...change,
-                    absolute: change.absolute * ratio
-                    // percent remains the same as it's asset-level performance
+                // Interactive Filter 2 & 3: Account Type / Name
+                // We need to check if the item (after global filtering) STILL has exposure to the interactive filter.
+                // Since we already filtered `accountsBreakdown` in Layer 1, we just check that.
+
+                let matchesInteractiveAccount = true;
+                if (interactiveFilters.accountType || interactiveFilters.accountName) {
+                    matchesInteractiveAccount = false; // Assume false until found
+
+                    if (item.accountsBreakdown) {
+                        Object.values(item.accountsBreakdown).forEach((acc: any) => {
+                            let breakdownMatch = true;
+                            if (interactiveFilters.accountType && acc.accountType !== interactiveFilters.accountType) breakdownMatch = false;
+                            if (interactiveFilters.accountName && acc.name !== interactiveFilters.accountName) breakdownMatch = false;
+
+                            if (breakdownMatch) matchesInteractiveAccount = true;
+                        });
+                    }
+                }
+
+                return matchesInteractiveAccount;
+            })
+            .map((item: any) => {
+                // If NO interactive account filters, return the global item (it's already correct for that scope)
+                if (!interactiveFilters.accountType && !interactiveFilters.accountName) return item;
+
+                // If there ARE interactive account filters, we need to create a SUB-slice of the global slice
+                let newQuantity = 0;
+                let newValue = 0;
+                let newCostBasis = 0;
+                let weightedXirrSum = 0;
+                let totalWeight = 0;
+
+                if (item.accountsBreakdown) {
+                    Object.values(item.accountsBreakdown).forEach((acc: any) => {
+                        let match = true;
+                        if (interactiveFilters.accountType && acc.accountType !== interactiveFilters.accountType) match = false;
+                        if (interactiveFilters.accountName && acc.name !== interactiveFilters.accountName) match = false;
+
+                        if (match) {
+                            newQuantity += acc.quantity;
+                            newValue += acc.value;
+                            newCostBasis += acc.costBasis;
+                            if (acc.xirr !== null && acc.value > 0) {
+                                weightedXirrSum += (acc.xirr * acc.value);
+                                totalWeight += acc.value;
+                            }
+                        }
+                    });
+                }
+
+                if (newQuantity === 0) return null;
+
+                const aggregatedXirr = totalWeight > 0 ? weightedXirrSum / totalWeight : null;
+                const quantityRatio = item.quantity > 0 ? (newQuantity / item.quantity) : 0; // ratio relative to GLOBAL slice
+
+                const scaleMetric = (metric: any) => {
+                    if (!metric) return metric;
+                    return { ...metric, absolute: metric.absolute * quantityRatio };
                 };
-            };
+
+                return {
+                    ...item,
+                    quantity: newQuantity,
+                    value: newValue,
+                    bookValue: newCostBasis,
+                    // breakdown can remain as is or be filtered, strictly speaking UI doesn't iterate it again usually
+
+                    dayChange: scaleMetric(item.dayChange),
+                    change1W: scaleMetric(item.change1W),
+                    change1M: scaleMetric(item.change1M),
+                    change1Y: scaleMetric(item.change1Y),
+                    changeYTD: scaleMetric(item.changeYTD),
+
+                    inceptionChange: {
+                        absolute: newValue - newCostBasis,
+                        percent: newCostBasis > 0 ? ((newValue - newCostBasis) / newCostBasis) * 100 : 0
+                    },
+                    xirr: aggregatedXirr
+                };
+
+            })
+            .filter(Boolean);
+    }, [globalConstituents, interactiveFilters]);
 
 
-            return {
-                ...item,
-                quantity: newQuantity,
-                value: newValue,
-                bookValue: newCostBasis,
-                currency: 'USD',
+    if (!summary) return <AnalysisSkeleton />;
 
-                // Recalculate day change proportional to value
-                dayChange: {
-                    ...item.dayChange,
-                    absolute: item.value > 0 ? (item.dayChange.absolute * (newValue / item.value)) : 0
-                },
-
-                // Scale historical metrics with Age Check
-                change1W: scaleChange(item.change1W, date1W),
-                change1M: scaleChange(item.change1M, date1M),
-                change1Y: scaleChange(item.change1Y, date1Y),
-                changeYTD: scaleChange(item.changeYTD, dateYTD),
-
-                // Accurate Inception Change for this slice
-                inceptionChange: {
-                    absolute: newValue - newCostBasis,
-                    percent: newCostBasis > 0 ? ((newValue - newCostBasis) / newCostBasis) * 100 : 0
-                },
-
-                // Aggregated XIRR
-                xirr: aggregatedXirr
-            };
-        })
-        .filter(Boolean); // Remove nulls
-
-    const hasFilters = filters.investmentType || filters.accountType || filters.accountName;
+    const hasInteractiveFilters = interactiveFilters.investmentType || interactiveFilters.accountType || interactiveFilters.accountName;
 
     return (
         <div className={styles.container}>
             <header className={styles.header}>
-                <h1 className={styles.title}>Portfolio Analysis</h1>
-                <p className={styles.subtitle}>
-                    Deep dive into your asset allocation and performance metrics.
-                </p>
-                {hasFilters && (
-                    <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        {filters.investmentType && (
-                            <span style={{
-                                background: 'var(--primary)', color: 'white', padding: '0.25rem 0.75rem',
-                                borderRadius: '1rem', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem'
-                            }}>
-                                Type: {filters.investmentType}
-                                <button onClick={() => setFilters(prev => ({ ...prev, investmentType: null }))}
-                                    style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1rem' }}>&times;</button>
+                <div className={styles.headerTop}>
+                    <div>
+                        <h1 className={styles.title}>Portfolio Analysis</h1>
+                        <p className={styles.subtitle}>
+                            Deep dive into your asset allocation and performance metrics.
+                        </p>
+                    </div>
+                    <ReportFilters onChange={setGlobalFilters} />
+                </div>
+
+                {hasInteractiveFilters && (
+                    <div className={styles.filterBadges}>
+                        {interactiveFilters.investmentType && (
+                            <span className={styles.badge}>
+                                Type: {interactiveFilters.investmentType}
+                                <button onClick={() => setInteractiveFilters(prev => ({ ...prev, investmentType: null }))}>&times;</button>
                             </span>
                         )}
-                        {filters.accountType && (
-                            <span style={{
-                                background: 'var(--primary)', color: 'white', padding: '0.25rem 0.75rem',
-                                borderRadius: '1rem', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem'
-                            }}>
-                                Type: {filters.accountType}
-                                <button onClick={() => setFilters(prev => ({ ...prev, accountType: null }))}
-                                    style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1rem' }}>&times;</button>
+                        {interactiveFilters.accountType && (
+                            <span className={styles.badge}>
+                                Type: {interactiveFilters.accountType}
+                                <button onClick={() => setInteractiveFilters(prev => ({ ...prev, accountType: null }))}>&times;</button>
                             </span>
                         )}
-                        {filters.accountName && (
-                            <span style={{
-                                background: 'var(--primary)', color: 'white', padding: '0.25rem 0.75rem',
-                                borderRadius: '1rem', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem'
-                            }}>
-                                Account: {filters.accountName}
-                                <button onClick={() => setFilters(prev => ({ ...prev, accountName: null }))}
-                                    style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1rem' }}>&times;</button>
+                        {interactiveFilters.accountName && (
+                            <span className={styles.badge}>
+                                Account: {interactiveFilters.accountName}
+                                <button onClick={() => setInteractiveFilters(prev => ({ ...prev, accountName: null }))}>&times;</button>
                             </span>
                         )}
                         <button
-                            onClick={() => setFilters({ investmentType: null, accountType: null, accountName: null })}
-                            style={{
-                                background: 'transparent', border: '1px solid var(--text-secondary)', color: 'var(--text-secondary)',
-                                padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.875rem', cursor: 'pointer'
-                            }}
+                            onClick={() => setInteractiveFilters({ investmentType: null, accountType: null, accountName: null })}
+                            className={styles.clearBtn}
                         >
-                            Clear All
+                            Clear Chart Filters
                         </button>
                     </div>
                 )}
             </header>
 
             <div className={styles.analysisGrid}>
-                {/* Allocation Charts */}
+                {/* Allocation Charts (Using Global Data) */}
                 <div className={styles.chartsRow}>
                     <AllocationChart
                         title="By Investment Type"
-                        data={summary.allocationByType}
+                        data={chartAllocations.allocationByType}
                         onSelect={handleInvestmentSelect}
-                        selectedName={filters.investmentType}
+                        selectedName={interactiveFilters.investmentType}
                     />
                     <AllocationChart
                         title="By Account Type"
-                        data={summary.allocationByAccountType || []}
+                        data={chartAllocations.allocationByAccountType}
                         onSelect={handleAccountTypeSelect}
-                        selectedName={filters.accountType}
+                        selectedName={interactiveFilters.accountType}
                     />
                     <AllocationChart
                         title="By Account"
-                        data={summary.allocationByAccount || []}
+                        data={chartAllocations.allocationByAccount}
                         onSelect={handleAccountNameSelect}
-                        selectedName={filters.accountName}
+                        selectedName={interactiveFilters.accountName}
                     />
                 </div>
 
-                {/* Constituents Grid */}
+                {/* Constituents Grid (Using Final Data) */}
                 <div className={styles.gridContainer}>
-                    <ConstituentsGrid data={filteredConstituents} />
+                    <ConstituentsGrid data={finalConstituents} />
                 </div>
             </div>
         </div>
