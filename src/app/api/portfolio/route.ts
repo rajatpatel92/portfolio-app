@@ -45,7 +45,7 @@ export async function GET() {
             quantity: number,
             investment: any,
             platforms: Map<string, number>,
-            accounts: Map<string, { quantity: number, platformName: string, accountType: string, costBasis: number, cashFlows: Transaction[], firstBuyDate: Date | null }>
+            accounts: Map<string, { quantity: number, platformName: string, accountType: string, costBasis: number, lifetimeDividends: number, dividendsYTD: number, realizedGain: number, cashFlows: Transaction[], firstBuyDate: Date | null }>
         }>();
 
         for (const activity of activities) {
@@ -85,7 +85,7 @@ export async function GET() {
             // Get account data or init
             let acc = current.accounts.get(accountKey);
             if (!acc) {
-                acc = { quantity: 0, platformName, accountType, costBasis: 0, cashFlows: [], firstBuyDate: null };
+                acc = { quantity: 0, platformName, accountType, costBasis: 0, lifetimeDividends: 0, dividendsYTD: 0, realizedGain: 0, cashFlows: [], firstBuyDate: null };
                 current.accounts.set(accountKey, acc);
             }
 
@@ -112,6 +112,10 @@ export async function GET() {
                 const proportion = acc.quantity > 0 ? (absQty / acc.quantity) : 0;
                 const costToRemove = acc.costBasis * proportion;
 
+                // Realized ID: (Proceeds) - (Cost of these specific shares)
+                const realized = (amount - fee) - costToRemove;
+                acc.realizedGain += realized;
+
                 acc.quantity = Math.max(0, acc.quantity - absQty);
                 acc.costBasis = Math.max(0, acc.costBasis - costToRemove);
                 acc.cashFlows.push({ amount: (amount - fee), date: activity.date });
@@ -119,6 +123,11 @@ export async function GET() {
             } else if (activity.type === 'DIVIDEND') {
                 // Dividends are cash inflows for the account
                 acc.cashFlows.push({ amount: (amount - fee), date: activity.date });
+                acc.lifetimeDividends += (amount - fee);
+
+                if (new Date(activity.date).getFullYear() === new Date().getFullYear()) {
+                    acc.dividendsYTD += (amount - fee);
+                }
 
             } else if (behavior === 'SPLIT') {
                 const multiplier = absQty;
@@ -180,6 +189,7 @@ export async function GET() {
 
                 // 2. Calculate Cost Basis & Cash Flows
                 let totalBuyCost = 0;
+                let totalSellProceeds = 0;
                 let totalBuyQty = 0;
                 let localDividendsYTD = 0;
                 let localLifetimeDividends = 0;
@@ -200,6 +210,7 @@ export async function GET() {
                         symbolCashFlows.push({ amount: -(amount + fee), date: activity.date });
                     } else if (behavior === 'REMOVE') {
                         symbolCashFlows.push({ amount: (amount - fee), date: activity.date });
+                        totalSellProceeds += (amount - fee);
                     } else if (activity.type === 'DIVIDEND') {
                         const netAmount = amount - fee;
                         symbolCashFlows.push({ amount: netAmount, date: activity.date });
@@ -223,6 +234,11 @@ export async function GET() {
                 const costBasis = avgBuyPrice * data.quantity;
                 const value = data.quantity * price;
                 const dayChange = data.quantity * regularMarketChange;
+
+                // Calculate Realized Gain (Proceeds - Cost of Sold Shares)
+                // Cost of Sold = Total Buy Cost - Remaining Cost Basis
+                const costOfSold = totalBuyCost - costBasis;
+                const realizedGainNative = totalSellProceeds - costOfSold;
 
                 // Add Current Value as "Inflow" for XIRR
                 if (data.quantity > 0) {
@@ -319,12 +335,15 @@ export async function GET() {
                         inceptionChange,
                         xirr,
                         dividendYield: marketData?.dividendYield || 0,
+                        lifetimeDividends: localLifetimeDividends * rateToUSD,
+                        dividendsYTD: localDividendsYTD * rateToUSD,
+                        realizedGain: realizedGainNative * rateToUSD,
                         accountTypes: Array.from(new Set(Array.from(data.accounts.values()).map(a => a.accountType || 'Unassigned'))),
                         accountNames: Array.from(new Set(Array.from(data.accounts.keys()).map(k => k.split(':')[0]))),
 
                         accountsBreakdown: Object.fromEntries(
                             Array.from(data.accounts.entries())
-                                .filter(([_, val]) => val.quantity > 0)
+                                .filter(([_, val]) => val.quantity > 0 || val.lifetimeDividends > 0 || Math.abs(val.realizedGain) > 0.01)
                                 .map(([key, val]) => {
                                     // Parse name from composite key if needed
                                     const [accName] = key.split(':');
@@ -346,6 +365,12 @@ export async function GET() {
                                         // Native Values for accurate reconstruction
                                         valueNative: val.quantity * price,
                                         costBasisNative: val.costBasis,
+                                        lifetimeDividends: val.lifetimeDividends * rateToUSD,
+                                        lifetimeDividendsNative: val.lifetimeDividends,
+                                        dividendsYTD: val.dividendsYTD * rateToUSD,
+                                        dividendsYTDNative: val.dividendsYTD,
+                                        realizedGain: val.realizedGain * rateToUSD,
+                                        realizedGainNative: val.realizedGain,
                                         accountType: val.accountType || 'Unassigned',
                                         platformName: val.platformName,
                                         xirr: accXirr,
@@ -440,6 +465,9 @@ export async function GET() {
                 if (constituent) {
                     constituents.push(constituent);
                 }
+            } else if (constituent && (totalLifetimeDividends > 0 || Math.abs(constituent.realizedGain) > 0.01)) {
+                // Include Sold Assets if they have history
+                constituents.push(constituent);
             }
 
             if (upcomingDividend) {

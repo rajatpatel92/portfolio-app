@@ -94,6 +94,9 @@ export default function AnalysisPage() {
                 let newQuantity = 0;
                 let newValue = 0;
                 let newCostBasis = 0;
+                let newLifetimeDividends = 0;
+                let newDividendsYTD = 0;
+                let newRealizedGain = 0;
                 let weightedXirrSum = 0;
                 let totalWeight = 0;
 
@@ -107,6 +110,9 @@ export default function AnalysisPage() {
                             newQuantity += acc.quantity;
                             newValue += (acc.valueNative ?? (acc.quantity * item.price));
                             newCostBasis += (acc.costBasisNative ?? acc.costBasis);
+                            newLifetimeDividends += (acc.lifetimeDividendsNative ?? 0);
+                            newDividendsYTD += (acc.dividendsYTDNative ?? 0);
+                            newRealizedGain += (acc.realizedGainNative ?? 0);
                             newBreakdown[key] = acc; // Keep this slice
 
                             if (acc.xirr !== null && acc.value > 0) {
@@ -117,7 +123,7 @@ export default function AnalysisPage() {
                     });
                 }
 
-                if (!hasValidAccount || newQuantity === 0) return null;
+                if (!hasValidAccount || (newQuantity === 0 && newLifetimeDividends === 0 && Math.abs(newRealizedGain) < 0.01)) return null;
 
                 const aggregatedXirr = totalWeight > 0 ? weightedXirrSum / totalWeight : null;
 
@@ -139,6 +145,9 @@ export default function AnalysisPage() {
                     quantity: newQuantity,
                     value: newValue,
                     bookValue: newCostBasis,
+                    lifetimeDividends: newLifetimeDividends,
+                    dividendsYTD: newDividendsYTD,
+                    realizedGain: newRealizedGain,
                     accountsBreakdown: newBreakdown, // Important: pass filtered breakdown for next layer
 
                     // Scaled Metrics
@@ -225,6 +234,9 @@ export default function AnalysisPage() {
                 let newQuantity = 0;
                 let newValue = 0;
                 let newCostBasis = 0;
+                let newLifetimeDividends = 0;
+                let newDividendsYTD = 0;
+                let newRealizedGain = 0;
                 let weightedXirrSum = 0;
                 let totalWeight = 0;
 
@@ -237,7 +249,10 @@ export default function AnalysisPage() {
                         if (match) {
                             newQuantity += acc.quantity;
                             newValue += (acc.valueNative ?? (acc.quantity * item.price));
-                            newCostBasis += (acc.costBasisNative ?? acc.costBasis);
+                            newCostBasis += (acc.costBasisNative ?? 0);
+                            newLifetimeDividends += (acc.lifetimeDividendsNative ?? 0);
+                            newDividendsYTD += (acc.dividendsYTDNative ?? 0);
+                            newRealizedGain += (acc.realizedGainNative ?? 0);
                             if (acc.xirr !== null && acc.value > 0) {
                                 weightedXirrSum += (acc.xirr * acc.value);
                                 totalWeight += acc.value;
@@ -246,7 +261,7 @@ export default function AnalysisPage() {
                     });
                 }
 
-                if (newQuantity === 0) return null;
+                if (newQuantity === 0 && newLifetimeDividends === 0 && Math.abs(newRealizedGain) < 0.01) return null;
 
                 const aggregatedXirr = totalWeight > 0 ? weightedXirrSum / totalWeight : null;
                 const quantityRatio = item.quantity > 0 ? (newQuantity / item.quantity) : 0; // ratio relative to GLOBAL slice
@@ -261,6 +276,9 @@ export default function AnalysisPage() {
                     quantity: newQuantity,
                     value: newValue,
                     bookValue: newCostBasis,
+                    lifetimeDividends: newLifetimeDividends,
+                    dividendsYTD: newDividendsYTD,
+                    realizedGain: newRealizedGain,
                     // breakdown can remain as is or be filtered, strictly speaking UI doesn't iterate it again usually
 
                     dayChange: scaleMetric(item.dayChange),

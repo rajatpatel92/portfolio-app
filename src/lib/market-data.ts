@@ -128,9 +128,20 @@ export class MarketDataService {
                 }
             }
 
+            if (!dividendRate) {
+                if (detail.trailingAnnualDividendRate) {
+                    dividendRate = detail.trailingAnnualDividendRate;
+                }
+            }
+
             // Calculate Rate if missing but Yield exists
             if (!dividendRate && dividendYield && priceData.regularMarketPrice) {
                 dividendRate = priceData.regularMarketPrice * dividendYield;
+            }
+
+            // Calculate Yield if missing but Rate exists
+            if (!dividendYield && dividendRate && priceData.regularMarketPrice) {
+                dividendYield = dividendRate / priceData.regularMarketPrice;
             }
 
             const data: MarketData = {
@@ -637,9 +648,20 @@ export class MarketDataService {
                     }
                 }
 
+                if (!dividendRate) {
+                    if (detail.trailingAnnualDividendRate) {
+                        dividendRate = detail.trailingAnnualDividendRate;
+                    }
+                }
+
                 // Calculate Rate if missing but Yield exists
                 if (!dividendRate && dividendYield && priceData.price) {
                     dividendRate = priceData.price * dividendYield;
+                }
+
+                // Calculate Yield if missing but Rate exists
+                if (!dividendYield && dividendRate && priceData.price) {
+                    dividendYield = dividendRate / priceData.price;
                 }
 
                 priceData.dividendRate = dividendRate;

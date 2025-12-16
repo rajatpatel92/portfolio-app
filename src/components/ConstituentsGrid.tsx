@@ -32,6 +32,9 @@ interface Constituent {
 
     xirr?: number | null;
     dividendYield?: number;
+    lifetimeDividends?: number;
+    realizedGain?: number;
+    dividendsYTD?: number;
 }
 
 interface ConstituentsGridProps {
@@ -51,7 +54,12 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
         setSortConfig({ key, direction });
     };
 
-    const sortedData = [...data].sort((a, b) => {
+    // Filter active assets for the main table body
+    const EPSILON = 0.000001;
+    const activeAssets = data.filter(d => d.quantity >= EPSILON);
+    const soldAssets = data.filter(d => d.quantity < EPSILON);
+
+    const sortedData = [...activeAssets].sort((a, b) => {
         if (!sortConfig) return 0;
 
         const getValue = (item: any, key: string) => {
@@ -121,7 +129,7 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                             <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('change1Y.absolute')}>1Y</th>
                             <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('changeYTD.absolute')}>YTD</th>
                             <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('inceptionChange.absolute')}>ALL</th>
-                            <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('dividendYield')}>Yield</th>
+                            <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('lifetimeDividends')}>Dividend</th>
                             <th className={`${styles.th} ${styles.right}`} style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--card-bg)', boxShadow: '0 1px 0 var(--card-border)' }} onClick={() => handleSort('xirr')}>XIRR</th>
                         </tr>
                     </thead>
@@ -176,7 +184,13 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                                         {renderChange(item.inceptionChange, item.currency)}
                                     </td>
                                     <td className={`${styles.td} ${styles.right}`}>
-                                        {item.dividendYield ? `${(item.dividendYield * 100).toFixed(2)}%` : '-'}
+                                        <div>{format(convert(item.lifetimeDividends || 0, item.currency))}</div>
+                                        <div className={styles.subtext}>
+                                            {(() => {
+                                                const yieldVal = item.dividendYield || (item.value > 0 ? (item.dividendsYTD || 0) / item.value : 0);
+                                                return yieldVal > 0 ? `(${(yieldVal * 100).toFixed(2)}%)` : '-';
+                                            })()}
+                                        </div>
                                     </td>
                                     <td className={`${styles.td} ${styles.right} ${getColorClass(item.xirr || 0)}`}>
                                         {item.xirr ? `${(item.xirr * 100).toFixed(2)}%` : '-'}
@@ -184,6 +198,33 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                                 </motion.tr>
                             ))}
                         </AnimatePresence>
+                        {/* Sold Assets Row - Rendered at bottom of body */}
+                        {soldAssets.length > 0 && (
+                            <tr className={styles.tr} style={{ background: 'var(--card-bg)', color: 'var(--text-secondary)', fontStyle: 'italic', boxShadow: '0 -1px 0 var(--card-border)' }}>
+                                <td className={styles.td}>Realized / Sold Assets</td>
+                                <td className={styles.td}></td>
+                                <td className={styles.td}></td>
+                                <td className={styles.td}></td>
+                                <td className={styles.td}></td>
+                                <td className={styles.td}></td>
+                                <td className={styles.td}></td>
+                                <td className={styles.td}></td>
+                                <td className={`${styles.td} ${styles.right}`}>
+                                    {(() => {
+                                        const totalRealized = soldAssets.reduce((sum, item) => sum + convert(item.realizedGain || 0, item.currency), 0);
+                                        return (
+                                            <div className={getColorClass(totalRealized)}>
+                                                <div>{format(totalRealized)}</div>
+                                            </div>
+                                        );
+                                    })()}
+                                </td>
+                                <td className={`${styles.td} ${styles.right}`}>
+                                    {format(soldAssets.reduce((sum, item) => sum + convert(item.lifetimeDividends || 0, item.currency), 0))}
+                                </td>
+                                <td className={styles.td}></td>
+                            </tr>
+                        )}
                     </tbody>
                     {data.length > 0 && (
                         <tfoot>
@@ -216,18 +257,35 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                                 <td className={styles.td}></td>
                                 <td className={`${styles.td} ${styles.right}`}>
                                     {(() => {
-                                        const totalAbs = data.reduce((sum, item) => sum + convert(item.inceptionChange.absolute, item.currency), 0);
-                                        const totalBook = data.reduce((sum, item) => sum + convert(item.bookValue, item.currency), 0);
-                                        const pct = totalBook !== 0 ? (totalAbs / totalBook) * 100 : 0;
+                                        const totalValue = data.reduce((sum, item) => sum + convert(item.value, item.currency), 0);
+                                        const totalCost = data.reduce((sum, item) => sum + convert(item.bookValue, item.currency), 0);
+                                        const totalRealized = data.reduce((sum, item) => sum + convert(item.realizedGain || 0, item.currency), 0);
+
+                                        const totalPnl = (totalValue - totalCost) + totalRealized;
+                                        const pct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
+
                                         return (
-                                            <div className={getColorClass(totalAbs)}>
-                                                <div>{format(totalAbs)}</div>
+                                            <div className={getColorClass(totalPnl)}>
+                                                <div>{format(totalPnl)}</div>
                                                 <div className={styles.percent}>({pct.toFixed(2)}%)</div>
                                             </div>
                                         );
                                     })()}
                                 </td>
-                                <td className={styles.td}></td>
+                                <td className={`${styles.td} ${styles.right}`}>
+                                    <div>{format(data.reduce((sum, item) => sum + convert(item.lifetimeDividends || 0, item.currency), 0))}</div>
+                                    <div className={styles.subtext}>
+                                        {(() => {
+                                            const totalVal = data.reduce((sum, item) => sum + convert(item.value, item.currency), 0);
+                                            const weightedYieldSum = data.reduce((sum, item) => {
+                                                const itemYield = item.dividendYield || (item.value > 0 ? (item.dividendsYTD || 0) / item.value : 0);
+                                                return sum + (convert(item.value, item.currency) * itemYield);
+                                            }, 0);
+                                            const avgYield = totalVal > 0 ? (weightedYieldSum / totalVal) : 0;
+                                            return `(${(avgYield * 100).toFixed(2)}%)`;
+                                        })()}
+                                    </div>
+                                </td>
                                 <td className={styles.td}></td>
                             </tr>
                         </tfoot>
