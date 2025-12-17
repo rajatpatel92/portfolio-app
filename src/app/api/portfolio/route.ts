@@ -323,6 +323,7 @@ export async function GET() {
                         avgPrice: avgBuyPrice,
                         bookValue: costBasis,
                         value,
+                        rateToUSD,
                         currency,
                         dayChange: {
                             absolute: dayChange,

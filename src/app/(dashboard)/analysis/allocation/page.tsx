@@ -175,8 +175,9 @@ export default function AnalysisPage() {
         const byAccount = new Map<string, number>();
 
         globalConstituents.forEach((item: any) => {
-            // Type Allocation
-            byType.set(item.type, (byType.get(item.type) || 0) + item.value);
+            // Type Allocation (Convert to USD first)
+            const itemUSD = item.value * (item.rateToUSD || 1);
+            byType.set(item.type, (byType.get(item.type) || 0) + itemUSD);
 
             // Account & AccountType Allocation (from breakdown)
             if (item.accountsBreakdown) {
