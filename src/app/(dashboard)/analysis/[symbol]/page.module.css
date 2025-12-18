@@ -5,6 +5,14 @@
     color: var(--foreground);
 }
 
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+        padding-top: 3.5rem;
+        /* Space for fixed sidebar toggle */
+    }
+}
+
 .loading {
     display: flex;
     justify-content: center;

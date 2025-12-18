@@ -199,12 +199,19 @@
 }
 
 @media (max-width: 1024px) {
+    .container {
+        padding: 1rem;
+        padding-top: 5rem;
+        /* Space for fixed sidebar toggle */
+    }
+
     .activitiesGrid {
         grid-template-columns: 1fr;
     }
 
     .sidebar {
         position: static;
+        margin-bottom: 1.5rem;
     }
 }
 
@@ -275,4 +282,64 @@
 
 .formInner {
     overflow: hidden;
+}
+
+/* Mobile Actions & Menu */
+.desktopActions {
+    display: flex;
+    gap: 1rem;
+}
+
+.mobileActions {
+    display: none;
+}
+
+.mobileFilterToggle {
+    display: none;
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-primary);
+    border-radius: 0.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+    .container {
+        padding: 1rem;
+        padding-top: 5rem;
+        /* Space for fixed sidebar toggle */
+    }
+
+    .activitiesGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        display: none;
+        /* Hidden by default on mobile */
+        position: static;
+        margin-bottom: 1.5rem;
+    }
+
+    .sidebar.open {
+        display: block;
+    }
+
+    .mobileFilterToggle {
+        display: flex;
+    }
+
+    .desktopActions {
+        display: none;
+    }
+
+    .mobileActions {
+        display: block;
+    }
 }

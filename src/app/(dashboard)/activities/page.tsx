@@ -51,6 +51,17 @@ export default function ActivitiesPage() {
     const { format, convert, currency } = useCurrency();
     const { formatDate } = useDate();
 
+    const [showFilters, setShowFilters] = useState(false);
+
+    // Modal States
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [showDividendModal, setShowDividendModal] = useState(false);
+    const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+
+    // Selection States
+    const [selectedDividends, setSelectedDividends] = useState<Set<number>>(new Set());
+    const [foundDividends, setFoundDividends] = useState<any[]>([]);
+    const [reinvestSelection, setReinvestSelection] = useState<Set<number>>(new Set());
     const [range, setRange] = useState('ALL');
     const [customStart, setCustomStart] = useState('');
     const [customEnd, setCustomEnd] = useState('');
@@ -223,15 +234,9 @@ export default function ActivitiesPage() {
     const { data: session } = useSession();
     const role = (session?.user as any)?.role || 'VIEWER';
 
-    const [showDividendModal, setShowDividendModal] = useState(false);
-    const [foundDividends, setFoundDividends] = useState<any[]>([]);
-    const [selectedDividends, setSelectedDividends] = useState<Set<number>>(new Set());
     const [loadingDividends, setLoadingDividends] = useState(false);
-    const [reinvestSelection, setReinvestSelection] = useState<Set<number>>(new Set());
 
     const [selectedActivities, setSelectedActivities] = useState<Set<string>>(new Set());
-    const [showImportModal, setShowImportModal] = useState(false);
-    const [showBulkEditModal, setShowBulkEditModal] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
 
     const handleBatchDelete = async () => {
@@ -390,108 +395,205 @@ export default function ActivitiesPage() {
         link.setAttribute('download', `activities_export_${new Date().toISOString().split('T')[0]}.csv`);
         document.body.appendChild(link);
         link.click();
+
         document.body.removeChild(link);
     };
+
+    const [showDesktopMenu, setShowDesktopMenu] = useState(false);
+    const [showMobileMenu, setShowMobileMenu] = useState(false);
 
     return (
         <div className={styles.container}>
             <header className={styles.header}>
                 <h1 className={styles.title}>Activities</h1>
                 {role !== 'VIEWER' && (
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                        {selectedActivities.size > 0 && (
-                            <>
-                                <button
-                                    onClick={() => setShowBulkEditModal(true)}
-                                    style={{
-                                        background: 'var(--primary)',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '0.75rem 1.5rem',
-                                        borderRadius: '0.5rem',
-                                        fontWeight: 600,
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    Edit Selected ({selectedActivities.size})
-                                </button>
-                                <button
-                                    onClick={handleBatchDelete}
-                                    style={{
-                                        background: 'var(--danger)',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '0.75rem 1.5rem',
-                                        borderRadius: '0.5rem',
-                                        fontWeight: 600,
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    Delete Selected ({selectedActivities.size})
-                                </button>
-                            </>
-                        )}
-                        <button
-                            onClick={handleFetchDividends}
-                            style={{
-                                background: 'var(--card-bg)',
-                                color: 'var(--text-primary)',
-                                border: '1px solid var(--card-border)',
-                                padding: '0.75rem 1.5rem',
-                                borderRadius: '0.5rem',
-                                fontWeight: 600,
-                                cursor: 'pointer'
-                            }}
-                        >
-                            Fetch Dividends
-                        </button>
-                        <button
-                            onClick={() => {
-                                setEditingActivity(null);
-                                setShowAddForm(!showAddForm);
-                            }}
-                            style={{
-                                background: 'var(--primary)',
-                                color: 'white',
-                                border: 'none',
-                                padding: '0.75rem 1.5rem',
-                                borderRadius: '0.5rem',
-                                fontWeight: 600,
-                                cursor: 'pointer'
-                            }}
-                        >
-                            {showAddForm ? 'Close Form' : '+ Add Activity'}
-                        </button>
-                        <div style={{ position: 'relative' }}>
+                    <>
+                        {/* Desktop Actions */}
+                        <div className={styles.desktopActions}>
+                            {selectedActivities.size > 0 && (
+                                <>
+                                    <button
+                                        onClick={() => setShowBulkEditModal(true)}
+                                        style={{
+                                            background: 'var(--primary)',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '0.75rem 1.5rem',
+                                            borderRadius: '0.5rem',
+                                            fontWeight: 600,
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        Edit Selected ({selectedActivities.size})
+                                    </button>
+                                    <button
+                                        onClick={handleBatchDelete}
+                                        style={{
+                                            background: 'var(--danger)',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '0.75rem 1.5rem',
+                                            borderRadius: '0.5rem',
+                                            fontWeight: 600,
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        Delete Selected ({selectedActivities.size})
+                                    </button>
+                                </>
+                            )}
                             <button
-                                onClick={() => setShowMenu(!showMenu)}
+                                onClick={handleFetchDividends}
                                 style={{
                                     background: 'var(--card-bg)',
                                     color: 'var(--text-primary)',
                                     border: '1px solid var(--card-border)',
-                                    padding: '0.75rem',
+                                    padding: '0.75rem 1.5rem',
+                                    borderRadius: '0.5rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Fetch Dividends
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setEditingActivity(null);
+                                    setShowAddForm(!showAddForm);
+                                }}
+                                style={{
+                                    background: 'var(--primary)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '0.75rem 1.5rem',
+                                    borderRadius: '0.5rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {showAddForm ? 'Close Form' : '+ Add Activity'}
+                            </button>
+                            <div style={{ position: 'relative' }}>
+                                <button
+                                    onClick={() => setShowDesktopMenu(!showDesktopMenu)}
+                                    style={{
+                                        background: 'var(--card-bg)',
+                                        color: 'var(--text-primary)',
+                                        border: '1px solid var(--card-border)',
+                                        padding: '0.75rem',
+                                        borderRadius: '0.5rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: '42px',
+                                        height: '42px'
+                                    }}
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="1" />
+                                        <circle cx="12" cy="5" r="1" />
+                                        <circle cx="12" cy="19" r="1" />
+                                    </svg>
+                                </button>
+
+                                {showDesktopMenu && (
+                                    <>
+                                        <div
+                                            style={{ position: 'fixed', inset: 0, zIndex: 10 }}
+                                            onClick={() => setShowDesktopMenu(false)}
+                                        />
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '100%',
+                                            right: 0,
+                                            marginTop: '0.5rem',
+                                            background: 'var(--card-bg)',
+                                            border: '1px solid var(--card-border)',
+                                            borderRadius: '0.5rem',
+                                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                            zIndex: 20,
+                                            minWidth: '160px',
+                                            overflow: 'hidden'
+                                        }}>
+                                            <button
+                                                onClick={() => {
+                                                    handleExport();
+                                                    setShowDesktopMenu(false);
+                                                }}
+                                                style={{
+                                                    display: 'block',
+                                                    width: '100%',
+                                                    textAlign: 'left',
+                                                    padding: '0.75rem 1rem',
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    color: 'var(--text-primary)',
+                                                    cursor: 'pointer',
+                                                    fontSize: '0.875rem'
+                                                }}
+                                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                            >
+                                                Export CSV
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setShowImportModal(true);
+                                                    setShowDesktopMenu(false);
+                                                }}
+                                                style={{
+                                                    display: 'block',
+                                                    width: '100%',
+                                                    textAlign: 'left',
+                                                    padding: '0.75rem 1rem',
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    color: 'var(--text-primary)',
+                                                    cursor: 'pointer',
+                                                    fontSize: '0.875rem',
+                                                    borderTop: '1px solid var(--card-border)'
+                                                }}
+                                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                            >
+                                                Import CSV
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Mobile Actions */}
+                        <div className={styles.mobileActions} style={{ position: 'relative' }}>
+                            <button
+                                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                                style={{
+                                    background: 'var(--primary)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '0.5rem 1rem',
                                     borderRadius: '0.5rem',
                                     fontWeight: 600,
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '42px',
-                                    height: '42px'
+                                    gap: '0.5rem'
                                 }}
                             >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="1" />
-                                    <circle cx="12" cy="5" r="1" />
-                                    <circle cx="12" cy="19" r="1" />
+                                <span>Actions</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M6 9l6 6 6-6" />
                                 </svg>
                             </button>
 
-                            {showMenu && (
+                            {showMobileMenu && (
                                 <>
                                     <div
                                         style={{ position: 'fixed', inset: 0, zIndex: 10 }}
-                                        onClick={() => setShowMenu(false)}
+                                        onClick={() => setShowMobileMenu(false)}
                                     />
                                     <div style={{
                                         position: 'absolute',
@@ -503,13 +605,14 @@ export default function ActivitiesPage() {
                                         borderRadius: '0.5rem',
                                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                                         zIndex: 20,
-                                        minWidth: '160px',
+                                        minWidth: '200px',
                                         overflow: 'hidden'
                                     }}>
                                         <button
                                             onClick={() => {
-                                                handleExport();
-                                                setShowMenu(false);
+                                                setEditingActivity(null);
+                                                setShowAddForm(true);
+                                                setShowMobileMenu(false);
                                             }}
                                             style={{
                                                 display: 'block',
@@ -518,19 +621,18 @@ export default function ActivitiesPage() {
                                                 padding: '0.75rem 1rem',
                                                 background: 'transparent',
                                                 border: 'none',
-                                                color: 'var(--text-primary)',
+                                                color: 'var(--primary)',
+                                                fontWeight: 600,
                                                 cursor: 'pointer',
                                                 fontSize: '0.875rem'
                                             }}
-                                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
-                                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                         >
-                                            Export CSV
+                                            + Add Activity
                                         </button>
                                         <button
                                             onClick={() => {
-                                                setShowImportModal(true);
-                                                setShowMenu(false);
+                                                handleFetchDividends();
+                                                setShowMobileMenu(false);
                                             }}
                                             style={{
                                                 display: 'block',
@@ -544,8 +646,46 @@ export default function ActivitiesPage() {
                                                 fontSize: '0.875rem',
                                                 borderTop: '1px solid var(--card-border)'
                                             }}
-                                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
-                                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            Fetch Dividends
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                handleExport();
+                                                setShowMobileMenu(false);
+                                            }}
+                                            style={{
+                                                display: 'block',
+                                                width: '100%',
+                                                textAlign: 'left',
+                                                padding: '0.75rem 1rem',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: 'var(--text-primary)',
+                                                cursor: 'pointer',
+                                                fontSize: '0.875rem',
+                                                borderTop: '1px solid var(--card-border)'
+                                            }}
+                                        >
+                                            Export CSV
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowImportModal(true);
+                                                setShowMobileMenu(false);
+                                            }}
+                                            style={{
+                                                display: 'block',
+                                                width: '100%',
+                                                textAlign: 'left',
+                                                padding: '0.75rem 1rem',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: 'var(--text-primary)',
+                                                cursor: 'pointer',
+                                                fontSize: '0.875rem',
+                                                borderTop: '1px solid var(--card-border)'
+                                            }}
                                         >
                                             Import CSV
                                         </button>
@@ -553,198 +693,101 @@ export default function ActivitiesPage() {
                                 </>
                             )}
                         </div>
-                    </div>
+                    </>
                 )}
             </header>
 
             {/* Dividend Modal */}
             {showDividendModal && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'rgba(0,0,0,0.5)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 1000
-                }}>
-                    <div style={{
-                        background: 'var(--card-bg)',
-                        padding: '2rem',
-                        borderRadius: '1rem',
-                        width: '90%',
-                        maxWidth: '1000px',
-                        maxHeight: '90vh',
-                        overflowY: 'auto',
-                        border: '1px solid var(--card-border)'
-                    }}>
-                        <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem', fontWeight: 700 }}>Found Dividends</h2>
-
-                        {loadingDividends ? (
-                            <div style={{ padding: '2rem', textAlign: 'center' }}>Scanning for dividends...</div>
-                        ) : foundDividends.length === 0 ? (
-                            <div style={{ padding: '2rem', textAlign: 'center' }}>No new dividends found.</div>
-                        ) : (
-                            <>
-                                <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
-                                    <table className={styles.table}>
-                                        <thead>
-                                            <tr>
-                                                <th>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedDividends.size === foundDividends.length}
-                                                        onChange={toggleAllDividends}
-                                                    />
-                                                </th>
-                                                <th>Date</th>
-                                                <th>Symbol</th>
-                                                <th style={{ textAlign: 'right' }}>Rate</th>
-                                                <th style={{ textAlign: 'right' }}>Qty</th>
-                                                <th style={{ textAlign: 'right' }}>Amount</th>
-                                                <th>Account</th>
-                                                <th style={{ textAlign: 'center' }}>Reinvest?</th>
-                                                <th style={{ textAlign: 'right' }}>Price</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {foundDividends.map((div, i) => (
-                                                <tr key={i}>
-                                                    <td>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedDividends.has(i)}
-                                                            onChange={() => toggleDividendSelection(i)}
-                                                        />
-                                                    </td>
-                                                    <td>{formatDate(div.date)}</td>
-                                                    <td style={{ fontWeight: 600 }}>{div.symbol}</td>
-                                                    <td style={{ textAlign: 'right' }}>{div.rate.toFixed(4)}</td>
-                                                    <td style={{ textAlign: 'right' }}>{div.quantity}</td>
-                                                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{format(convert(div.amount, div.currency))}</td>
-                                                    <td>{accounts.find(a => a.id === div.accountId)?.name || 'Unknown'}</td>
-                                                    <td style={{ textAlign: 'center' }}>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={reinvestSelection.has(i)}
-                                                            onChange={() => toggleReinvestSelection(i)}
-                                                            disabled={!div.price || div.price <= 0}
-                                                        />
-                                                    </td>
-                                                    <td style={{ textAlign: 'right' }}>
-                                                        {div.price ? format(convert(div.price, div.currency)) : '-'}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                                    <button
-                                        onClick={() => setShowDividendModal(false)}
-                                        style={{
-                                            background: 'transparent',
-                                            color: 'var(--text-secondary)',
-                                            border: '1px solid var(--card-border)',
-                                            padding: '0.75rem 1.5rem',
-                                            borderRadius: '0.5rem',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleAddDividends}
-                                        disabled={selectedDividends.size === 0}
-                                        style={{
-                                            background: 'var(--primary)',
-                                            color: 'white',
-                                            border: 'none',
-                                            padding: '0.75rem 1.5rem',
-                                            borderRadius: '0.5rem',
-                                            fontWeight: 600,
-                                            cursor: selectedDividends.size === 0 ? 'not-allowed' : 'pointer',
-                                            opacity: selectedDividends.size === 0 ? 0.5 : 1
-                                        }}
-                                    >
-                                        Add Selected ({selectedDividends.size})
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                        {!loadingDividends && foundDividends.length === 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                <button
-                                    onClick={() => setShowDividendModal(false)}
-                                    style={{
-                                        background: 'var(--primary)',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '0.75rem 1.5rem',
-                                        borderRadius: '0.5rem',
-                                        fontWeight: 600,
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    Close
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {role !== 'VIEWER' && (
-                <div className={`${styles.formWrapper} ${showAddForm ? styles.open : ''}`}>
-                    <div className={styles.formInner}>
-                        <div className="card">
-                            <AddActivityForm
-                                onSuccess={handleSuccess}
-                                initialData={editingActivity}
-                                onCancel={() => {
-                                    setEditingActivity(null);
-                                    setShowAddForm(false);
-                                }}
-                            />
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+                    <div style={{ background: 'var(--card-bg)', padding: '2rem', borderRadius: '1rem', maxWidth: '800px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Found Dividends</h2>
+                        <div style={{ overflowX: 'auto', marginBottom: '1rem' }}>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th><input type="checkbox" onChange={toggleAllDividends} checked={selectedDividends.size === foundDividends.length && foundDividends.length > 0} /></th>
+                                        <th>Date</th>
+                                        <th>Symbol</th>
+                                        <th>Amount</th>
+                                        <th>Reinvest?</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {foundDividends.map((div, i) => (
+                                        <tr key={i}>
+                                            <td><input type="checkbox" checked={selectedDividends.has(i)} onChange={() => toggleDividendSelection(i)} /></td>
+                                            <td>{formatDate(div.date)}</td>
+                                            <td>{div.symbol}</td>
+                                            <td>{format(div.amount)} {div.currency}</td>
+                                            <td><input type="checkbox" checked={reinvestSelection.has(i)} onChange={() => toggleReinvestSelection(i)} /></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                            <button onClick={() => setShowDividendModal(false)} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--card-border)', background: 'transparent', cursor: 'pointer' }}>Cancel</button>
+                            <button onClick={handleAddDividends} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer' }} disabled={selectedDividends.size === 0}>Add Selected ({selectedDividends.size})</button>
                         </div>
                     </div>
                 </div>
             )}
 
+            {showImportModal && (
+                <BulkUploadModal
+                    onClose={() => setShowImportModal(false)}
+                    onSuccess={() => {
+                        fetchActivities();
+                        setShowImportModal(false);
+                    }}
+                />
+            )}
 
-            {
-                showImportModal && (
-                    <BulkUploadModal
-                        onClose={() => setShowImportModal(false)}
+            {/* Form Wrapper */}
+            <div className={`${styles.formWrapper} ${showAddForm ? styles.open : ''}`}>
+                <div className={styles.formInner}>
+                    <AddActivityForm
                         onSuccess={() => {
                             fetchActivities();
-                            setShowImportModal(false);
+                            setShowAddForm(false);
+                            setEditingActivity(null);
+                        }}
+                        initialData={editingActivity}
+                        onCancel={() => {
+                            setShowAddForm(false);
+                            setEditingActivity(null);
                         }}
                     />
-                )
-            }
-            {
-                showBulkEditModal && (
-                    <BulkEditModal
-                        count={selectedActivities.size}
-                        selectedIds={Array.from(selectedActivities)}
-                        uniqueSymbolsCount={new Set(activities.filter(a => selectedActivities.has(a.id)).map(a => a.investment.symbol)).size}
-                        onClose={() => setShowBulkEditModal(false)}
-                        onSuccess={() => {
-                            fetchActivities();
-                            setSelectedActivities(new Set());
-                            setShowBulkEditModal(false);
-                        }}
-                    />
-                )
-            }
+                </div>
+            </div>
+
+            <button
+                className={styles.mobileFilterToggle}
+                onClick={() => setShowFilters(!showFilters)}
+            >
+                <span>Filters & Options</span>
+                <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{
+                        transform: showFilters ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s'
+                    }}
+                >
+                    <path d="M6 9l6 6 6-6" />
+                </svg>
+            </button>
 
             <div className={styles.activitiesGrid}>
                 {/* Sidebar Filters */}
-                <aside className={styles.sidebar}>
+                <aside className={`${styles.sidebar} ${showFilters ? styles.open : ''}`}>
                     {/* ... (Filters unchanged) ... */}
                     <h2 className={styles.sidebarTitle}>Filters</h2>
 

@@ -137,6 +137,12 @@
 }
 
 @media (max-width: 1024px) {
+    .container {
+        padding: 1rem;
+        padding-top: 5rem;
+        /* Space for fixed sidebar toggle */
+    }
+
     .analysisGrid {
         grid-template-columns: 1fr;
     }

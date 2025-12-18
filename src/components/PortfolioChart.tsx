@@ -129,23 +129,39 @@ export default function PortfolioChart({
                     )}
                 </div>
                 <div className={styles.controls}>
-                    <div className={styles.ranges}>
-                        {RANGES.map(r => (
+                    <div className={styles.desktopControls}>
+                        <div className={styles.ranges}>
+                            {RANGES.map(r => (
+                                <button
+                                    key={r}
+                                    className={`${styles.rangeButton} ${range === r ? styles.active : ''}`}
+                                    onClick={() => setRange(r)}
+                                >
+                                    {r}
+                                </button>
+                            ))}
                             <button
-                                key={r}
-                                className={`${styles.rangeButton} ${range === r ? styles.active : ''}`}
-                                onClick={() => setRange(r)}
+                                className={`${styles.rangeButton} ${range === 'CUSTOM' ? styles.active : ''}`}
+                                onClick={() => setRange('CUSTOM')}
                             >
-                                {r}
+                                Custom
                             </button>
-                        ))}
-                        <button
-                            className={`${styles.rangeButton} ${range === 'CUSTOM' ? styles.active : ''}`}
-                            onClick={() => setRange('CUSTOM')}
-                        >
-                            Custom
-                        </button>
+                        </div>
                     </div>
+
+                    <div className={styles.mobileControls}>
+                        <select
+                            className={styles.mobileSelect}
+                            value={range}
+                            onChange={(e) => setRange(e.target.value)}
+                        >
+                            {RANGES.map(r => (
+                                <option key={r} value={r}>{r === 'ALL' ? 'All Time' : r}</option>
+                            ))}
+                            <option value="CUSTOM">Custom Range</option>
+                        </select>
+                    </div>
+
                     {range === 'CUSTOM' && (
                         <div className={styles.dateInputs}>
                             <DateInput
@@ -187,26 +203,32 @@ export default function PortfolioChart({
                                 <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" strokeOpacity={0.5} />
                         <XAxis
                             dataKey="date"
                             tickFormatter={(str) => {
                                 const date = new Date(str);
                                 return range === '1W' || range === '1M'
-                                    ? formatDate(date).split(',')[0] // Simplified for axis
+                                    ? formatDate(date).split(',')[0]
                                     : formatDate(date);
                             }}
                             stroke="#9ca3af"
-                            fontSize={12}
-                            tickMargin={10}
+                            fontSize={10}
+                            tickMargin={5}
+                            minTickGap={30}
+                            tickLine={false}
+                            axisLine={false}
                         />
                         <YAxis
                             tickFormatter={(val) => format(val)}
                             stroke="#9ca3af"
-                            fontSize={12}
-                            tickMargin={10}
+                            fontSize={10}
+                            tickMargin={5}
                             domain={['auto', 'auto']}
-                            width={100}
+                            width={30}
+                            tickCount={4}
+                            tickLine={false}
+                            axisLine={false}
                         />
                         <Tooltip
                             formatter={(val: number) => [format(val), 'Value']}
@@ -216,7 +238,9 @@ export default function PortfolioChart({
                                 border: '1px solid var(--card-border)',
                                 borderRadius: '0.5rem',
                                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                                color: 'var(--text-primary)'
+                                color: 'var(--text-primary)',
+                                fontSize: '0.8rem',
+                                padding: '0.5rem'
                             }}
                             itemStyle={{ color: 'var(--text-primary)' }}
                             labelStyle={{ color: 'var(--text-secondary)' }}
@@ -225,7 +249,7 @@ export default function PortfolioChart({
                             type="monotone"
                             dataKey="value"
                             stroke="#2563eb"
-                            strokeWidth={2}
+                            strokeWidth={1.5}
                             fillOpacity={1}
                             fill="url(#colorValue)"
                         />

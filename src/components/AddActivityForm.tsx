@@ -436,7 +436,7 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
                 <button type="submit" className={styles.button}>
                     {initialData ? 'Update Activity' : 'Add Activity'}
                 </button>
-                {initialData && onCancel && (
+                {onCancel && (
                     <button type="button" onClick={onCancel} className={styles.cancelButton}>
                         Cancel
                     </button>

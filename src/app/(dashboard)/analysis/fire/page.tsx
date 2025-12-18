@@ -12,6 +12,9 @@ import {
     ResponsiveContainer
 } from 'recharts';
 import styles from '@/app/(dashboard)/settings/page.module.css'; // Reusing settings styles for cards
+import localStyles from './page.module.css';
+
+
 import { useCurrency } from '@/context/CurrencyContext';
 
 // Helper to format currency
@@ -279,8 +282,11 @@ export default function FireAnalysisPage() {
     // If Fixed Horizon, check if calculated Rate >= needed Rate? 
     // Actually simpler: Just check if initial withdrawal covers expenses.
 
+    // Mobile Config Toggle
+    const [isConfigOpen, setIsConfigOpen] = useState(false);
+
     return (
-        <div style={{ padding: '2rem', width: '100%' }}>
+        <div style={{ padding: '2rem', width: '100%' }} className={localStyles.container}>
             <div style={{ marginBottom: '2rem' }}>
                 <h1 className={styles.title} style={{ marginBottom: '0.5rem', fontSize: '2rem', fontWeight: 'bold' }}>FIRE Analysis</h1>
                 <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
@@ -288,10 +294,18 @@ export default function FireAnalysisPage() {
                 </p>
             </div>
 
-            <div className={styles.grid} style={{ gridTemplateColumns: 'minmax(300px, 1fr) 3fr', alignItems: 'start', gap: '1.5rem' }}>
+            <button
+                className={localStyles.mobileConfigToggle}
+                onClick={() => setIsConfigOpen(!isConfigOpen)}
+            >
+                <span>Configuration</span>
+                <span>{isConfigOpen ? 'Wait, hide it' : 'Customize it'}</span>
+            </button>
+
+            <div className={localStyles.grid}>
 
                 {/* Configuration Panel */}
-                <div className={styles.card} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: 'fit-content' }}>
+                <div className={`${localStyles.configSection} ${isConfigOpen ? localStyles.open : ''}`}>
                     <h2 className={styles.cardTitle}>Configuration</h2>
 
                     <div className={styles.field}>
@@ -412,7 +426,7 @@ export default function FireAnalysisPage() {
                 </div>
 
                 {/* Analysis Area */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', minWidth: 0 }}>
+                <div className={localStyles.analysisSection}>
 
                     {/* Summary Cards */}
                     <div className={styles.grid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
@@ -490,7 +504,7 @@ export default function FireAnalysisPage() {
                     {/* Detailed Table */}
                     <div className={styles.card}>
                         <h2 className={styles.cardTitle}>Yearly Breakdown</h2>
-                        <div style={{ overflowX: 'auto' }}>
+                        <div className={localStyles.tableWrapper}>
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                                 <thead>
                                     <tr style={{ borderBottom: '1px solid var(--card-border)', textAlign: 'left' }}>
@@ -517,16 +531,56 @@ export default function FireAnalysisPage() {
                                                     {row.phase}
                                                 </span>
                                             </td>
-                                            <td style={{ padding: '0.75rem', textAlign: 'right', fontFamily: 'monospace' }}>{format(row.principal)}</td>
-                                            <td style={{ padding: '0.75rem', textAlign: 'right', fontFamily: 'monospace' }}>{format(row.gains)}</td>
-                                            <td style={{ padding: '0.75rem', textAlign: 'right', fontFamily: 'monospace', color: row.withdrawal > 0 ? 'var(--error)' : 'var(--text-secondary)' }}>
+                                            <td style={{ padding: '0.75rem', textAlign: 'right' }}>{format(row.principal)}</td>
+                                            <td style={{ padding: '0.75rem', textAlign: 'right' }}>{format(row.gains)}</td>
+                                            <td style={{ padding: '0.75rem', textAlign: 'right', color: row.withdrawal > 0 ? 'var(--error)' : 'var(--text-secondary)' }}>
                                                 {row.withdrawal > 0 ? format(row.withdrawal) : '-'}
                                             </td>
-                                            <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 'bold', fontFamily: 'monospace' }}>{format(row.total)}</td>
+                                            <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 'bold' }}>{format(row.total)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Mobile List */}
+                        <div className={localStyles.mobileList}>
+                            {finalData.map((row) => (
+                                <div key={row.year} className={localStyles.mobileCard}>
+                                    <div className={localStyles.cardHeader}>
+                                        <span>{row.year}</span>
+                                        <span style={{
+                                            fontSize: '0.75rem',
+                                            color: row.phase === 'Accumulation' ? '#3b82f6' : '#10b981',
+                                            background: row.phase === 'Accumulation' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                            padding: '0.125rem 0.5rem',
+                                            borderRadius: '1rem'
+                                        }}>
+                                            {row.phase}
+                                        </span>
+                                    </div>
+                                    <div className={localStyles.cardBody}>
+                                        <div className={localStyles.cardRow}>
+                                            <span className={localStyles.cardLabel}>Invested</span>
+                                            <span className={localStyles.cardValue}>{format(row.principal)}</span>
+                                        </div>
+                                        <div className={localStyles.cardRow}>
+                                            <span className={localStyles.cardLabel}>Gains</span>
+                                            <span className={localStyles.cardValue} style={{ color: '#10b981' }}>{format(row.gains)}</span>
+                                        </div>
+                                        {row.withdrawal > 0 && (
+                                            <div className={localStyles.cardRow}>
+                                                <span className={localStyles.cardLabel}>Withdrawal</span>
+                                                <span className={localStyles.cardValue} style={{ color: 'var(--error)' }}>{format(row.withdrawal)}</span>
+                                            </div>
+                                        )}
+                                        <div className={localStyles.cardRow}>
+                                            <span className={localStyles.cardLabel}>Total Balance</span>
+                                            <span className={localStyles.cardValue} style={{ fontWeight: 'bold' }}>{format(row.total)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 

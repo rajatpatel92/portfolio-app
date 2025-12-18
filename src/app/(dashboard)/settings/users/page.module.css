@@ -4,6 +4,13 @@
     margin: 0 auto;
 }
 
+@media (max-width: 640px) {
+    .container {
+        padding-top: 5rem !important;
+        /* Space for fixed sidebar toggle */
+    }
+}
+
 .header {
     display: flex;
     justify-content: space-between;
@@ -36,7 +43,7 @@
     background: var(--card-bg);
     border-radius: 1rem;
     border: 1px solid var(--card-border);
-    overflow: hidden;
+    overflow-x: auto;
 }
 
 .table {

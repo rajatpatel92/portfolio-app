@@ -29,8 +29,25 @@
 }
 
 @media (max-width: 1024px) {
+    .container {
+        padding: 1rem;
+        padding-top: 5rem;
+        /* Space for fixed sidebar toggle */
+    }
+
+    .settingsGrid {
+        grid-template-columns: 1fr;
+    }
+
     .grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .settingsGrid {
+        grid-template-columns: 1fr;
+        /* Ensure single column on small screens */
     }
 }
 
@@ -68,37 +85,7 @@
     /* Ensure cards stretch if needed */
 }
 
-.currency {
-    /* grid-area removed */
-}
 
-.ui {
-    /* grid-area removed */
-}
-
-.rates {
-    /* grid-area removed */
-}
-
-.invTypes {
-    /* grid-area removed */
-}
-
-.actTypes {
-    /* grid-area removed */
-}
-
-.accTypes {
-    /* grid-area removed */
-}
-
-.platforms {
-    /* grid-area removed */
-}
-
-.accounts {
-    /* grid-area removed */
-}
 
 .cardTitle {
     font-size: 1.125rem;

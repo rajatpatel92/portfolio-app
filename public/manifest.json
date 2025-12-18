@@ -1,0 +1,23 @@
+{
+    "name": "Ascend Portfolio",
+    "short_name": "Ascend",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#0f172a",
+    "description": "Track your investments",
+    "icons": [
+        {
+            "src": "/favicon.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/dashboard-dark.png",
+            "sizes": "1920x1080",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "orientation": "portrait-primary"
+}

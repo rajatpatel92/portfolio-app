@@ -136,11 +136,6 @@ export default function Dashboard() {
             customEnd={customEnd}
             setCustomEnd={setCustomEnd}
           />
-          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
-            <Link href="/analysis" className={styles.link}>
-              Detailed Analysis &rarr;
-            </Link>
-          </div>
         </section>
 
         {/* Chart Section */}

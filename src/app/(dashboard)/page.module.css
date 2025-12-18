@@ -5,6 +5,12 @@
   margin: 0 auto;
 }
 
+@media (max-width: 640px) {
+  .container {
+    padding: 1rem;
+  }
+}
+
 .header {
   margin-bottom: 2rem;
   grid-area: header;
@@ -16,6 +22,17 @@
   color: var(--text-primary);
   letter-spacing: -0.025em;
   margin-bottom: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .header {
+    margin-top: 3rem;
+    /* Clear the fixed menu button */
+  }
+
+  .greeting {
+    font-size: 1.5rem;
+  }
 }
 
 .date {
@@ -260,12 +277,63 @@
 }
 
 @media (max-width: 640px) {
-  .statsGrid {
-    grid-template-columns: 1fr;
-    /* Stack stats on mobile */
+  .container {
+    overflow-x: hidden;
+    /* Safety net */
+    padding-top: 5rem;
+    /* Ensure content starts below fixed menu button */
   }
 
+  /* Fix grid blowout: Ensure grid items don't force width */
+  .dashboardGrid>* {
+    min-width: 0;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    /* Tighter gap for compact tiles */
+  }
+
+  .header {
+    margin-top: 0;
+  }
+
+  .greeting {
+    font-size: 2rem;
+  }
+
+  /* Compact Stats for Mobile */
   .heroValue {
-    font-size: 2.5rem;
+    font-size: 1.75rem;
+    /* Significantly smaller */
+  }
+
+  .statValue,
+  .statAmount {
+    font-size: 1.5rem;
+    /* Compact for 2-col layout */
+  }
+
+  .heroLabel,
+  .statLabel {
+    font-size: 0.75rem;
+  }
+
+  /* Compact Cards */
+  .heroCard,
+  .statCard,
+  .chartSection,
+  .performanceSection,
+  .tableSection {
+    padding: 1rem;
+    min-height: auto;
+  }
+
+  /* Restrict Chart Height */
+  .chartSection,
+  .performanceSection {
+    min-height: 300px;
+    height: auto;
   }
 }

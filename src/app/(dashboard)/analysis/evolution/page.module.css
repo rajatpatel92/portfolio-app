@@ -48,8 +48,26 @@
 }
 
 /* Ensure responsiveness */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
     .container {
+        padding: 1rem;
+        padding-top: 5rem;
+        /* Space for fixed sidebar toggle */
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .analysisGrid {
+        gap: 2rem;
+        /* Increase gap between charts */
+    }
+
+    .chartCard {
+        height: 400px;
         padding: 1rem;
     }
 }

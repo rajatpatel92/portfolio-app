@@ -121,7 +121,8 @@
         z-index: 50;
         transform: translateX(-100%);
         transition: transform 0.3s ease-in-out;
-        width: 280px;
+        width: 85vw;
+        max-width: 280px;
         /* Slightly wider on mobile for better touch targets */
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.5);
     }

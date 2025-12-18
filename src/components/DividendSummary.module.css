@@ -8,6 +8,8 @@
     flex-direction: column;
 }
 
+
+
 .title {
     font-size: 1.125rem;
     font-weight: 600;
@@ -110,4 +112,40 @@
     font-size: 0.875rem;
     color: var(--text-tertiary);
     font-style: italic;
+}
+
+@media (max-width: 640px) {
+    .card {
+        padding: 1.25rem !important;
+    }
+
+    .statsGrid {
+        display: grid;
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+        margin-bottom: 1rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+
+    .value {
+        font-size: 1.5rem !important;
+    }
+
+    .title {
+        font-size: 1.125rem !important;
+        margin-bottom: 0.75rem;
+    }
+
+    .symbol,
+    .amount {
+        font-size: 0.85rem;
+    }
+
+    .date {
+        font-size: 0.75rem;
+    }
+
+    .list {
+        gap: 0.75rem;
+    }
 }

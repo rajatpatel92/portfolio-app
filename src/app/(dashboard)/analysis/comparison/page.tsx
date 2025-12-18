@@ -231,16 +231,29 @@ export default function ComparePage() {
                             </div>
                         </div>
 
-                        <div className={styles.ranges}>
-                            {RANGES.map(r => (
-                                <button
-                                    key={r}
-                                    className={`${styles.rangeBtn} ${timeRange === r ? styles.active : ''}`}
-                                    onClick={() => setTimeRange(r)}
-                                >
-                                    {r}
-                                </button>
-                            ))}
+                        <div className={styles.desktopControls}>
+                            <div className={styles.ranges}>
+                                {RANGES.map(r => (
+                                    <button
+                                        key={r}
+                                        className={`${styles.rangeBtn} ${timeRange === r ? styles.active : ''}`}
+                                        onClick={() => setTimeRange(r)}
+                                    >
+                                        {r}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className={styles.mobileControls}>
+                            <select
+                                className={styles.mobileSelect}
+                                value={timeRange}
+                                onChange={(e) => setTimeRange(e.target.value)}
+                            >
+                                {RANGES.map(r => (
+                                    <option key={r} value={r}>{r}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 

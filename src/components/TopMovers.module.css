@@ -19,6 +19,8 @@
     gap: 1.5rem;
 }
 
+
+
 .column {
     display: flex;
     flex-direction: column;
@@ -92,4 +94,44 @@
     font-size: 0.875rem;
     color: var(--text-tertiary);
     font-style: italic;
+}
+
+@media (max-width: 640px) {
+    .grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .card {
+        padding: 1.25rem !important;
+    }
+
+    .title {
+        font-size: 1.125rem !important;
+        margin-bottom: 0.75rem;
+    }
+
+    .subtitle {
+        font-size: 0.75rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .item {
+        padding-bottom: 0.25rem !important;
+        border-bottom: 1px solid var(--hover-bg) !important;
+        padding-top: 0.25rem !important;
+    }
+
+    .list {
+        gap: 0.5rem !important;
+    }
+
+    .symbol {
+        font-size: 0.9rem !important;
+    }
+
+    .price,
+    .change {
+        font-size: 0.75rem;
+    }
 }

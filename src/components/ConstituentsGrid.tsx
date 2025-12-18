@@ -292,6 +292,57 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                     )}
                 </table>
             </div>
+
+            {/* Mobile Card List */}
+            <div className={styles.mobileList}>
+                {sortedData.map((item) => (
+                    <div
+                        key={item.symbol}
+                        className={styles.mobileCard}
+                        onClick={() => handleRowClick(item.symbol)}
+                    >
+                        <div className={styles.cardHeader}>
+                            <div>
+                                <div className={styles.symbolRow}>
+                                    <span className={styles.symbolText}>{item.symbol}</span>
+                                </div>
+                                <div className={styles.sharesText}>{formatQuantity(item.quantity)} Shares</div>
+                                {item.xirr && (
+                                    <div className={styles.sharesText} style={{ marginTop: '0.125rem' }}>
+                                        <span className={styles.subtext} style={{ fontSize: '0.75rem', fontWeight: 500 }}>
+                                            XIRR: <span className={getColorClass(item.xirr)}>{(item.xirr * 100).toFixed(2)}%</span>
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{format(convert(item.value, item.currency))}</div>
+                                {renderChange(item.dayChange, item.currency)}
+                            </div>
+                        </div>
+                        <div className={styles.cardBody}>
+                            <div className={styles.statItem}>
+                                <span className={styles.statLabel}>Avg Cost</span>
+                                <span className={styles.statValue}>{format(convert(item.avgPrice, item.currency))}</span>
+                            </div>
+                            <div className={styles.statItem}>
+                                <span className={styles.statLabel}>Total Return</span>
+                                {renderChange(item.inceptionChange, item.currency)}
+                            </div>
+                            <div className={styles.statItem}>
+                                <span className={styles.statLabel}>1D Change</span>
+                                {renderChange(item.dayChange, item.currency)}
+                            </div>
+                            <div className={styles.statItem}>
+                                <span className={styles.statLabel}>Dividends</span>
+                                <span className={styles.statValue}>
+                                    {format(convert(item.lifetimeDividends || 0, item.currency))}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div >
     );
 }
