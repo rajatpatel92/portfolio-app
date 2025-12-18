@@ -444,7 +444,7 @@ export default function FireAnalysisPage() {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                                 <XAxis dataKey="year" stroke="#9ca3af" fontSize={12} />
                                 <YAxis
-                                    tickFormatter={(val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact' }).format(val)}
+                                    tickFormatter={(val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: currency, notation: 'compact' }).format(val)}
                                     stroke="#9ca3af"
                                     fontSize={12}
                                 />
