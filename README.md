@@ -11,14 +11,21 @@ A comprehensive, self-hosted portfolio management application designed to track 
 ## Features
 
 -   **Multi-Currency Support**: Track investments in their native currency and view your portfolio value in your preferred base currency (e.g., USD, CAD, INR).
+-   **Advanced FIRE Analysis**:
+    -   **"Solve for X" Simulations**: Calculate the safe withdrawal rate for a specific duration or find out how long a specific rate will last.
+    -   **Inflation Adjustment**: Projections account for inflation to ensure real purchasing power is maintained.
+    -   **Lifestyle Analysis**: Determine the minimum monthly income required to maintain your current standard of living in retirement.
+    -   **Detailed Projections**: Year-by-year breakdown of principal, gains, withdrawals, and balances.
+-   **Deep Allocation Analysis**:
+    -   **Investment Type Breakdown**: Aggregate view across all asset classes with accurate currency conversion.
+    -   **Dividend Analysis**: Automatic yield calculation with fallback deduction for missing data.
+    -   **Realized Gains**: Tracking for sold assets and historical performance.
 -   **Performance Tracking**:
     -   **XIRR Calculation**: Accurate return on investment considering cash flows.
-    -   **Time-Weighted Return**: Compare your performance against benchmarks.
-    -   **Treemap Visualization**: Visualize your portfolio composition and performance at a glance.
--   **Asset Allocation**: Breakdown by asset type, platform, and account.
--   **Dividend Tracking**: Monitor upcoming dividends and projected annual income.
--   **Dark Mode**: Sleek, eye-friendly interface.
+    -   **Portfolio Evolution**: Visualize growth vs. average contributions over time.
+    -   **Treemap Visualization**: Interact with portfolio composition at a glance.
 -   **Privacy Focused**: Self-hosted solution ensures you own your financial data.
+-   **Dark Mode**: Sleek, eye-friendly interface.
 
 ## Installation
 
