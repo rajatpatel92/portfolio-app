@@ -25,6 +25,14 @@
     gap: 0.5rem;
 }
 
+.iconWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    /* Fixed width to prevent misalignment if icons vary slightly */
+}
+
 .logo span {
     color: #3b82f6;
     /* Blue 500 */
