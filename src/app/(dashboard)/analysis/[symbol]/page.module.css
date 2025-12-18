@@ -8,8 +8,17 @@
 @media (max-width: 768px) {
     .container {
         padding: 1rem;
-        padding-top: 3.5rem;
+        padding-top: 5rem !important;
         /* Space for fixed sidebar toggle */
+    }
+
+    .navButton {
+        display: none !important;
+    }
+
+    .price,
+    .returnValue {
+        font-size: 1.125rem;
     }
 }
 
@@ -42,6 +51,12 @@
     font-size: 2rem;
     font-weight: 700;
     margin: 0;
+}
+
+@media (max-width: 768px) {
+    .title {
+        font-size: 1.25rem;
+    }
 }
 
 .price {
@@ -386,21 +401,43 @@
     margin: 0;
 }
 
+/* ... existing styles ... */
+.mobileRefresh {
+    display: none;
+}
+
 @media (max-width: 1024px) {
 
     .sideNavPrev,
     .sideNavNext {
         display: none;
-        /* Hide side nav on smaller screens */
     }
 
     .mobileNav {
         display: block;
-        /* Show header nav on mobile */
     }
 
-    .desktopTitle {
-        display: none;
-        /* Hide duplicate title */
+    .desktopHeaderGroup {
+        display: none !important;
+    }
+
+    .mobileRefresh {
+        display: flex;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+        padding-top: 5rem !important;
+    }
+
+    .navButton {
+        display: none !important;
+    }
+
+    .price,
+    .returnValue {
+        font-size: 1rem;
     }
 }

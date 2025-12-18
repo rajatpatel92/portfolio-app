@@ -193,7 +193,17 @@ export default function AnalysisPage() {
                                     <MdChevronLeft size={24} />
                                 </div>
                             )}
-                            <h1 className={styles.title}>{data.name} ({data.symbol})</h1>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <h1 className={styles.title}>{data.name} ({data.symbol})</h1>
+                                <button
+                                    id="refresh-btn-mobile"
+                                    className={`${styles.iconButton} ${styles.mobileRefresh}`}
+                                    onClick={handleRefresh}
+                                    title="Refresh Data"
+                                >
+                                    <MdRefresh size={20} />
+                                </button>
+                            </div>
                             {nextSymbol ? (
                                 <Link href={`/analysis/${nextSymbol}`} className={styles.navButton} title={`Next: ${nextSymbol}`}>
                                     <MdChevronRight size={24} />
@@ -206,7 +216,7 @@ export default function AnalysisPage() {
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div className={styles.desktopHeaderGroup} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <h1 className={styles.desktopTitle}>{data.name} ({data.symbol})</h1>
                         <button
                             id="refresh-btn"

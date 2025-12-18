@@ -176,6 +176,20 @@ export default function StockChart({ data, currency: assetCurrency, avgPriceHist
                             Custom
                         </button>
                     </div>
+
+                    {/* Mobile Range Select */}
+                    <div className={styles.mobileControls}>
+                        <select
+                            value={range}
+                            onChange={(e) => setRange(e.target.value)}
+                            className={styles.mobileSelect}
+                        >
+                            {RANGES.map(r => (
+                                <option key={r} value={r}>{r}</option>
+                            ))}
+                            <option value="CUSTOM">Custom</option>
+                        </select>
+                    </div>
                     {range === 'CUSTOM' && (
                         <div className={styles.dateInputs}>
                             <input
