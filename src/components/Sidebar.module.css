@@ -1,6 +1,7 @@
 .sidebar {
     width: 250px;
     height: 100vh;
+    height: 100dvh;
     background-color: #1e293b;
     /* Slate 800 */
     color: #f8fafc;
@@ -40,6 +41,8 @@
 
 .nav {
     flex: 1;
+    overflow-y: auto;
+    min-height: 0;
     padding: 1.5rem 1rem;
     display: flex;
     flex-direction: column;
