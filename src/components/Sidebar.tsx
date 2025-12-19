@@ -75,7 +75,8 @@ export default function Sidebar() {
         navItems.push({ name: 'Settings', href: '/settings', icon: <MdSettings size={20} /> });
     }
 
-    if (role === 'ADMIN') {
+    // Users Management - Available to all (Admins see all, others see self)
+    if (session) {
         navItems.push({ name: 'Users', href: '/settings/users', icon: <MdPeople size={20} /> });
     }
 

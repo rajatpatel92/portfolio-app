@@ -2,6 +2,7 @@
 import { auth } from "@/auth";
 import { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -26,9 +27,50 @@ export async function DELETE(
             where: { id }
         });
 
+
         return new NextResponse(null, { status: 204 });
     } catch (error) {
         console.error("Error deleting user:", error);
+        return new NextResponse("Internal Server Error", { status: 500 });
+    }
+}
+
+export async function PUT(
+    req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const session = await auth();
+    const { id } = await params;
+
+    if (!session || ((session.user as any).role !== 'ADMIN' && session.user?.id !== id)) {
+        return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    try {
+        const { name, password, role } = await req.json();
+
+        const updateData: any = {};
+        if (name !== undefined) updateData.name = name;
+
+        if (role) {
+            if ((session.user as any).role !== 'ADMIN') {
+                return new NextResponse("Unauthorized to change role", { status: 403 });
+            }
+            updateData.role = role;
+        }
+
+        if (password) {
+            updateData.password = await bcrypt.hash(password, 10);
+        }
+
+        await prisma.user.update({
+            where: { id },
+            data: updateData
+        });
+
+        return new NextResponse(null, { status: 200 });
+    } catch (error) {
+        console.error("Error updating user:", error);
         return new NextResponse("Internal Server Error", { status: 500 });
     }
 }

@@ -30,6 +30,8 @@ export default function AccountsSettingsPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [editFormData, setEditFormData] = useState<any>({});
 
+    const [customOptions, setCustomOptions] = useState<string[]>([]);
+
     const { data: session } = useSession();
     const role = (session?.user as any)?.role || 'VIEWER';
 
@@ -38,6 +40,13 @@ export default function AccountsSettingsPage() {
         const data = await res.json();
         if (Array.isArray(data)) setAccounts(data);
     }
+    // ...
+    // Note: I am skipping some functions to keep context short if possible, but replace_file_content needs contiguity.
+    // I will target the block around state declarations.
+
+    // Actually, I should just replace the top block to add state, and then `startEditing`.
+    // Let's do state first.
+
 
     async function fetchPlatforms() {
         const res = await fetch('/api/platforms');
@@ -152,6 +161,10 @@ export default function AccountsSettingsPage() {
 
     const startEditing = (item: any) => {
         setEditingId(item.id);
+        const isUser = users.some(u => u.username === item.name);
+        if (!isUser) {
+            setCustomOptions(prev => prev.includes(item.name) ? prev : [...prev, item.name]);
+        }
         setEditFormData({ ...item });
     };
 
@@ -299,18 +312,34 @@ export default function AccountsSettingsPage() {
             <div className={`${styles.card} ${styles.accounts}`}>
                 <h2 className={styles.cardTitle}>Accounts</h2>
                 <form onSubmit={handleAddAccount} className={styles.form}>
-                    <select
-                        value={newAccountName}
-                        onChange={(e) => setNewAccountName(e.target.value)}
-                        className={styles.select}
-                        style={{ flex: 2 }}
-                        required
-                    >
-                        <option value="">Select User</option>
-                        {users.map(user => (
-                            <option key={user.id} value={user.username}>{user.name || user.username}</option>
-                        ))}
-                    </select>
+                    <div style={{ flex: 2 }}>
+                        <select
+                            value={newAccountName}
+                            onChange={(e) => {
+                                if (e.target.value === 'CUSTOM_TRIGGER') {
+                                    const name = prompt("Enter Custom Account Name:");
+                                    if (name) {
+                                        setCustomOptions(prev => [...prev, name]);
+                                        setNewAccountName(name);
+                                    }
+                                } else {
+                                    setNewAccountName(e.target.value);
+                                }
+                            }}
+                            className={styles.select}
+                            style={{ width: '100%' }}
+                        >
+                            <option value="">Select Account Owner</option>
+                            {users.map(user => (
+                                <option key={user.id} value={user.username}>{user.name || user.username}</option>
+                            ))}
+                            <option disabled>──────────</option>
+                            {customOptions.map(name => (
+                                <option key={name} value={name}>{name}</option>
+                            ))}
+                            <option value="CUSTOM_TRIGGER">Custom Name...</option>
+                        </select>
+                    </div>
                     <select
                         value={newAccountCurrency}
                         onChange={(e) => setNewAccountCurrency(e.target.value)}
@@ -350,17 +379,34 @@ export default function AccountsSettingsPage() {
                     <li key={account.id} className={styles.item}>
                         {editingId === account.id ? (
                             <div className={styles.editForm}>
-                                <select
-                                    value={editFormData.name}
-                                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                                    className={styles.select}
-                                    style={{ flex: 2 }}
-                                >
-                                    <option value="">Select User</option>
-                                    {users.map(user => (
-                                        <option key={user.id} value={user.username}>{user.name || user.username}</option>
-                                    ))}
-                                </select>
+                                <div style={{ flex: 2 }}>
+                                    <select
+                                        value={editFormData.name}
+                                        onChange={(e) => {
+                                            if (e.target.value === 'CUSTOM_TRIGGER') {
+                                                const name = prompt("Enter Custom Account Name:");
+                                                if (name) {
+                                                    setCustomOptions(prev => [...prev, name]);
+                                                    setEditFormData({ ...editFormData, name });
+                                                }
+                                            } else {
+                                                setEditFormData({ ...editFormData, name: e.target.value });
+                                            }
+                                        }}
+                                        className={styles.select}
+                                        style={{ width: '100%' }}
+                                    >
+                                        <option value="">Select Account Owner</option>
+                                        {users.map(user => (
+                                            <option key={user.id} value={user.username}>{user.name || user.username}</option>
+                                        ))}
+                                        <option disabled>──────────</option>
+                                        {customOptions.map(name => (
+                                            <option key={name} value={name}>{name}</option>
+                                        ))}
+                                        <option value="CUSTOM_TRIGGER">Custom Name...</option>
+                                    </select>
+                                </div>
                                 <select
                                     value={editFormData.currency}
                                     onChange={(e) => setEditFormData({ ...editFormData, currency: e.target.value })}

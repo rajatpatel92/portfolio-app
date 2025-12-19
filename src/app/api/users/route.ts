@@ -8,13 +8,23 @@ const prisma = new PrismaClient();
 
 export async function GET(req: Request) {
     const session = await auth();
-    // Allow ADMIN and EDITOR (anyone who is not a VIEWER) to view users
-    if (!session || (session.user as any).role === 'VIEWER') {
+    if (!session) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    const userRole = (session.user as any).role;
+    const userId = session.user?.id;
+
     try {
+        let whereClause: any = { id: userId };
+
+        // If ADMIN or EDITOR, remove the restriction (return all users)
+        if (userRole === 'ADMIN' || userRole === 'EDITOR') {
+            whereClause = {};
+        }
+
         const users = await prisma.user.findMany({
+            where: whereClause,
             select: {
                 id: true,
                 username: true,

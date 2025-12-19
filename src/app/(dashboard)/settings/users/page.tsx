@@ -21,6 +21,8 @@ export default function UserManagementPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    const [editingId, setEditingId] = useState<string | null>(null);
+
     useEffect(() => {
         fetchUsers();
     }, []);
@@ -43,10 +45,17 @@ export default function UserManagementPage() {
         setError('');
 
         try {
-            const res = await fetch('/api/users', {
-                method: 'POST',
+            const url = editingId ? `/api/users/${editingId}` : '/api/users';
+            const method = editingId ? 'PUT' : 'POST';
+
+            const body: any = { ...formData };
+            if (editingId && !body.password) delete body.password; // Don't send empty password on edit
+            if (editingId) delete body.username; // Username is immutable
+
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(body),
             });
 
             if (!res.ok) {
@@ -54,14 +63,32 @@ export default function UserManagementPage() {
                 throw new Error(msg);
             }
 
-            setFormData({ username: '', password: '', role: 'VIEWER', name: '' });
-            setShowForm(false);
+            resetForm();
             fetchUsers();
         } catch (err: any) {
             setError(err.message);
         } finally {
             setLoading(false);
         }
+    };
+
+    const resetForm = () => {
+        setFormData({ username: '', password: '', role: 'VIEWER', name: '' });
+        setEditingId(null);
+        setShowForm(false);
+        setError('');
+    };
+
+    const handleEdit = (user: User) => {
+        setFormData({
+            username: user.username,
+            password: '', // Password not retrieved
+            role: user.role,
+            name: user.name || ''
+        });
+        setEditingId(user.id);
+        setShowForm(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleDelete = async (id: string) => {
@@ -80,18 +107,28 @@ export default function UserManagementPage() {
         }
     };
 
-    if (!session || (session.user as any).role !== 'ADMIN') {
+    if (!session) {
         return <div className={styles.container}>Unauthorized</div>;
     }
+
+    const isAdmin = (session.user as any).role === 'ADMIN';
 
     return (
         <>
             <div className={`${styles.card} ${styles.users}`} style={{ marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h2 className={styles.cardTitle} style={{ margin: 0 }}>User Management</h2>
-                    <button className={styles.addButton} onClick={() => setShowForm(!showForm)}>
-                        {showForm ? 'Cancel' : 'Add User'}
-                    </button>
+                    {isAdmin && (
+                        <button
+                            className={showForm && !editingId ? styles.cancelButton : styles.addButton}
+                            onClick={() => {
+                                if (showForm) resetForm();
+                                else setShowForm(true);
+                            }}
+                        >
+                            {showForm ? 'Cancel' : 'Add User'}
+                        </button>
+                    )}
                 </div>
 
                 {showForm && (
@@ -115,6 +152,8 @@ export default function UserManagementPage() {
                                     value={formData.username}
                                     onChange={e => setFormData({ ...formData, username: e.target.value })}
                                     required
+                                    disabled={!!editingId} // Username cannot be changed
+                                    style={editingId ? { background: 'var(--background-subtle)', cursor: 'not-allowed' } : {}}
                                 />
                             </div>
                             <div className={styles.inputGroup}>
@@ -124,7 +163,8 @@ export default function UserManagementPage() {
                                     className={styles.input}
                                     value={formData.password}
                                     onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                    required
+                                    required={!editingId}
+                                    placeholder={editingId ? "Leave blank to keep current" : ""}
                                 />
                             </div>
                             <div className={styles.inputGroup}>
@@ -133,6 +173,7 @@ export default function UserManagementPage() {
                                     className={styles.select}
                                     value={formData.role}
                                     onChange={e => setFormData({ ...formData, role: e.target.value })}
+                                    disabled={!isAdmin}
                                 >
                                     <option value="VIEWER">Viewer</option>
                                     <option value="EDITOR">Editor</option>
@@ -140,7 +181,7 @@ export default function UserManagementPage() {
                                 </select>
                             </div>
                             <button type="submit" className={styles.addButton} disabled={loading}>
-                                {loading ? 'Creating...' : 'Create User'}
+                                {loading ? 'Saving...' : (editingId ? 'Update User' : 'Create User')}
                             </button>
                         </form>
                         {error && <div style={{ color: 'var(--error)', marginTop: '1rem' }}>{error}</div>}
@@ -166,19 +207,37 @@ export default function UserManagementPage() {
                                     <td className={styles.td}>{user.role}</td>
                                     <td className={styles.td}>{new Date(user.createdAt).toLocaleDateString()}</td>
                                     <td className={styles.td}>
-                                        {user.id !== session.user?.id && (
-                                            <button
-                                                className={styles.deleteButton}
-                                                onClick={() => handleDelete(user.id)}
-                                            >
-                                                Delete
-                                            </button>
-                                        )}
+                                        {/* Show actions if it's not the current user (for deletion) OR if it IS the current user (for editing) */
+                                            /* Actually, simpler: Show EDIT for everyone (if admin or self). Show DELETE only if admin and not self. */
+                                        }
+                                        <div className={styles.itemActions}>
+                                            {(isAdmin || user.id === session.user?.id) && (
+                                                <button
+                                                    className={styles.editButton}
+                                                    onClick={() => handleEdit(user)}
+                                                >
+                                                    Edit
+                                                </button>
+                                            )}
+                                            {isAdmin && user.id !== session.user?.id && (
+                                                <button
+                                                    className={styles.deleteButton}
+                                                    onClick={() => handleDelete(user.id)}
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
+                </div>
+                <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'var(--background-subtle)', borderRadius: '0.5rem', border: '1px solid var(--card-border)' }}>
+                    <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>
+                        <strong>Note:</strong> Regardless of the number of users, all users have unrestricted access to view the entire portfolio. No user specific portfolios are supported at this stage.
+                    </p>
                 </div>
             </div>
         </>
