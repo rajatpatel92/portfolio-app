@@ -8,6 +8,7 @@ import ConstituentsGrid from '@/components/ConstituentsGrid';
 import AllocationChart from '@/components/AllocationChart';
 import AnalysisSkeleton from '@/components/AnalysisSkeleton';
 import ReportFilters, { FilterOptions } from '@/components/ReportFilters';
+import usePersistentState from '@/hooks/usePersistentState';
 
 interface PortfolioSummary {
     allocationByType: { name: string; value: number }[];
@@ -20,7 +21,7 @@ interface PortfolioSummary {
 export default function AnalysisPage() {
     const [summary, setSummary] = useState<PortfolioSummary | null>(null);
     // Global Filters (Layer 1)
-    const [globalFilters, setGlobalFilters] = useState<FilterOptions | null>(null);
+    const [globalFilters, setGlobalFilters] = usePersistentState<FilterOptions | null>('allocation_filters', null);
     // Interactive Filters (Layer 2)
     const [interactiveFilters, setInteractiveFilters] = useState<{
         investmentType: string | null;
@@ -314,7 +315,7 @@ export default function AnalysisPage() {
                             Deep dive into your asset allocation and performance metrics.
                         </p>
                     </div>
-                    <ReportFilters onChange={setGlobalFilters} />
+                    <ReportFilters onChange={setGlobalFilters} initialFilters={globalFilters || undefined} />
                 </div>
 
                 {hasInteractiveFilters && (

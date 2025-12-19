@@ -1,6 +1,6 @@
 .container {
     position: relative;
-    z-index: 20;
+    z-index: 1000;
     /* Above chart */
 }
 

@@ -109,7 +109,7 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
     const router = useRouter();
 
     const handleRowClick = (symbol: string) => {
-        router.push(`/analysis/${symbol}`);
+        router.push(`/analysis/${symbol}?from=allocation`);
     };
 
     return (

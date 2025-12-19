@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useCurrency } from '@/context/CurrencyContext';
 import PortfolioChart from '@/components/PortfolioChart';
 import StockChart from '@/components/StockChart';
@@ -60,6 +60,8 @@ interface User {
 
 export default function AnalysisPage() {
     const { symbol } = useParams();
+    const searchParams = useSearchParams();
+    const from = searchParams.get('from');
     const [data, setData] = useState<AnalysisData | null>(null);
     const { format, convert } = useCurrency();
     const [activeTab, setActiveTab] = useState<'overview' | 'activities'>('overview');
@@ -152,13 +154,24 @@ export default function AnalysisPage() {
         }
     };
 
+    let backHref = '/analysis/allocation';
+    let backLabel = 'Back to Allocation Analysis';
+
+    if (from === 'dashboard') {
+        backHref = '/';
+        backLabel = 'Back to Dashboard';
+    } else if (from === 'comparison') {
+        backHref = '/analysis/comparison';
+        backLabel = 'Back to Comparison';
+    }
+
     return (
         <div className={styles.container}>
 
             <div className={styles.backLinkContainer}>
-                <Link href="/analysis/allocation" className={styles.backLink}>
+                <Link href={backHref} className={styles.backLink}>
                     <MdArrowBack size={20} />
-                    <span>Back to Allocation Analysis</span>
+                    <span>{backLabel}</span>
                 </Link>
             </div>
 

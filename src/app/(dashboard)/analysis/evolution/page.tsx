@@ -11,12 +11,10 @@ import AnalysisSkeleton from '@/components/AnalysisSkeleton';
 import { useCurrency } from '@/context/CurrencyContext';
 
 import { ClientCache } from '@/lib/client-cache';
+import usePersistentState from '@/hooks/usePersistentState';
 
 export default function EvolutionPage() {
-    const [filters, setFilters] = useState<FilterOptions>({
-        accountTypes: [],
-        investmentTypes: []
-    });
+    const [filters, setFilters] = usePersistentState<FilterOptions | null>('evolution_filters', null);
 
     const [data, setData] = useState<{
         evolution?: any[];
@@ -32,12 +30,15 @@ export default function EvolutionPage() {
     const [contributionPeriod, setContributionPeriod] = useState<'week' | 'month' | 'year'>('month');
     const [dividendPeriod, setDividendPeriod] = useState<'month' | 'year'>('year');
 
-    const [range, setRange] = useState('ALL');
+    const [range, setRange] = usePersistentState('evolution_range', 'ALL');
     const { currency } = useCurrency();
 
     useEffect(() => {
+        // Safe filters: if null (initial load), treat as empty arrays (fetch all).
+        const safeFilters = filters || { accountTypes: [], investmentTypes: [] };
+
         const fetchHistory = async () => {
-            const cacheKey = ClientCache.generateKey('evolution_history', { filters, range, currency });
+            const cacheKey = ClientCache.generateKey('evolution_history', { filters: safeFilters, range, currency });
             const cached = ClientCache.get<any>(cacheKey);
 
             if (cached) {
@@ -48,7 +49,7 @@ export default function EvolutionPage() {
 
             setLoadingHistory(true);
             try {
-                const backendFilters = { ...filters, assetClasses: filters.investmentTypes };
+                const backendFilters = { ...safeFilters, assetClasses: safeFilters.investmentTypes };
                 const res = await fetch('/api/analytics/evolution', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -67,7 +68,7 @@ export default function EvolutionPage() {
         };
 
         const fetchFlows = async () => {
-            const cacheKey = ClientCache.generateKey('evolution_flows', { filters, range, currency });
+            const cacheKey = ClientCache.generateKey('evolution_flows', { filters: safeFilters, range, currency });
             const cached = ClientCache.get<any>(cacheKey);
 
             if (cached) {
@@ -78,7 +79,7 @@ export default function EvolutionPage() {
 
             setLoadingFlows(true);
             try {
-                const backendFilters = { ...filters, assetClasses: filters.investmentTypes };
+                const backendFilters = { ...safeFilters, assetClasses: safeFilters.investmentTypes };
                 const res = await fetch('/api/analytics/evolution', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -139,7 +140,7 @@ export default function EvolutionPage() {
                 </div>
                 <ReportFilters
                     onChange={setFilters}
-                    initialFilters={filters}
+                    initialFilters={filters || undefined}
                 />
             </div>
 

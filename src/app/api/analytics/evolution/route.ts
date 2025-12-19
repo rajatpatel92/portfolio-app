@@ -8,13 +8,12 @@ export async function POST(req: Request) {
     if (!session?.user) {
         return new NextResponse('Unauthorized', { status: 401 });
     }
+    // const session = { user: { id: 'test' } }; // Dummy session
 
     try {
         const { filters, range, currency, mode } = await req.json();
-        const userId = (session.user as any).id;
-
         // Build base query
-        const where: any = { userId };
+        const where: any = {};
 
         // Apply Filters if present
         if (filters?.accountIds?.length > 0) {
@@ -35,6 +34,7 @@ export async function POST(req: Request) {
             if (!a.account) return false; // Filter out orphans
 
             if (filters?.assetClasses?.length > 0) {
+                // console.log(`Checking asset class: ${a.investment.type} against ${filters.assetClasses}`);
                 if (!filters.assetClasses.includes(a.investment.type)) return false;
             }
             if (filters?.accountTypes?.length > 0) {
