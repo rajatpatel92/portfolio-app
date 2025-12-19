@@ -29,6 +29,7 @@ export interface MarketData {
     dividendRate?: number;
     dividendYield?: number;
     exDividendDate?: Date;
+    name?: string;
 }
 
 export class MarketDataService {
@@ -160,7 +161,8 @@ export class MarketDataService {
 
                 dividendRate: dividendRate,
                 dividendYield: dividendYield,
-                exDividendDate: calendar.exDividendDate ? new Date(calendar.exDividendDate) : undefined
+                exDividendDate: calendar.exDividendDate ? new Date(calendar.exDividendDate) : undefined,
+                name: priceData.longName || priceData.shortName
             };
 
             // 3. Update Cache

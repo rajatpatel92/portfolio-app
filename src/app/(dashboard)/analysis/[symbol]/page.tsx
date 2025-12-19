@@ -10,7 +10,7 @@ import { formatQuantity } from '@/lib/format';
 import styles from './page.module.css';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
-import { MdRefresh, MdChevronLeft, MdChevronRight } from 'react-icons/md';
+import { MdRefresh, MdArrowBack } from 'react-icons/md';
 import Link from 'next/link';
 import SymbolSkeleton from '@/components/SymbolSkeleton';
 
@@ -55,12 +55,14 @@ interface User {
     name?: string;
 }
 
+
+
+
 export default function AnalysisPage() {
     const { symbol } = useParams();
     const [data, setData] = useState<AnalysisData | null>(null);
     const { format, convert } = useCurrency();
     const [activeTab, setActiveTab] = useState<'overview' | 'activities'>('overview');
-    const [constituents, setConstituents] = useState<string[]>([]);
     const [users, setUsers] = useState<User[]>([]);
 
     useEffect(() => {
@@ -69,17 +71,6 @@ export default function AnalysisPage() {
             .then(res => res.json())
             .then(setUsers)
             .catch(err => console.error('Failed to fetch users', err));
-
-        // Fetch portfolio constituents for navigation
-        fetch('/api/portfolio')
-            .then(res => res.json())
-            .then(data => {
-                if (data.constituents) {
-                    const symbols = data.constituents.map((c: any) => c.symbol).sort();
-                    setConstituents(symbols);
-                }
-            })
-            .catch(err => console.error('Failed to fetch portfolio for navigation', err));
     }, []);
 
     useEffect(() => {
@@ -161,38 +152,20 @@ export default function AnalysisPage() {
         }
     };
 
-    // Navigation Logic
-    const currentIndex = constituents.indexOf(data.symbol);
-    const prevSymbol = currentIndex > 0 ? constituents[currentIndex - 1] : null;
-    const nextSymbol = currentIndex < constituents.length - 1 ? constituents[currentIndex + 1] : null;
-
     return (
         <div className={styles.container}>
-            {/* Desktop Side Navigation */}
-            {prevSymbol && (
-                <Link href={`/analysis/${prevSymbol}`} className={styles.sideNavPrev} title={`Previous: ${prevSymbol}`}>
-                    <MdChevronLeft size={48} />
+
+            <div className={styles.backLinkContainer}>
+                <Link href="/analysis/allocation" className={styles.backLink}>
+                    <MdArrowBack size={20} />
+                    <span>Back to Allocation Analysis</span>
                 </Link>
-            )}
-            {nextSymbol && (
-                <Link href={`/analysis/${nextSymbol}`} className={styles.sideNavNext} title={`Next: ${nextSymbol}`}>
-                    <MdChevronRight size={48} />
-                </Link>
-            )}
+            </div>
 
             <header className={styles.header}>
                 <div>
                     <div className={styles.mobileNav}>
                         <div className={styles.navigation}>
-                            {prevSymbol ? (
-                                <Link href={`/analysis/${prevSymbol}`} className={styles.navButton} title={`Previous: ${prevSymbol}`}>
-                                    <MdChevronLeft size={24} />
-                                </Link>
-                            ) : (
-                                <div className={`${styles.navButton} ${styles.disabled}`}>
-                                    <MdChevronLeft size={24} />
-                                </div>
-                            )}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <h1 className={styles.title}>{data.name} ({data.symbol})</h1>
                                 <button
@@ -204,15 +177,6 @@ export default function AnalysisPage() {
                                     <MdRefresh size={20} />
                                 </button>
                             </div>
-                            {nextSymbol ? (
-                                <Link href={`/analysis/${nextSymbol}`} className={styles.navButton} title={`Next: ${nextSymbol}`}>
-                                    <MdChevronRight size={24} />
-                                </Link>
-                            ) : (
-                                <div className={`${styles.navButton} ${styles.disabled}`}>
-                                    <MdChevronRight size={24} />
-                                </div>
-                            )}
                         </div>
                     </div>
 

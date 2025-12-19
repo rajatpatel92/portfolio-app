@@ -31,6 +31,16 @@ export async function GET(request: Request, props: { params: Promise<{ symbol: s
 
         // 2. Fetch Market Data
         const marketData = await MarketDataService.getPrice(symbol);
+
+        // Auto-update name if we have a better one from market data
+        if (marketData?.name && marketData.name !== investment.name) {
+            await prisma.investment.update({
+                where: { id: investment.id },
+                data: { name: marketData.name }
+            });
+            investment.name = marketData.name;
+        }
+
         const historicalPrices = await MarketDataService.getHistoricalPrices(symbol);
 
         // 3. Calculate Stats
