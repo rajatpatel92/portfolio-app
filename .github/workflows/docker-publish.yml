@@ -3,6 +3,7 @@ name: Docker Build and Publish
 on:
   push:
     branches: [ "main", "master" ]
+    tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ "main", "master" ]
 
@@ -34,6 +35,8 @@ jobs:
           images: ${{ secrets.DOCKER_USERNAME }}/portfolio-app
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
             type=sha
 
       - name: Build and push Docker image
