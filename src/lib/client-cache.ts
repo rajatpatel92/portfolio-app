@@ -7,7 +7,7 @@ interface CacheEntry<T> {
     version: number;
 }
 
-const CURRENT_VERSION = 1;
+const CURRENT_VERSION = 2;
 
 export const ClientCache = {
     get: <T>(key: string): T | null => {
@@ -57,9 +57,28 @@ export const ClientCache = {
     },
 
     generateKey: (base: string, params: Record<string, any>): string => {
-        // Sort keys to ensure stability
-        const stableString = JSON.stringify(params, Object.keys(params).sort());
-        // Simple hash or btoa to safe string
+        // Recursive stable stringify
+        const stableStringify = (obj: any): string => {
+            if (obj === null || typeof obj !== 'object') {
+                return JSON.stringify(obj);
+            }
+            if (Array.isArray(obj)) {
+                // Sort arrays primitives to ensure order independence for filters
+                // For object arrays, simpler sort might be needed or just map-sort
+                try {
+                    const copy = [...obj].sort();
+                    return '[' + copy.map(stableStringify).join(',') + ']';
+                } catch (e) {
+                    return JSON.stringify(obj);
+                }
+            }
+            // Sort object keys
+            const keys = Object.keys(obj).sort();
+            const parts = keys.map(k => `${JSON.stringify(k)}:${stableStringify(obj[k])}`);
+            return '{' + parts.join(',') + '}';
+        };
+
+        const stableString = stableStringify(params);
         return `${base}_${btoa(stableString)}`;
     },
 

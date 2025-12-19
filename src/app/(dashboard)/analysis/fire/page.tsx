@@ -308,49 +308,49 @@ export default function FireAnalysisPage() {
                 <div className={`${localStyles.configSection} ${isConfigOpen ? localStyles.open : ''}`}>
                     <h2 className={styles.cardTitle}>Configuration</h2>
 
-                    <div className={styles.field}>
-                        <label className={styles.label}>FIRE Date</label>
+                    <div className={`${styles.field} ${localStyles.compactField}`}>
+                        <label className={`${styles.label} ${localStyles.compactLabel}`}>FIRE Date</label>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <select value={fireMonth} onChange={(e) => setFireMonth(Number(e.target.value))} className={styles.select} style={{ flex: 1 }}>
+                            <select value={fireMonth} onChange={(e) => setFireMonth(Number(e.target.value))} className={`${styles.select} ${localStyles.compactInput}`} style={{ flex: 1 }}>
                                 {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => <option key={i} value={i}>{m}</option>)}
                             </select>
-                            <select value={fireYear} onChange={(e) => setFireYear(Number(e.target.value))} className={styles.select} style={{ flex: 1 }}>
+                            <select value={fireYear} onChange={(e) => setFireYear(Number(e.target.value))} className={`${styles.select} ${localStyles.compactInput}`} style={{ flex: 1 }}>
                                 {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() + i).map(y => <option key={y} value={y}>{y}</option>)}
                             </select>
                         </div>
                     </div>
 
-                    <div className={styles.field}>
-                        <label className={styles.label}>Expected Return (%)</label>
-                        <input type="number" value={expectedReturn} onChange={(e) => setExpectedReturn(Number(e.target.value))} className={styles.input} step="0.1" />
+                    <div className={`${styles.field} ${localStyles.compactField}`}>
+                        <label className={`${styles.label} ${localStyles.compactLabel}`}>Expected Return (%)</label>
+                        <input type="number" value={expectedReturn} onChange={(e) => setExpectedReturn(Number(e.target.value))} className={`${styles.input} ${localStyles.compactInput}`} step="0.1" />
                     </div>
-                    <div className={styles.field}>
-                        <label className={styles.label}>Expected Inflation (%)</label>
-                        <input type="number" value={inflationRate} onChange={(e) => setInflationRate(Number(e.target.value))} className={styles.input} step="0.1" />
+                    <div className={`${styles.field} ${localStyles.compactField}`}>
+                        <label className={`${styles.label} ${localStyles.compactLabel}`}>Expected Inflation (%)</label>
+                        <input type="number" value={inflationRate} onChange={(e) => setInflationRate(Number(e.target.value))} className={`${styles.input} ${localStyles.compactInput}`} step="0.1" />
                     </div>
-                    <div className={styles.field}>
-                        <label className={styles.label}>Monthly Contribution ({currency})</label>
-                        <input type="number" value={monthlyContribution} onChange={(e) => setMonthlyContribution(Number(e.target.value))} className={styles.input} />
+                    <div className={`${styles.field} ${localStyles.compactField}`}>
+                        <label className={`${styles.label} ${localStyles.compactLabel}`}>Monthly Contribution ({currency})</label>
+                        <input type="number" value={monthlyContribution} onChange={(e) => setMonthlyContribution(Number(e.target.value))} className={`${styles.input} ${localStyles.compactInput}`} />
                     </div>
 
                     <div style={{ borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem', marginTop: '0.5rem' }}>
-                        <h3 className={styles.cardTitle} style={{ fontSize: '1rem', marginBottom: '1rem' }}>Lifestyle Needs</h3>
-                        <div className={styles.field}>
-                            <label className={styles.label}>Current Expense ({currency})</label>
+                        <h3 className={styles.cardTitle} style={{ fontSize: '1rem', marginBottom: '0.5rem', borderBottom: 'none', paddingBottom: 0 }}>Lifestyle Needs</h3>
+                        <div className={`${styles.field} ${localStyles.compactField}`}>
+                            <label className={`${styles.label} ${localStyles.compactLabel}`}>Current Expense ({currency})</label>
                             <input
                                 type="number"
                                 value={currentMonthlyExpense}
                                 onChange={(e) => setCurrentMonthlyExpense(Number(e.target.value))}
-                                className={styles.input}
+                                className={`${styles.input} ${localStyles.compactInput}`}
                                 min="0"
                             />
                         </div>
                     </div>
 
-                    <div style={{ borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem' }}>
-                        <h3 className={styles.cardTitle} style={{ fontSize: '1rem', marginBottom: '1rem' }}>Withdrawal Strategy</h3>
+                    <div style={{ borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <h3 className={styles.cardTitle} style={{ fontSize: '1rem', marginBottom: '0rem', borderBottom: 'none', paddingBottom: 0 }}>Withdrawal Strategy</h3>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             {/* Toggle Mode */}
                             <div style={{ display: 'flex', gap: '1rem', background: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: '0.5rem' }}>
                                 <button
@@ -387,8 +387,8 @@ export default function FireAnalysisPage() {
                                 </button>
                             </div>
 
-                            <div className={styles.field}>
-                                <label className={styles.label}>Withdrawal Rate (%)</label>
+                            <div className={`${styles.field} ${localStyles.compactField}`}>
+                                <label className={`${styles.label} ${localStyles.compactLabel}`}>Withdrawal Rate (%)</label>
                                 <input
                                     type="number"
                                     value={calculationMode === 'FIXED_HORIZON' ? simulationResults.computedWithdrawalRate.toFixed(2) : withdrawalRate}
@@ -396,14 +396,14 @@ export default function FireAnalysisPage() {
                                         if (calculationMode === 'FIXED_RATE') setWithdrawalRate(Number(e.target.value));
                                     }}
                                     disabled={calculationMode === 'FIXED_HORIZON'}
-                                    className={styles.input}
+                                    className={`${styles.input} ${localStyles.compactInput}`}
                                     step="0.1"
                                     style={{ opacity: calculationMode === 'FIXED_HORIZON' ? 0.7 : 1 }}
                                 />
                             </div>
 
-                            <div className={styles.field}>
-                                <label className={styles.label}>Years to Last</label>
+                            <div className={`${styles.field} ${localStyles.compactField}`}>
+                                <label className={`${styles.label} ${localStyles.compactLabel}`}>Years to Last</label>
                                 <input
                                     type="number"
                                     value={calculationMode === 'FIXED_RATE' ? (typeof simulationResults.computedHorizon === 'number' ? simulationResults.computedHorizon : 60) : withdrawalDuration}
@@ -411,7 +411,7 @@ export default function FireAnalysisPage() {
                                         if (calculationMode === 'FIXED_HORIZON') setWithdrawalDuration(Number(e.target.value));
                                     }}
                                     disabled={calculationMode === 'FIXED_RATE'}
-                                    className={styles.input}
+                                    className={`${styles.input} ${localStyles.compactInput}`}
                                     style={{ opacity: calculationMode === 'FIXED_RATE' ? 0.7 : 1 }}
                                 />
                                 {calculationMode === 'FIXED_RATE' && simulationResults.computedHorizon === '60+' && (
@@ -439,6 +439,17 @@ export default function FireAnalysisPage() {
                                 Calculated based on your current expense plus inflation, assuming you retain your current lifestyle until you die.
                             </div>
                         </div>
+
+                        <div className={styles.card} style={{ padding: '1.5rem', textAlign: 'center' }}>
+                            <div className={styles.label}>Available Monthly Withdrawal</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>
+                                {format(simulationResults.initialMonthlyWithdrawal)}
+                            </div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                                Based on a {simulationResults.computedWithdrawalRate.toFixed(2)}% withdrawal rate{typeof simulationResults.computedHorizon === 'number' ? ` lasting ${simulationResults.computedHorizon} years` : ' lasting 60+ years'}.
+                            </div>
+                        </div>
+
                         <div className={styles.card} style={{ padding: '1.5rem', textAlign: 'center' }}>
                             <div className={styles.label}>Lifestyle Coverage</div>
                             <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: isMaintenancePossible ? 'var(--success)' : 'var(--error)' }}>
@@ -586,6 +597,6 @@ export default function FireAnalysisPage() {
 
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

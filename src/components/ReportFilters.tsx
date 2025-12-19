@@ -27,22 +27,14 @@ export default function ReportFilters({ onChange, initialFilters }: ReportFilter
     const [selectedInvTypes, setSelectedInvTypes] = useState<string[]>(initialFilters?.investmentTypes || []);
 
     useEffect(() => {
-        // Fetch Metadata to populate filters
-        // We can hit /api/portfolio to get unique types from current data, 
-        // OR fetch settings types.
-        // Let's rely on /api/portfolio metadata if possible, or hit separate endpoints.
-        // Simplest: Hit settings endpoints or infer from portfolio.
-        // Let's use portfolio to ensure we only show Used types.
-        fetch('/api/portfolio')
-            .then(res => res.json())
-            .then(data => {
-                if (data.stats) {
-                    // Extract unique types from allocation/activities not trivial here.
-                    // Let's just hardcode standard ones or fetch settings.
-                    // Actually, fetching from Settings is cleaner.
-                }
-            });
+        if (initialFilters) {
+            setSelectedAccTypes(initialFilters.accountTypes);
+            setSelectedInvTypes(initialFilters.investmentTypes);
+        }
+    }, [initialFilters]);
 
+    useEffect(() => {
+        // Fetch Metadata to populate filters
         // Parallel fetch for types
         Promise.all([
             fetch('/api/settings/account-types').then(res => res.json()),
@@ -54,14 +46,18 @@ export default function ReportFilters({ onChange, initialFilters }: ReportFilter
             setAvailableAccTypes(accTypes);
             setAvailableInvTypes(invTypes);
 
-            // Default select all
-            setSelectedAccTypes(accTypes);
-            setSelectedInvTypes(invTypes);
+            // Default select all ONLY if no initial filters provided (or meaningless empty)
+            // But we should respect empty array if it means "none selected" - though usually we want all.
+            // A truly "fresh" state usually means Select All.
+            if (!initialFilters) {
+                setSelectedAccTypes(accTypes);
+                setSelectedInvTypes(invTypes);
 
-            // Initial notify
-            if (onChange) onChange({ accountTypes: accTypes, investmentTypes: invTypes });
+                // Initial notify only if we are setting defaults
+                if (onChange) onChange({ accountTypes: accTypes, investmentTypes: invTypes });
+            }
         });
-    }, [onChange]);
+    }, []); // Run once on mount
 
     const handleApply = () => {
         onChange({
@@ -83,6 +79,14 @@ export default function ReportFilters({ onChange, initialFilters }: ReportFilter
         );
     };
 
+    const invertAcc = () => {
+        setSelectedAccTypes(prev => availableAccTypes.filter(t => !prev.includes(t)));
+    };
+
+    const invertInv = () => {
+        setSelectedInvTypes(prev => availableInvTypes.filter(t => !prev.includes(t)));
+    };
+
     return (
         <div className={styles.container}>
             <button className={styles.filterBtn} onClick={() => setIsOpen(!isOpen)}>
@@ -98,7 +102,12 @@ export default function ReportFilters({ onChange, initialFilters }: ReportFilter
                     </div>
 
                     <div className={styles.section}>
-                        <h4>Account Types</h4>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <h4>Account Types</h4>
+                            <button onClick={invertAcc} className={styles.linkBtn} style={{ fontSize: '0.8rem', color: 'var(--primary-color)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                                Inverse
+                            </button>
+                        </div>
                         <div className={styles.grid}>
                             {availableAccTypes.map(type => (
                                 <label key={type} className={styles.checkbox}>
@@ -114,7 +123,12 @@ export default function ReportFilters({ onChange, initialFilters }: ReportFilter
                     </div>
 
                     <div className={styles.section}>
-                        <h4>Investment Types</h4>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <h4>Investment Types</h4>
+                            <button onClick={invertInv} className={styles.linkBtn} style={{ fontSize: '0.8rem', color: 'var(--primary-color)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                                Inverse
+                            </button>
+                        </div>
                         <div className={styles.grid}>
                             {availableInvTypes.map(type => (
                                 <label key={type} className={styles.checkbox}>

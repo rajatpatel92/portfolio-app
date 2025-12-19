@@ -52,7 +52,7 @@ export default function TopMovers({ constituents }: TopMoversProps) {
                                         exit={{ opacity: 0, transition: { duration: 0.05 } }}
                                         transition={{ duration: 0.2 }}
                                     >
-                                        <Link href={`/analysis/${c.symbol}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Link href={`/analysis/${c.symbol}?from=dashboard`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div className={styles.symbolRow}>
                                                 <span className={styles.symbol}>{c.symbol}</span>
                                                 <span className={styles.price}>{format(convert(c.price, c.currency))}</span>
@@ -84,7 +84,7 @@ export default function TopMovers({ constituents }: TopMoversProps) {
                                         exit={{ opacity: 0, transition: { duration: 0.05 } }}
                                         transition={{ duration: 0.2 }}
                                     >
-                                        <Link href={`/analysis/${c.symbol}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Link href={`/analysis/${c.symbol}?from=dashboard`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div className={styles.symbolRow}>
                                                 <span className={styles.symbol}>{c.symbol}</span>
                                                 <span className={styles.price}>{format(convert(c.price, c.currency))}</span>

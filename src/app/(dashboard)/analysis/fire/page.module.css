@@ -10,12 +10,26 @@
 .configSection {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
     height: fit-content;
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: 1rem;
     padding: 1.5rem;
+}
+
+.compactField {
+    margin-bottom: 0 !important;
+}
+
+.compactLabel {
+    margin-bottom: 0.25rem !important;
+    font-size: 0.85rem !important;
+}
+
+.compactInput {
+    padding: 0.5rem !important;
+    font-size: 0.85rem !important;
 }
 
 /* Analysis Section */

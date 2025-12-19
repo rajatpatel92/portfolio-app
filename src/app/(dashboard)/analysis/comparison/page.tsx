@@ -2,8 +2,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import styles from './page.module.css';
 import ReportFilters from '@/components/ReportFilters';
+import usePersistentState from '@/hooks/usePersistentState';
 import { Line } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -49,9 +51,10 @@ export default function ComparePage() {
     const [availableBenchmarks, setAvailableBenchmarks] = useState<any[]>([]);
 
     // Controls
-    const [timeRange, setTimeRange] = useState('1Y');
-    const [benchmark, setBenchmark] = useState('^GSPC'); // S&P 500
-    const [filters, setFilters] = useState<any>(null);
+    // Controls
+    const [timeRange, setTimeRange] = usePersistentState('comparison_range', '1Y');
+    const [benchmark, setBenchmark] = usePersistentState('comparison_benchmark', '^GSPC'); // S&P 500
+    const [filters, setFilters] = usePersistentState<any>('comparison_filters', null);
 
     const RANGES = ['1M', '6M', 'YTD', '1Y', '5Y', 'ALL'];
 
@@ -104,12 +107,16 @@ export default function ComparePage() {
 
 
     // Chart Config
+    // Transform to Percentage Growth relative to start
+    const startNav = portfolioData.length > 0 ? portfolioData[0].nav : 1;
+    const startBench = benchmarkData.length > 0 ? benchmarkData[0].normalized : 1;
+
     const chartData = {
         labels: portfolioData.map(d => new Date(d.date).toLocaleDateString()),
         datasets: [
             {
                 label: 'My Portfolio',
-                data: portfolioData.map(d => d.nav),
+                data: portfolioData.map(d => ((d.nav - startNav) / startNav) * 100),
                 borderColor: '#10b981', // Emerald 500
                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 tension: 0.4,
@@ -118,7 +125,7 @@ export default function ComparePage() {
             },
             {
                 label: availableBenchmarks.find(b => b.symbol === benchmark)?.name || 'Benchmark',
-                data: benchmarkData.map(d => d.normalized),
+                data: benchmarkData.map(d => ((d.normalized - startBench) / startBench) * 100),
                 borderColor: '#f59e0b', // Amber 500
                 tension: 0.4,
                 pointRadius: 0,
@@ -151,7 +158,7 @@ export default function ComparePage() {
                             label += ': ';
                         }
                         if (context.parsed.y !== null) {
-                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                            label += (context.parsed.y > 0 ? '+' : '') + context.parsed.y.toFixed(2) + '%';
                         }
                         return label;
                     }
@@ -178,7 +185,7 @@ export default function ComparePage() {
                 ticks: {
                     color: '#9ca3af',
                     callback: function (value: any) {
-                        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact' }).format(value);
+                        return value + '%';
                     }
                 }
             }
@@ -208,7 +215,7 @@ export default function ComparePage() {
                         ))}
                     </select>
 
-                    <ReportFilters onChange={setFilters} />
+                    <ReportFilters onChange={setFilters} initialFilters={filters || undefined} />
                 </div>
             </header>
 
@@ -270,12 +277,12 @@ export default function ComparePage() {
                         <div className={styles.performerList}>
                             {performers.top.length === 0 && <span className={styles.performerName}>No data</span>}
                             {performers.top.map((p, i) => (
-                                <div key={i} className={styles.performerItem}>
+                                <Link key={i} href={`/analysis/${p.symbol}?from=comparison`} className={styles.performerItem}>
                                     <span className={styles.performerName}>{p.symbol}</span>
                                     <span className={`${styles.performerValue} ${styles.positive}`}>
                                         +{p.return.toFixed(2)}%
                                     </span>
-                                </div>
+                                </Link>
                             ))}
                         </div>
                     </div>
@@ -285,12 +292,12 @@ export default function ComparePage() {
                         <div className={styles.performerList}>
                             {performers.bottom.length === 0 && <span className={styles.performerName}>No data</span>}
                             {performers.bottom.map((p, i) => (
-                                <div key={i} className={styles.performerItem}>
+                                <Link key={i} href={`/analysis/${p.symbol}?from=comparison`} className={styles.performerItem}>
                                     <span className={styles.performerName}>{p.symbol}</span>
                                     <span className={`${styles.performerValue} ${styles.negative}`}>
                                         {p.return.toFixed(2)}%
                                     </span>
-                                </div>
+                                </Link>
                             ))}
                         </div>
                     </div>
