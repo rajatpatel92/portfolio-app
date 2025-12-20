@@ -57,8 +57,11 @@
 
     .header {
         flex-direction: column;
-        align-items: flex-start;
         gap: 1rem;
+    }
+
+    .header> :last-child {
+        align-self: flex-end;
     }
 
     .analysisGrid {
