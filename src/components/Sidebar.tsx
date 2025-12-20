@@ -28,7 +28,8 @@ import {
     MdTimeline,
     MdExpandMore,
     MdChevronRight,
-    MdCalculate
+    MdCalculate,
+    MdBarChart
 } from 'react-icons/md';
 import { signOut } from 'next-auth/react';
 
@@ -64,7 +65,7 @@ export default function Sidebar() {
             children: [
                 { name: 'Allocation', href: '/analysis/allocation', icon: <MdPieChart size={20} /> },
                 { name: 'Comparison', href: '/analysis/comparison', icon: <MdCompareArrows size={20} /> },
-                { name: 'Evolution', href: '/analysis/evolution', icon: <MdTimeline size={20} /> },
+                { name: 'Evolution', href: '/analysis/evolution', icon: <MdBarChart size={20} /> },
                 { name: 'FIRE', href: '/analysis/fire', icon: <MdCalculate size={20} /> }
             ]
         },

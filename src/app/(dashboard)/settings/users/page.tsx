@@ -236,7 +236,7 @@ export default function UserManagementPage() {
                 </div>
                 <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'var(--background-subtle)', borderRadius: '0.5rem', border: '1px solid var(--card-border)' }}>
                     <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>
-                        <strong>Note:</strong> Regardless of the number of users, all users have unrestricted access to view the entire portfolio. No user specific portfolios are supported at this stage.
+                        <strong>Note:</strong> All users have unrestricted access to view the entire portfolio. No user specific portfolios are supported at this stage.
                     </p>
                 </div>
             </div>
