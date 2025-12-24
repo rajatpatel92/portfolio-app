@@ -24,7 +24,7 @@ export default function DividendChart({ data, period }: Props) {
 
     return (
         <div style={{ width: '100%', height: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                 <BarChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                     <XAxis

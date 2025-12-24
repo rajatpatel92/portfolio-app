@@ -134,3 +134,9 @@ model HiddenDividend {
 
   @@unique([symbol, date]) // Ensure uniqueness
 }
+
+model RateLimit {
+  key       String   @id
+  count     Int      @default(0)
+  expiresAt DateTime
+}
