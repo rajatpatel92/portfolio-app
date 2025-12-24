@@ -4,7 +4,10 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
     try {
         const types = await prisma.investmentType.findMany({
-            orderBy: { name: 'asc' }
+            orderBy: { name: 'asc' },
+            include: {
+                yahooInvestmentType: true
+            }
         });
         return NextResponse.json(types);
     } catch (error) {
@@ -14,14 +17,42 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const { name } = await request.json();
+        const { name, yahooInvestmentTypeId } = await request.json();
         if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
 
         const newType = await prisma.investmentType.create({
-            data: { name: name.toUpperCase() }
+            data: {
+                name: name.toUpperCase(),
+                yahooInvestmentTypeId: yahooInvestmentTypeId || null
+            },
+            include: {
+                yahooInvestmentType: true
+            }
         });
         return NextResponse.json(newType);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to create investment type' }, { status: 500 });
+    }
+}
+
+export async function PUT(request: Request) {
+    try {
+        const { id, name, yahooInvestmentTypeId } = await request.json();
+        if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+
+        const updatedType = await prisma.investmentType.update({
+            where: { id },
+            data: {
+                name: name ? name.toUpperCase() : undefined,
+                yahooInvestmentTypeId: yahooInvestmentTypeId // Can be null to clear
+            },
+            include: {
+                yahooInvestmentType: true
+            }
+        });
+        return NextResponse.json(updatedType);
+    } catch (error) {
+        console.error('Failed to update investment type', error);
+        return NextResponse.json({ error: 'Failed to update investment type' }, { status: 500 });
     }
 }

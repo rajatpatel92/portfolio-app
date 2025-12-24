@@ -80,8 +80,16 @@ model MarketDataCache {
 }
 
 model InvestmentType {
-  id   String @id @default(uuid())
-  name String @unique
+  id                    String               @id @default(uuid())
+  name                  String               @unique
+  yahooInvestmentTypeId String?
+  yahooInvestmentType   YahooInvestmentType? @relation(fields: [yahooInvestmentTypeId], references: [id])
+}
+
+model YahooInvestmentType {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  investmentTypes InvestmentType[]
 }
 
 model ActivityType {

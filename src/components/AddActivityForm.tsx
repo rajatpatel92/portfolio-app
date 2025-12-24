@@ -40,81 +40,45 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
 
     const [platforms, setPlatforms] = useState<{ id: string, name: string }[]>([]);
     const [accounts, setAccounts] = useState<{ id: string, name: string, type: string, platformId: string, currency: string }[]>([]);
-    const [investmentTypes, setInvestmentTypes] = useState<{ id: string, name: string }[]>([]);
+    // ... inside component ...
+    interface InvestmentType {
+        id: string;
+        name: string;
+        yahooInvestmentType?: { name: string };
+    }
+    const [investmentTypes, setInvestmentTypes] = useState<InvestmentType[]>([]);
     const [activityTypes, setActivityTypes] = useState<{ id: string, name: string }[]>([]);
     const [users, setUsers] = useState<{ id: string, username: string, name?: string }[]>([]);
+    const [isInvestmentTypeLocked, setIsInvestmentTypeLocked] = useState(false);
 
     useEffect(() => {
         // Fetch platforms, accounts, and types
-        Promise.all([
+        Promise.allSettled([
             fetch('/api/platforms').then(res => res.json()),
             fetch('/api/accounts').then(res => res.json()),
             fetch('/api/settings/investment-types').then(res => res.json()),
             fetch('/api/settings/activity-types').then(res => res.json()),
             fetch('/api/users').then(res => res.json())
-        ]).then(([platformsData, accountsData, invTypesData, actTypesData, usersData]) => {
-            if (Array.isArray(platformsData)) setPlatforms(platformsData);
-            if (Array.isArray(accountsData)) setAccounts(accountsData);
-            if (Array.isArray(invTypesData)) setInvestmentTypes(invTypesData);
-            if (Array.isArray(actTypesData)) setActivityTypes(actTypesData);
-            if (Array.isArray(usersData)) setUsers(usersData);
-        }).catch(err => console.error('Failed to fetch data', err));
+        ]).then((results) => {
+            const [platformsRes, accountsRes, invTypesRes, actTypesRes, usersRes] = results;
+
+            if (platformsRes.status === 'fulfilled' && Array.isArray(platformsRes.value)) {
+                setPlatforms(platformsRes.value);
+            }
+            if (accountsRes.status === 'fulfilled' && Array.isArray(accountsRes.value)) {
+                setAccounts(accountsRes.value);
+            }
+            if (invTypesRes.status === 'fulfilled' && Array.isArray(invTypesRes.value)) {
+                setInvestmentTypes(invTypesRes.value);
+            }
+            if (actTypesRes.status === 'fulfilled' && Array.isArray(actTypesRes.value)) {
+                setActivityTypes(actTypesRes.value);
+            }
+            if (usersRes.status === 'fulfilled' && Array.isArray(usersRes.value)) {
+                setUsers(usersRes.value);
+            }
+        });
     }, []);
-
-    // Initialize form if editing
-    useEffect(() => {
-        if (initialData) {
-            setSymbol(initialData.investment.symbol);
-            setType(initialData.type);
-            setDate(new Date(initialData.date).toISOString().split('T')[0]);
-            setQuantity(initialData.quantity.toString());
-            setPrice(initialData.price.toString());
-            setFee(initialData.fee ? initialData.fee.toString() : '');
-            setPlatformId(initialData.platformId?.toString() || '');
-            setAccountId(initialData.accountId?.toString() || '');
-            setInvestmentType(initialData.investment.type);
-            setCurrency(initialData.investment.currencyCode || 'USD');
-        }
-    }, [initialData]);
-
-    // Auto-select platform when account changes
-    useEffect(() => {
-        if (accountId) {
-            const account = accounts.find(a => a.id === accountId);
-            if (account) {
-                setPlatformId(account.platformId);
-            }
-        }
-    }, [accountId, accounts]);
-
-    useEffect(() => {
-        const searchSymbols = async () => {
-            if (isSelectionRef.current) {
-                isSelectionRef.current = false;
-                return;
-            }
-
-            if (symbol.length < 2 || initialData) { // Don't search if editing or short query
-                setResults([]);
-                return;
-            }
-
-            setLoading(true);
-            try {
-                const res = await fetch(`/api/search?q=${encodeURIComponent(symbol)}`);
-                const data = await res.json();
-                setResults(Array.isArray(data) ? data : []);
-                setShowResults(true);
-            } catch (error) {
-                console.error('Search failed', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        const timeoutId = setTimeout(searchSymbols, 500);
-        return () => clearTimeout(timeoutId);
-    }, [symbol, initialData]);
 
     const handleSelectSymbol = async (result: SearchResult) => {
         isSelectionRef.current = true;
@@ -122,20 +86,49 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
         setSymbolName(result.name);
         setSymbolType(result.type);
 
-        // Auto-detect investment type
-        let detectedType = 'EQUITY';
-        if (result.type === 'ETF' || result.type === 'MUTUALFUND') detectedType = 'EQUITY'; // Map to Equity
-        else if (result.type === 'CRYPTOCURRENCY') detectedType = 'CRYPTO';
-        else if (result.type === 'BOND') detectedType = 'BOND';
-        else if (result.type === 'FUTURE' || result.type === 'OPTION') detectedType = 'COMMODITY'; // Rough mapping
+        // Check if symbol exists in DB to lock Investment Type
+        try {
+            const res = await fetch(`/api/investments?symbol=${encodeURIComponent(result.symbol)}`);
+            const existingInvestments = await res.json();
 
-        // Check if detected type exists in our list, otherwise default to first available or EQUITY
-        const typeExists = investmentTypes.some(t => t.name === detectedType);
-        if (typeExists) {
-            setInvestmentType(detectedType);
-        } else if (investmentTypes.length > 0) {
-            // Try to match loosely or default
-            setInvestmentType(investmentTypes[0].name);
+            if (Array.isArray(existingInvestments) && existingInvestments.length > 0) {
+                // Symbol exists! Use its existing type.
+                const existingType = existingInvestments[0].type;
+                if (existingType) {
+                    setInvestmentType(existingType);
+                    setIsInvestmentTypeLocked(true);
+                }
+            } else {
+                // New symbol: Auto-detect based on mapping
+                setIsInvestmentTypeLocked(false);
+
+                // Find Investment Type where mapped Yahoo Type matches result.type
+                // Yahoo types from search are usually uppercase, e.g. "ETF", "EQUITY"
+                const yahooType = result.type.toUpperCase();
+
+                const matchedType = investmentTypes.find(
+                    it => it.yahooInvestmentType?.name === yahooType
+                );
+
+                if (matchedType) {
+                    setInvestmentType(matchedType.name);
+                } else {
+                    // Fallback logic
+                    if (yahooType === 'EQUITY' || yahooType === 'ETF' || yahooType === 'MUTUALFUND') {
+                        // Try to find "Stock" or "Equity"
+                        const stockType = investmentTypes.find(t => t.name === 'Stock' || t.name === 'Equity');
+                        if (stockType) setInvestmentType(stockType.name);
+                    } else if (investmentTypes.length > 0) {
+                        // Default to first if completely unknown
+                        // setInvestmentType(investmentTypes[0].name); 
+                        // Actually, better to leave it as 'EQUITY' default or whatever the state initialized to, 
+                        // or just let user select.
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Failed to check existing investment', error);
+            setIsInvestmentTypeLocked(false);
         }
 
         setShowResults(false);
@@ -154,6 +147,31 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
             console.error('Failed to fetch currency/price', error);
         }
     };
+
+    // Effect for symbol search
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(async () => {
+            if (symbol.length > 1 && !isSelectionRef.current) {
+                setLoading(true);
+                try {
+                    const res = await fetch(`/api/search?q=${encodeURIComponent(symbol)}`);
+                    const data = await res.json();
+                    setResults(Array.isArray(data) ? data : []);
+                    setShowResults(true);
+                } catch (error) {
+                    console.error('Search failed', error);
+                } finally {
+                    setLoading(false);
+                }
+            } else if (symbol.length <= 1) {
+                setResults([]);
+                setShowResults(false);
+            }
+            isSelectionRef.current = false; // Reset after potential selection or search
+        }, 300); // Debounce time
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [symbol]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -285,6 +303,7 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
                         value={investmentType}
                         onChange={(e) => setInvestmentType(e.target.value)}
                         className={styles.select}
+                        disabled={isInvestmentTypeLocked}
                     >
                         {investmentTypes.map(type => (
                             <option key={type.id} value={type.name}>{type.name}</option>
@@ -332,7 +351,16 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
                     <select
                         id="account"
                         value={accountId}
-                        onChange={(e) => setAccountId(e.target.value)}
+                        onChange={(e) => {
+                            const newAccountId = e.target.value;
+                            setAccountId(newAccountId);
+                            const account = accounts.find(a => a.id === newAccountId);
+                            if (account) {
+                                setPlatformId(account.platformId);
+                            } else {
+                                setPlatformId('');
+                            }
+                        }}
                         className={styles.select}
                         required
                     >

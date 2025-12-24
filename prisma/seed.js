@@ -3,10 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-/* eslint-disable @typescript-eslint/no-require-imports */
-const { PrismaClient } = require('@prisma/client');
+const client_1 = require("@prisma/client");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const prisma = new PrismaClient();
+const prisma = new client_1.PrismaClient();
 async function main() {
     const adminUsername = 'admin';
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
@@ -49,18 +48,60 @@ async function main() {
         });
     }
     console.log('Exchange rates seeded.');
-    // Seed Investment Types
-    const investmentTypes = [
-        'Stock', 'ETF', 'Mutual Fund', 'Crypto', 'Bond', 'GIC', 'REIT', 'Cash'
+    // Seed Yahoo Investment Types
+    const yahooTypes = [
+        'EQUITY', 'ETF', 'MUTUALFUND', 'CRYPTOCURRENCY', 'FUTURE', 'INDEX', 'OPTION', 'CURRENCY', 'BOND'
     ];
-    for (const name of investmentTypes) {
-        await prisma.investmentType.upsert({
+    for (const name of yahooTypes) {
+        await prisma.yahooInvestmentType.upsert({
             where: { name },
             update: {},
             create: { name },
         });
     }
-    console.log('Investment types seeded.');
+    console.log('Yahoo Investment types seeded.');
+    // Seed Investment Types and Map to Yahoo Types
+    const investmentTypes = [
+        { name: 'Stock', yahooType: 'EQUITY' },
+        { name: 'ETF', yahooType: 'ETF' },
+        { name: 'Mutual Fund', yahooType: 'MUTUALFUND' },
+        { name: 'Crypto', yahooType: 'CRYPTOCURRENCY' },
+        { name: 'Bond', yahooType: 'BOND' },
+        { name: 'GIC', yahooType: null },
+        { name: 'REIT', yahooType: 'EQUITY' },
+        { name: 'Cash', yahooType: 'CURRENCY' }
+    ];
+    for (const type of investmentTypes) {
+        // Find Yahoo Type ID if applicable
+        let yahooTypeId = null;
+        if (type.yahooType) {
+            const yt = await prisma.yahooInvestmentType.findUnique({ where: { name: type.yahooType } });
+            yahooTypeId = yt === null || yt === void 0 ? void 0 : yt.id;
+        }
+        // Upsert Investment Type
+        // We only want to set the yahooInvestmentTypeId if it is NOT set, or if we are creating it.
+        // We don't want to overwrite user changes if they changed the mapping.
+        const existing = await prisma.investmentType.findUnique({ where: { name: type.name } });
+        if (!existing) {
+            await prisma.investmentType.create({
+                data: {
+                    name: type.name,
+                    yahooInvestmentTypeId: yahooTypeId
+                }
+            });
+        }
+        else {
+            // Optional: If existing but has NO mapping, we could auto-map it?
+            // Let's safe-update: Only update if yahooInvestmentTypeId is null and we have a default for it.
+            if (existing.yahooInvestmentTypeId === null && yahooTypeId) {
+                await prisma.investmentType.update({
+                    where: { id: existing.id },
+                    data: { yahooInvestmentTypeId: yahooTypeId }
+                });
+            }
+        }
+    }
+    console.log('Investment types seeded and mapped.');
     // Seed Account Types
     const accountTypes = [
         // Canada
@@ -94,6 +135,7 @@ async function main() {
     }
     console.log('Account types seeded.');
     // Seed Activity Types
+    // Seed Activity Types
     const activityTypes = [
         { name: 'BUY', behavior: 'ADD', isSystem: true },
         { name: 'SELL', behavior: 'REMOVE', isSystem: true },
@@ -111,7 +153,6 @@ async function main() {
         });
     }
     console.log('Activity types seeded.');
-
     // Seed Benchmarks
     const benchmarks = [
         { symbol: '^GSPC', name: 'S&P 500', isSystem: true },
@@ -131,9 +172,9 @@ async function main() {
 }
 main()
     .catch((e) => {
-        console.error(e);
-        process.exit(1);
-    })
+    console.error(e);
+    process.exit(1);
+})
     .finally(async () => {
-        await prisma.$disconnect();
-    });
+    await prisma.$disconnect();
+});
