@@ -124,3 +124,13 @@ model Benchmark {
   isSystem  Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
+model HiddenDividend {
+  id        String   @id @default(uuid())
+  symbol    String
+  date      DateTime
+  amount    Float?    // Optional, can match loosely or strictly
+  createdAt DateTime @default(now())
+
+  @@unique([symbol, date]) // Ensure uniqueness
+}
