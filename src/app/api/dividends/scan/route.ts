@@ -28,6 +28,20 @@ export async function POST(request: Request) {
             symbolsToScan = investments.map(i => i.symbol);
         }
 
+        // Fetch hidden dividends for these symbols
+        const hiddenDividends = await prisma.hiddenDividend.findMany({
+            where: {
+                symbol: { in: symbolsToScan }
+            }
+        });
+
+        // Create a map for quick lookup: symbol-date -> boolean
+        const hiddenMap = new Map<string, boolean>();
+        hiddenDividends.forEach(h => {
+            const key = `${h.symbol}-${h.date.toISOString().split('T')[0]}`;
+            hiddenMap.set(key, true);
+        });
+
         const foundDividends = [];
 
         // 2. Scan each symbol
@@ -81,7 +95,8 @@ export async function POST(request: Request) {
                                     currency: chartResult.meta.currency || 'USD',
                                     accountId: accountId === 'unknown' ? null : accountId,
                                     price: price,
-                                    isDuplicate: exists
+                                    isDuplicate: exists,
+                                    isHidden: hiddenMap.has(`${symbol}-${divDate.toISOString().split('T')[0]}`)
                                 });
                             }
                         }
@@ -100,4 +115,3 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
-

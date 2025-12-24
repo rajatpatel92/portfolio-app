@@ -69,6 +69,7 @@ export default function ActivitiesPage() {
     const [foundDividends, setFoundDividends] = useState<any[]>([]);
     const [reinvestSelection, setReinvestSelection] = useState<Set<string>>(new Set());
     const [showDuplicates, setShowDuplicates] = useState(false);
+    const [showHidden, setShowHidden] = useState(false);
     const [range, setRange] = useState('ALL');
     const [customStart, setCustomStart] = useState('');
     const [customEnd, setCustomEnd] = useState('');
@@ -311,6 +312,7 @@ export default function ActivitiesPage() {
         setReinvestSelection(new Set());
         setDividendStep('SELECTION');
         setShowDuplicates(false);
+        setShowHidden(false);
     };
 
     const handleFetchDividends = async () => {
@@ -343,11 +345,12 @@ export default function ActivitiesPage() {
                 data.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
                 setFoundDividends(data);
 
-                // Select only non-duplicates by default
+                // Select only non-duplicates and non-hidden by default
                 const initialSelection = new Set<string>();
                 data.forEach((d: any, index: number) => {
                     const isDup = !!d.isDuplicate;
-                    if (!isDup) {
+                    const isHidden = !!d.isHidden;
+                    if (!isDup && !isHidden) {
                         initialSelection.add(getDivKey(d));
                     }
                 });
@@ -410,8 +413,41 @@ export default function ActivitiesPage() {
         setReinvestSelection(newReinvest);
     };
 
+    const handleToggleHide = async (d: any) => {
+        const isHidden = !!d.isHidden;
+        const method = isHidden ? 'DELETE' : 'POST';
+
+        try {
+            const res = await fetch('/api/dividends/hide', {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbol: d.symbol, date: d.date, amount: d.amount })
+            });
+
+            if (res.ok) {
+                // Update local state
+                setFoundDividends(prev => prev.map(div => {
+                    if (getDivKey(div) === getDivKey(d)) {
+                        return { ...div, isHidden: !isHidden };
+                    }
+                    return div;
+                }));
+                // Deselect if hidden
+                if (!isHidden) {
+                    const newSelected = new Set(selectedDividends);
+                    newSelected.delete(getDivKey(d));
+                    setSelectedDividends(newSelected);
+                }
+            } else {
+                alert('Failed to update hidden status');
+            }
+        } catch (error) {
+            console.error('Failed to toggle hide', error);
+        }
+    };
+
     const toggleAllDividends = () => {
-        const displayedDividends = foundDividends.filter(d => showDuplicates || !d.isDuplicate);
+        const displayedDividends = foundDividends.filter(d => (showDuplicates || !d.isDuplicate) && (showHidden || !d.isHidden));
         const displayedKeys = displayedDividends.map(getDivKey);
         const allSelected = displayedKeys.every(k => selectedDividends.has(k));
 
@@ -835,23 +871,52 @@ export default function ActivitiesPage() {
 
                         {dividendStep === 'RESULTS' && (
                             <>
-                                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Found Dividends</h2>
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={showDuplicates}
-                                            onChange={(e) => setShowDuplicates(e.target.checked)}
-                                        />
-                                        <span>Show Already Added Dividends</span>
-                                    </label>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                    <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Found Dividends</h2>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button
+                                            onClick={() => setShowDuplicates(!showDuplicates)}
+                                            style={{
+                                                background: showDuplicates ? 'var(--primary)' : 'transparent',
+                                                color: showDuplicates ? 'white' : 'var(--text-secondary)',
+                                                border: `1px solid ${showDuplicates ? 'var(--primary)' : 'var(--card-border)'}`,
+                                                padding: '0.25rem 0.75rem',
+                                                borderRadius: '1rem',
+                                                fontSize: '0.75rem',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            Show Already Added
+                                        </button>
+                                        <button
+                                            onClick={() => setShowHidden(!showHidden)}
+                                            style={{
+                                                background: showHidden ? 'var(--primary)' : 'transparent',
+                                                color: showHidden ? 'white' : 'var(--text-secondary)',
+                                                border: `1px solid ${showHidden ? 'var(--primary)' : 'var(--card-border)'}`,
+                                                padding: '0.25rem 0.75rem',
+                                                borderRadius: '1rem',
+                                                fontSize: '0.75rem',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            Show Hidden
+                                        </button>
+                                    </div>
                                 </div>
                                 {foundDividends.filter(d => showDuplicates || !d.isDuplicate).length === 0 ? (
                                     <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
                                         No new dividends found for the selected symbols in the last year.
                                         {!showDuplicates && foundDividends.length > 0 && (
                                             <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
-                                                {foundDividends.length} already added dividends hidden. Check "Show Already Added Dividends" to view them.
+                                                {foundDividends.filter(d => d.isDuplicate).length} already added dividends hidden.
+                                            </div>
+                                        )}
+                                        {!showHidden && foundDividends.filter(d => d.isHidden).length > 0 && (
+                                            <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
+                                                {foundDividends.filter(d => d.isHidden).length} hidden dividends.
                                             </div>
                                         )}
                                     </div>
@@ -864,7 +929,7 @@ export default function ActivitiesPage() {
                                                         <input
                                                             type="checkbox"
                                                             onChange={toggleAllDividends}
-                                                            checked={foundDividends.filter(d => showDuplicates || !d.isDuplicate).length > 0 && foundDividends.filter(d => showDuplicates || !d.isDuplicate).every(d => selectedDividends.has(getDivKey(d)))}
+                                                            checked={foundDividends.filter(d => (showDuplicates || !d.isDuplicate) && (showHidden || !d.isHidden)).length > 0 && foundDividends.filter(d => (showDuplicates || !d.isDuplicate) && (showHidden || !d.isHidden)).every(d => selectedDividends.has(getDivKey(d)))}
                                                         />
                                                     </th>
                                                     <th>Date</th>
@@ -872,26 +937,56 @@ export default function ActivitiesPage() {
                                                     <th>Amount</th>
                                                     <th>Reinvest?</th>
                                                     <th>Status</th>
+                                                    <th>Hide</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {foundDividends
-                                                    .filter(div => showDuplicates || !div.isDuplicate)
+                                                    .filter(div => (showDuplicates || !div.isDuplicate) && (showHidden || !div.isHidden))
                                                     .map((div, i) => {
                                                         const key = getDivKey(div);
+                                                        const isHidden = !!div.isHidden;
                                                         return (
-                                                            <tr key={key} style={{ opacity: div.isDuplicate ? 0.6 : 1, background: div.isDuplicate ? 'var(--bg-secondary)' : 'transparent' }}>
-                                                                <td><input type="checkbox" checked={selectedDividends.has(key)} onChange={() => toggleDividendSelection(key)} /></td>
+                                                            <tr key={key} style={{ opacity: isHidden ? 0.5 : (div.isDuplicate ? 0.6 : 1), background: div.isDuplicate ? 'var(--bg-secondary)' : 'transparent' }}>
+                                                                <td>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={selectedDividends.has(key)}
+                                                                        onChange={() => toggleDividendSelection(key)}
+                                                                        disabled={isHidden}
+                                                                    />
+                                                                </td>
                                                                 <td>{formatDate(div.date)}</td>
                                                                 <td>{div.symbol}</td>
                                                                 <td>{format(div.amount)} {div.currency}</td>
-                                                                <td><input type="checkbox" checked={reinvestSelection.has(key)} onChange={() => toggleReinvestSelection(key)} /></td>
+                                                                <td><input type="checkbox" checked={reinvestSelection.has(key)} onChange={() => toggleReinvestSelection(key)} disabled={isHidden} /></td>
                                                                 <td>
-                                                                    {div.isDuplicate ? (
+                                                                    {isHidden ? (
+                                                                        <span style={{ fontSize: '0.75rem', background: 'var(--text-secondary)', color: 'white', padding: '0.25rem 0.5rem', borderRadius: '1rem' }}>Hidden</span>
+                                                                    ) : div.isDuplicate ? (
                                                                         <span style={{ fontSize: '0.75rem', background: 'var(--warning-light)', color: 'var(--warning-dark)', padding: '0.25rem 0.5rem', borderRadius: '1rem' }}>Already Added</span>
                                                                     ) : (
                                                                         <span style={{ fontSize: '0.75rem', background: 'var(--success-light)', color: 'var(--success-dark)', padding: '0.25rem 0.5rem', borderRadius: '1rem' }}>New</span>
                                                                     )}
+                                                                </td>
+                                                                <td>
+                                                                    <button
+                                                                        onClick={() => handleToggleHide(div)}
+                                                                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                                                                        title={isHidden ? "Unhide" : "Hide"}
+                                                                    >
+                                                                        {isHidden ? (
+                                                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                                                <circle cx="12" cy="12" r="3"></circle>
+                                                                            </svg>
+                                                                        ) : (
+                                                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                                                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                                                                            </svg>
+                                                                        )}
+                                                                    </button>
                                                                 </td>
                                                             </tr>
                                                         );
