@@ -134,7 +134,9 @@ export class PortfolioAnalytics {
     }> {
 
         const debug: string[] = [];
-        const log = (msg: string) => { console.log(msg); debug.push(msg); };
+        const log = (msg: string) => {
+            debug.push(msg);
+        };
 
         log(`[PortfolioAnalytics] Starting Calculation. Target: ${targetCurrency}`);
 
@@ -262,6 +264,7 @@ export class PortfolioAnalytics {
             daysActivities.forEach(a => {
                 // Determine FX Rate for this transaction's currency
                 const assetCurrency = a.investment.currency;
+                const symbol = a.investment.symbol;
 
                 // For Transaction Flow, we usually use the historic rate ON THAT DAY (or close to it)
                 // We can use our daily FX map
@@ -286,18 +289,47 @@ export class PortfolioAnalytics {
                     netFlow -= flowVal * fxRate; // Outflow is negative
 
                     holdings[a.investment.symbol] = (holdings[a.investment.symbol] || 0) - Math.abs(a.quantity);
+
+                    // [FIX] Negative Holdings Protection
+                    // If we sell more than we have (due to missing history/splits), treat the deficit as an implicit deposit
+                    // to prevent massive value drops.
+                    if (holdings[a.investment.symbol] < 0) {
+                        const deficit = Math.abs(holdings[a.investment.symbol]);
+                        const deficitVal = deficit * a.price;
+                        // Add back the value of the missing shares to netFlow 
+                        // (effectively saying "We deposited these shares just before selling them")
+                        netFlow += deficitVal * fxRate;
+                        holdings[a.investment.symbol] = 0;
+                    }
                 } else if (a.type === 'DIVIDEND') {
                     const divVal = (a.quantity * a.price);
                     dividends += divVal * fxRate;
                 } else if (a.type === 'STOCK_SPLIT') {
                     holdings[a.investment.symbol] = (holdings[a.investment.symbol] || 0) * a.quantity;
                 }
+
+                // [FIX]: Ensure we update lastKnownPrices/Fx for the asset involved today.
+                // If we don't, and this is a new asset, the NEXT day's calculateMarketValue loop
+                // will see it as a "New Discovery" because lastKnownPrices[symbol] would be 0 or undefined,
+                // causing a massive fake "inflow" equal to the entire position value.
+                if (priceMaps[symbol]?.[dateStr]) {
+                    lastKnownPrices[symbol] = priceMaps[symbol][dateStr];
+                } else if (a.price > 0) {
+                    // Fallback to execution price if market data is missing for today
+                    lastKnownPrices[symbol] = a.price;
+                }
+
+                if (assetCurrency !== targetCurrency && fxMaps[assetCurrency]?.[dateStr]) {
+                    lastKnownFx[assetCurrency] = fxMaps[assetCurrency][dateStr];
+                }
             });
 
             // 3. Calculate Performance (NAV Change)
             const adjustablePassiveMV = passiveMV + dividends;
 
-            if (prevMarketValue > 0) {
+            // [FIX] Epsilon Start Protection
+            // Use a threshold (0.01) to avoid division by floating point dust (e.g. 1e-15)
+            if (prevMarketValue > 0.01) {
                 const growth = adjustablePassiveMV / prevMarketValue;
                 nav = nav * growth;
             } else if (netFlow > 0 && nav === 100) {
@@ -312,12 +344,6 @@ export class PortfolioAnalytics {
             // Log final day summary
             if (isLastDay) {
                 log(`[Final Day ${dateStr}] FinalMV: ${finalMV}, PassiveMV: ${passiveMV}, NetFlow: ${netFlow}, Discovery: ${discoveryFlow}, Nav: ${nav}, Dividends: ${dividends}`);
-            }
-
-            // Recalculate Units
-            if (totalEffectiveFlow !== 0) {
-                const newUnits = totalEffectiveFlow / nav;
-                units += newUnits;
             }
 
             dailyPerf.push({
