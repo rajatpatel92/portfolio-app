@@ -7,11 +7,13 @@ import { useSession } from 'next-auth/react';
 import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 
 export default function MasterDataSettingsPage() {
-    const [investmentTypes, setInvestmentTypes] = useState<{ id: string, name: string }[]>([]);
+    const [investmentTypes, setInvestmentTypes] = useState<{ id: string, name: string, yahooInvestmentTypeId?: string | null, yahooInvestmentType?: { name: string } }[]>([]);
     const [activityTypes, setActivityTypes] = useState<{ id: string, name: string, behavior: string, isSystem?: boolean }[]>([]);
     const [accountTypes, setAccountTypes] = useState<{ id: string, name: string, currency: string }[]>([]);
+    const [yahooTypes, setYahooTypes] = useState<{ id: string, name: string }[]>([]);
 
     const [newInvestmentType, setNewInvestmentType] = useState('');
+    const [newInvestmentTypeMapping, setNewInvestmentTypeMapping] = useState('');
     const [newActivityType, setNewActivityType] = useState('');
     const [newActivityBehavior, setNewActivityBehavior] = useState('ADD');
     const [newAccountTypeName, setNewAccountTypeName] = useState('');
@@ -22,12 +24,19 @@ export default function MasterDataSettingsPage() {
     const [editFormData, setEditFormData] = useState<any>({});
 
     const { data: session } = useSession();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const role = (session?.user as any)?.role || 'VIEWER';
 
     async function fetchInvestmentTypes() {
         const res = await fetch('/api/settings/investment-types');
         const data = await res.json();
         if (Array.isArray(data)) setInvestmentTypes(data);
+    }
+
+    async function fetchYahooTypes() {
+        const res = await fetch('/api/settings/yahoo-types');
+        const data = await res.json();
+        if (Array.isArray(data)) setYahooTypes(data);
     }
 
     async function fetchActivityTypes() {
@@ -45,6 +54,7 @@ export default function MasterDataSettingsPage() {
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchInvestmentTypes();
+        fetchYahooTypes();
         fetchActivityTypes();
         fetchAccountTypes();
     }, []);
@@ -57,10 +67,14 @@ export default function MasterDataSettingsPage() {
             const res = await fetch('/api/settings/investment-types', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newInvestmentType }),
+                body: JSON.stringify({
+                    name: newInvestmentType,
+                    yahooInvestmentTypeId: newInvestmentTypeMapping || null
+                }),
             });
             if (res.ok) {
                 setNewInvestmentType('');
+                setNewInvestmentTypeMapping('');
                 fetchInvestmentTypes();
             }
         } catch (error) {
@@ -152,7 +166,10 @@ export default function MasterDataSettingsPage() {
             const res = await fetch(`/api/settings/investment-types/${editingId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: editFormData.name }),
+                body: JSON.stringify({
+                    name: editFormData.name,
+                    yahooInvestmentTypeId: editFormData.yahooInvestmentTypeId || null
+                }),
             });
             if (res.ok) {
                 cancelEditing();
@@ -242,7 +259,19 @@ export default function MasterDataSettingsPage() {
                                 onChange={(e) => setNewInvestmentType(e.target.value)}
                                 placeholder="New Type (e.g. ART)"
                                 className={styles.input}
+                                style={{ flex: 2 }}
                             />
+                            <select
+                                value={newInvestmentTypeMapping}
+                                onChange={(e) => setNewInvestmentTypeMapping(e.target.value)}
+                                className={styles.select}
+                                style={{ flex: 1 }}
+                            >
+                                <option value="">-- Yahoo Type --</option>
+                                {yahooTypes.map(yt => (
+                                    <option key={yt.id} value={yt.id}>{yt.name}</option>
+                                ))}
+                            </select>
                             <button type="submit" className={styles.button}>Add</button>
                         </form>
                         <ul className={styles.list}>
@@ -254,7 +283,19 @@ export default function MasterDataSettingsPage() {
                                                 value={editFormData.name}
                                                 onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
                                                 className={styles.input}
+                                                style={{ flex: 2 }}
                                             />
+                                            <select
+                                                value={editFormData.yahooInvestmentTypeId || ''}
+                                                onChange={(e) => setEditFormData({ ...editFormData, yahooInvestmentTypeId: e.target.value })}
+                                                className={styles.select}
+                                                style={{ flex: 1 }}
+                                            >
+                                                <option value="">-- Yahoo Type --</option>
+                                                {yahooTypes.map(yt => (
+                                                    <option key={yt.id} value={yt.id}>{yt.name}</option>
+                                                ))}
+                                            </select>
                                             <div className={styles.editActions}>
                                                 <button onClick={handleUpdateInvestmentType} className={styles.saveButton}>Save</button>
                                                 <button onClick={cancelEditing} className={styles.cancelButton}>Cancel</button>
@@ -262,7 +303,14 @@ export default function MasterDataSettingsPage() {
                                         </div>
                                     ) : (
                                         <>
-                                            <span>{type.name}</span>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span>{type.name}</span>
+                                                {type.yahooInvestmentType && (
+                                                    <small style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                                                        Maps to: {type.yahooInvestmentType.name}
+                                                    </small>
+                                                )}
+                                            </div>
                                             <div className={styles.itemActions}>
                                                 <button onClick={() => startEditing(type)} className={styles.editButton}>Edit</button>
                                                 <button onClick={() => handleDeleteInvestmentType(type.id)} className={styles.deleteButton}>Delete</button>

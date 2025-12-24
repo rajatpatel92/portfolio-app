@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import YahooFinance from 'yahoo-finance2';
@@ -9,18 +10,28 @@ const yahooFinance = new YahooFinance({
     suppressNotices: ['yahooSurvey', 'ripHistorical']
 });
 
-export async function GET() {
+export async function POST(request: Request) {
     try {
-        // 1. Get all distinct symbols from Investments
-        const investments = await prisma.investment.findMany({
-            select: { symbol: true }
-        });
-        const symbols = investments.map(i => i.symbol);
+        const body = await request.json();
+        const { symbols: requestedSymbols } = body;
+
+        let symbolsToScan: string[] = [];
+
+        if (requestedSymbols && Array.isArray(requestedSymbols) && requestedSymbols.length > 0) {
+            symbolsToScan = requestedSymbols;
+        } else {
+            // Default: Get all distinct symbols from Investments
+            const investments = await prisma.investment.findMany({
+                select: { symbol: true },
+                distinct: ['symbol']
+            });
+            symbolsToScan = investments.map(i => i.symbol);
+        }
 
         const foundDividends = [];
 
         // 2. Scan each symbol
-        for (const symbol of symbols) {
+        for (const symbol of symbolsToScan) {
             try {
                 // Fetch dividends for the last year
                 const endDate = new Date();
@@ -40,7 +51,6 @@ export async function GET() {
 
                         // Check if already exists
                         const exists = await checkDividendExists(symbol, divDate, div.amount);
-                        if (exists) continue;
 
                         // Calculate holdings on Ex-Date - 1 day
                         const checkDate = new Date(divDate);
@@ -49,8 +59,6 @@ export async function GET() {
                         const holdingsByAccount = await getHoldingsAtDate(symbol, checkDate);
 
                         // Find price for the dividend date
-                        // The chart result 'quotes' array contains open, high, low, close, volume, date
-                        // We need to find the quote matching the dividend date
                         let price = 0;
                         if (chartResult.quotes) {
                             const quote = chartResult.quotes.find(q => {
@@ -59,12 +67,6 @@ export async function GET() {
                             });
                             if (quote) {
                                 price = quote.close || 0;
-                            } else {
-                                // If no quote on ex-date (e.g. weekend), try the next available quote? 
-                                // Or previous? Usually ex-date is a trading day.
-                                // Let's fallback to the last quote if exact match fails, or 0.
-                                // Actually, let's try to find the closest quote.
-                                // For now, simple find.
                             }
                         }
 
@@ -78,7 +80,8 @@ export async function GET() {
                                     amount: div.amount * quantity,
                                     currency: chartResult.meta.currency || 'USD',
                                     accountId: accountId === 'unknown' ? null : accountId,
-                                    price: price
+                                    price: price,
+                                    isDuplicate: exists
                                 });
                             }
                         }
@@ -97,3 +100,4 @@ export async function GET() {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+

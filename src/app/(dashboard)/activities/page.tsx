@@ -58,10 +58,17 @@ export default function ActivitiesPage() {
     const [showDividendModal, setShowDividendModal] = useState(false);
     const [showBulkEditModal, setShowBulkEditModal] = useState(false);
 
+    // Dividend Fetching States
+    type DividendStep = 'SELECTION' | 'SCANNING' | 'RESULTS';
+    const [dividendStep, setDividendStep] = useState<DividendStep>('SELECTION');
+    const [availableSymbols, setAvailableSymbols] = useState<{ symbol: string, name: string }[]>([]);
+    const [selectedScanSymbols, setSelectedScanSymbols] = useState<Set<string>>(new Set());
+
     // Selection States
-    const [selectedDividends, setSelectedDividends] = useState<Set<number>>(new Set());
+    const [selectedDividends, setSelectedDividends] = useState<Set<string>>(new Set());
     const [foundDividends, setFoundDividends] = useState<any[]>([]);
-    const [reinvestSelection, setReinvestSelection] = useState<Set<number>>(new Set());
+    const [reinvestSelection, setReinvestSelection] = useState<Set<string>>(new Set());
+    const [showDuplicates, setShowDuplicates] = useState(false);
     const [range, setRange] = useState('ALL');
     const [customStart, setCustomStart] = useState('');
     const [customEnd, setCustomEnd] = useState('');
@@ -281,30 +288,86 @@ export default function ActivitiesPage() {
         }
     };
 
+    const fetchAvailableSymbols = async () => {
+        try {
+            const res = await fetch('/api/investments');
+            if (res.ok) {
+                const data = await res.json();
+                setAvailableSymbols(data);
+                // Default select all
+                setSelectedScanSymbols(new Set(data.map((i: any) => i.symbol)));
+            }
+        } catch (error) {
+            console.error('Failed to fetch investments', error);
+        }
+    };
+
+    const getDivKey = (d: any) => `${d.symbol}-${d.date}-${d.amount}`;
+
+    const handleCloseDividendModal = () => {
+        setShowDividendModal(false);
+        setFoundDividends([]);
+        setSelectedDividends(new Set());
+        setReinvestSelection(new Set());
+        setDividendStep('SELECTION');
+        setShowDuplicates(false);
+    };
+
     const handleFetchDividends = async () => {
+        setDividendStep('SELECTION');
         setShowDividendModal(true);
-        setLoadingDividends(true);
+        setFoundDividends([]);
+        setSelectedDividends(new Set());
+        setReinvestSelection(new Set());
+        fetchAvailableSymbols();
+    };
+
+    const handleScanDividends = async () => {
+        setDividendStep('SCANNING');
         setFoundDividends([]);
         setReinvestSelection(new Set());
+        setSelectedDividends(new Set());
+
         try {
-            const res = await fetch('/api/dividends/scan');
+            const res = await fetch('/api/dividends/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbols: Array.from(selectedScanSymbols) })
+            });
+
             const data = await res.json();
+            console.log('SCAN RESULTS:', data);
+
             if (Array.isArray(data)) {
+                // Sort by date descending
+                data.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
                 setFoundDividends(data);
-                // Select all by default
-                setSelectedDividends(new Set(data.map((_, i) => i)));
+
+                // Select only non-duplicates by default
+                const initialSelection = new Set<string>();
+                data.forEach((d: any, index: number) => {
+                    const isDup = !!d.isDuplicate;
+                    if (!isDup) {
+                        initialSelection.add(getDivKey(d));
+                    }
+                });
+
+                setSelectedDividends(initialSelection);
+                setDividendStep('RESULTS');
+            } else {
+                alert('Failed to scan dividends');
+                setDividendStep('SELECTION');
             }
         } catch (error) {
             console.error('Failed to fetch dividends', error);
-        } finally {
-            setLoadingDividends(false);
+            setDividendStep('SELECTION');
         }
     };
 
     const handleAddDividends = async () => {
         const toAdd = foundDividends
-            .map((div, i) => ({ ...div, reinvest: reinvestSelection.has(i) }))
-            .filter((_, i) => selectedDividends.has(i));
+            .filter(div => selectedDividends.has(getDivKey(div)))
+            .map(div => ({ ...div, reinvest: reinvestSelection.has(getDivKey(div)) }));
 
         if (toAdd.length === 0) return;
 
@@ -316,7 +379,7 @@ export default function ActivitiesPage() {
             });
 
             if (res.ok) {
-                setShowDividendModal(false);
+                handleCloseDividendModal();
                 fetchActivities();
                 alert(`Successfully added ${toAdd.length} dividend activities.`);
             } else {
@@ -327,32 +390,38 @@ export default function ActivitiesPage() {
         }
     };
 
-    const toggleDividendSelection = (index: number) => {
+    const toggleDividendSelection = (key: string) => {
         const newSelected = new Set(selectedDividends);
-        if (newSelected.has(index)) {
-            newSelected.delete(index);
+        if (newSelected.has(key)) {
+            newSelected.delete(key);
         } else {
-            newSelected.add(index);
+            newSelected.add(key);
         }
         setSelectedDividends(newSelected);
     };
 
-    const toggleReinvestSelection = (index: number) => {
+    const toggleReinvestSelection = (key: string) => {
         const newReinvest = new Set(reinvestSelection);
-        if (newReinvest.has(index)) {
-            newReinvest.delete(index);
+        if (newReinvest.has(key)) {
+            newReinvest.delete(key);
         } else {
-            newReinvest.add(index);
+            newReinvest.add(key);
         }
         setReinvestSelection(newReinvest);
     };
 
     const toggleAllDividends = () => {
-        if (selectedDividends.size === foundDividends.length) {
-            setSelectedDividends(new Set());
+        const displayedDividends = foundDividends.filter(d => showDuplicates || !d.isDuplicate);
+        const displayedKeys = displayedDividends.map(getDivKey);
+        const allSelected = displayedKeys.every(k => selectedDividends.has(k));
+
+        const newSelected = new Set(selectedDividends);
+        if (allSelected) {
+            displayedKeys.forEach(k => newSelected.delete(k));
         } else {
-            setSelectedDividends(new Set(foundDividends.map((_, i) => i)));
+            displayedKeys.forEach(k => newSelected.add(k));
         }
+        setSelectedDividends(newSelected);
     };
 
 
@@ -701,35 +770,159 @@ export default function ActivitiesPage() {
             {showDividendModal && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
                     <div style={{ background: 'var(--card-bg)', padding: '2rem', borderRadius: '1rem', maxWidth: '800px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Found Dividends</h2>
-                        <div style={{ overflowX: 'auto', marginBottom: '1rem' }}>
-                            <table className={styles.table}>
-                                <thead>
-                                    <tr>
-                                        <th><input type="checkbox" onChange={toggleAllDividends} checked={selectedDividends.size === foundDividends.length && foundDividends.length > 0} /></th>
-                                        <th>Date</th>
-                                        <th>Symbol</th>
-                                        <th>Amount</th>
-                                        <th>Reinvest?</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {foundDividends.map((div, i) => (
-                                        <tr key={i}>
-                                            <td><input type="checkbox" checked={selectedDividends.has(i)} onChange={() => toggleDividendSelection(i)} /></td>
-                                            <td>{formatDate(div.date)}</td>
-                                            <td>{div.symbol}</td>
-                                            <td>{format(div.amount)} {div.currency}</td>
-                                            <td><input type="checkbox" checked={reinvestSelection.has(i)} onChange={() => toggleReinvestSelection(i)} /></td>
-                                        </tr>
+
+                        {dividendStep === 'SELECTION' && (
+                            <>
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Select Symbols to Scan</h2>
+                                <div style={{ marginBottom: '1rem', maxHeight: '400px', overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '0.5rem' }}>
+                                    {availableSymbols.map(item => (
+                                        <label key={item.symbol} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', border: '1px solid var(--card-border)', borderRadius: '0.25rem', cursor: 'pointer', background: selectedScanSymbols.has(item.symbol) ? 'var(--bg-secondary)' : 'transparent' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedScanSymbols.has(item.symbol)}
+                                                onChange={(e) => {
+                                                    const newSet = new Set(selectedScanSymbols);
+                                                    if (e.target.checked) newSet.add(item.symbol);
+                                                    else newSet.delete(item.symbol);
+                                                    setSelectedScanSymbols(newSet);
+                                                }}
+                                            />
+                                            <span style={{ fontWeight: 600 }}>{item.symbol}</span>
+                                        </label>
                                     ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                            <button onClick={() => setShowDividendModal(false)} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--card-border)', background: 'transparent', cursor: 'pointer' }}>Cancel</button>
-                            <button onClick={handleAddDividends} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer' }} disabled={selectedDividends.size === 0}>Add Selected ({selectedDividends.size})</button>
-                        </div>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <button
+                                            onClick={() => setSelectedScanSymbols(new Set(availableSymbols.map(i => i.symbol)))}
+                                            style={{ background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', marginRight: '1rem' }}
+                                        >
+                                            Select All
+                                        </button>
+                                        <button
+                                            onClick={() => setSelectedScanSymbols(new Set())}
+                                            style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                                        >
+                                            Deselect All
+                                        </button>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <button onClick={handleCloseDividendModal} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--card-border)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}>Cancel</button>
+                                        <button
+                                            onClick={handleScanDividends}
+                                            style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none', cursor: 'pointer', opacity: selectedScanSymbols.size === 0 ? 0.5 : 1 }}
+                                            disabled={selectedScanSymbols.size === 0}
+                                        >
+                                            Scan for Dividends
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {dividendStep === 'SCANNING' && (
+                            <div style={{ textAlign: 'center', padding: '2rem' }}>
+                                <div style={{ display: 'inline-block', width: '2rem', height: '2rem', border: '3px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                                <h3 style={{ marginTop: '1rem', fontSize: '1.25rem' }}>Scanning for Dividends...</h3>
+                                <p style={{ color: 'var(--text-secondary)' }}>This may take a few moments depending on the number of symbols.</p>
+                                <style jsx>{`
+                                    @keyframes spin {
+                                        to { transform: rotate(360deg); }
+                                    }
+                                `}</style>
+                            </div>
+                        )}
+
+                        {dividendStep === 'RESULTS' && (
+                            <>
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Found Dividends</h2>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={showDuplicates}
+                                            onChange={(e) => setShowDuplicates(e.target.checked)}
+                                        />
+                                        <span>Show Already Added Dividends</span>
+                                    </label>
+                                </div>
+                                {foundDividends.filter(d => showDuplicates || !d.isDuplicate).length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+                                        No new dividends found for the selected symbols in the last year.
+                                        {!showDuplicates && foundDividends.length > 0 && (
+                                            <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
+                                                {foundDividends.length} already added dividends hidden. Check "Show Already Added Dividends" to view them.
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div style={{ overflowX: 'auto', marginBottom: '1rem' }}>
+                                        <table className={styles.table}>
+                                            <thead>
+                                                <tr>
+                                                    <th>
+                                                        <input
+                                                            type="checkbox"
+                                                            onChange={toggleAllDividends}
+                                                            checked={foundDividends.filter(d => showDuplicates || !d.isDuplicate).length > 0 && foundDividends.filter(d => showDuplicates || !d.isDuplicate).every(d => selectedDividends.has(getDivKey(d)))}
+                                                        />
+                                                    </th>
+                                                    <th>Date</th>
+                                                    <th>Symbol</th>
+                                                    <th>Amount</th>
+                                                    <th>Reinvest?</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {foundDividends
+                                                    .filter(div => showDuplicates || !div.isDuplicate)
+                                                    .map((div, i) => {
+                                                        const key = getDivKey(div);
+                                                        return (
+                                                            <tr key={key} style={{ opacity: div.isDuplicate ? 0.6 : 1, background: div.isDuplicate ? 'var(--bg-secondary)' : 'transparent' }}>
+                                                                <td><input type="checkbox" checked={selectedDividends.has(key)} onChange={() => toggleDividendSelection(key)} /></td>
+                                                                <td>{formatDate(div.date)}</td>
+                                                                <td>{div.symbol}</td>
+                                                                <td>{format(div.amount)} {div.currency}</td>
+                                                                <td><input type="checkbox" checked={reinvestSelection.has(key)} onChange={() => toggleReinvestSelection(key)} /></td>
+                                                                <td>
+                                                                    {div.isDuplicate ? (
+                                                                        <span style={{ fontSize: '0.75rem', background: 'var(--warning-light)', color: 'var(--warning-dark)', padding: '0.25rem 0.5rem', borderRadius: '1rem' }}>Already Added</span>
+                                                                    ) : (
+                                                                        <span style={{ fontSize: '0.75rem', background: 'var(--success-light)', color: 'var(--success-dark)', padding: '0.25rem 0.5rem', borderRadius: '1rem' }}>New</span>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                    <button onClick={() => setDividendStep('SELECTION')} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--card-border)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}>Back</button>
+                                    <button onClick={handleCloseDividendModal} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid var(--card-border)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}>Cancel</button>
+                                    {foundDividends.length > 0 && (
+                                        <button
+                                            onClick={handleAddDividends}
+                                            style={{
+                                                padding: '0.5rem 1rem',
+                                                borderRadius: '0.5rem',
+                                                background: 'var(--primary)',
+                                                color: 'white',
+                                                border: 'none',
+                                                cursor: selectedDividends.size === 0 ? 'not-allowed' : 'pointer',
+                                                opacity: selectedDividends.size === 0 ? 0.5 : 1
+                                            }}
+                                            disabled={selectedDividends.size === 0}
+                                        >
+                                            Add Selected {selectedDividends.size > 0 && `(${selectedDividends.size})`}
+                                        </button>
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

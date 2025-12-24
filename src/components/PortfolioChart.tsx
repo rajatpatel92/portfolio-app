@@ -220,15 +220,17 @@ export default function PortfolioChart({
                             axisLine={false}
                         />
                         <YAxis
-                            tickFormatter={(val) => format(val)}
+                            tickFormatter={(value) => {
+                                if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                                if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+                                return String(value);
+                            }}
                             stroke="#9ca3af"
                             fontSize={10}
                             tickMargin={5}
                             domain={['auto', 'auto']}
-                            width={30}
-                            tickCount={4}
-                            tickLine={false}
                             axisLine={false}
+                            width={45}
                         />
                         <Tooltip
                             formatter={(val: number) => [format(val), 'Value']}
