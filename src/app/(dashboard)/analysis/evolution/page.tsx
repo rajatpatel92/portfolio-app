@@ -129,7 +129,7 @@ export default function EvolutionPage() {
     // User wants "Async" style. Better to show structure and loaders inside.
     // So removing global AnalysisSkeleton return.
 
-    console.log('Evolution Page Data:', data);
+
 
     return (
         <div className={styles.container}>

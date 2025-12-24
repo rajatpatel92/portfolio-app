@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from "@/auth";
 
 export async function GET() {
+    const session = await auth();
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     try {
         const types = await prisma.investmentType.findMany({
             orderBy: { name: 'asc' },
@@ -16,6 +21,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+    const session = await auth();
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     try {
         const { name, yahooInvestmentTypeId } = await request.json();
         if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -36,6 +45,10 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+    const session = await auth();
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     try {
         const { id, name, yahooInvestmentTypeId } = await request.json();
         if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });

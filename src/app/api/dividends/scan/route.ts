@@ -10,7 +10,23 @@ const yahooFinance = new YahooFinance({
     suppressNotices: ['yahooSurvey', 'ripHistorical']
 });
 
+import { auth } from "@/auth";
+import { checkRateLimit } from "@/lib/rate-limit";
+
 export async function POST(request: Request) {
+    const session = await auth();
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate Limit: 5 scans per minute per user
+    const userId = session.user?.id || 'unknown';
+    const isAllowed = await checkRateLimit(`scan-dividends-${userId}`, 5, 60);
+
+    if (!isAllowed) {
+        return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+    }
+
     try {
         const body = await request.json();
         const { symbols: requestedSymbols } = body;
