@@ -118,7 +118,8 @@ export default function PerformanceChart({
             date: point.date,
             value: returnPercent,
             invested: invested,
-            marketValue: value // Pass USD Market Value for Tooltip
+            marketValue: value, // Pass USD Market Value for Tooltip
+            dividend: point.dividend || 0
         };
     });
 
