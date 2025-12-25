@@ -299,8 +299,8 @@ export default function ComparePage() {
                             {performers.top.map((p, i) => (
                                 <Link key={i} href={`/analysis/${p.symbol}?from=comparison`} className={styles.performerItem}>
                                     <span className={styles.performerName}>{p.symbol}</span>
-                                    <span className={`${styles.performerValue} ${styles.positive}`}>
-                                        +{p.return.toFixed(2)}%
+                                    <span className={`${styles.performerValue} ${getValColor(p.return)}`}>
+                                        {formatPct(p.return)}
                                     </span>
                                 </Link>
                             ))}
@@ -314,8 +314,8 @@ export default function ComparePage() {
                             {performers.bottom.map((p, i) => (
                                 <Link key={i} href={`/analysis/${p.symbol}?from=comparison`} className={styles.performerItem}>
                                     <span className={styles.performerName}>{p.symbol}</span>
-                                    <span className={`${styles.performerValue} ${styles.negative}`}>
-                                        {p.return.toFixed(2)}%
+                                    <span className={`${styles.performerValue} ${getValColor(p.return)}`}>
+                                        {formatPct(p.return)}
                                     </span>
                                 </Link>
                             ))}
