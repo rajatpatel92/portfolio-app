@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ClientCache } from '@/lib/client-cache';
 import {
     AreaChart,
     Area,
@@ -19,6 +20,9 @@ interface HistoryPoint {
     date: string;
     value: number;
     invested: number;
+    nav?: number;
+    marketValue?: number;
+    dividend?: number;
 }
 
 interface PerformanceChartProps {
@@ -43,14 +47,22 @@ export default function PerformanceChart({
     const [data, setData] = useState<HistoryPoint[]>([]);
     // Local state removed
     const [loading, setLoading] = useState(false);
-    const { convert } = useCurrency();
+    const { convert, currency } = useCurrency();
     const { formatDate } = useDate();
 
     useEffect(() => {
         const fetchData = async () => {
+            const cacheKey = `portfolio-history-${range}-${currency}-${customStart}-${customEnd}-v2`;
+
+            // 1. Try cache first for instant load
+            const cached = ClientCache.get<any[]>(cacheKey);
+            if (cached && Array.isArray(cached) && cached.length > 0) {
+                setData(cached);
+            }
+
             setLoading(true);
             try {
-                let url = `/api/portfolio/history?range=${range}`;
+                let url = `/api/portfolio/history?range=${range}&currency=${currency}`;
                 if (range === 'CUSTOM' && customStart && customEnd) {
                     url += `&startDate=${customStart}&endDate=${customEnd}`;
                 }
@@ -59,6 +71,9 @@ export default function PerformanceChart({
                 const json = await res.json();
                 if (Array.isArray(json)) {
                     setData(json);
+                    // Update Cache
+                    // Update Cache
+                    ClientCache.set(cacheKey, json);
                 }
             } catch (error) {
                 console.error('Failed to fetch history', error);
@@ -70,34 +85,69 @@ export default function PerformanceChart({
         if (range !== 'CUSTOM' || (customStart && customEnd)) {
             fetchData();
         }
-    }, [range, customStart, customEnd]);
+    }, [range, customStart, customEnd, currency]);
 
     // Calculate Average Invested Capital for the period
-    const totalInvested = data.reduce((sum, point) => sum + convert(point.invested, 'USD'), 0);
+    const totalInvested = data.reduce((sum, point) => sum + point.invested, 0);
     const avgInvested = data.length > 0 ? totalInvested / data.length : 0;
 
-    // Calculate Return % for each point based on Average Investment
+    // Calculate Return % for each point based on NAV (Time-Weighted)
     const chartData = data.map(point => {
-        const value = convert(point.value, 'USD');
-        const invested = convert(point.invested, 'USD');
-        // Profit = Value - Invested
-        // Return % = Profit / AvgInvested
-        const profit = value - invested;
-        const returnPercent = avgInvested !== 0 ? (profit / avgInvested) * 100 : 0;
+        // Values are already in the requested currency from the API
+        const value = point.value;
+        const invested = point.invested;
+
+        let returnPercent = 0;
+
+        if (point.nav !== undefined) {
+            // New NAV Logic
+            // Return % for the period = ((Current NAV / Start NAV) - 1) * 100
+            // Since data is already filtered to the range, start NAV is data[0].nav
+            const startNav = data[0].nav || 100;
+            if (startNav > 0) {
+                returnPercent = ((point.nav / startNav) - 1) * 100;
+            }
+        } else {
+            // Legacy Logic
+            const profit = value - invested;
+            const avgInv = avgInvested; // Use calculated avgInvested from above
+            returnPercent = avgInv !== 0 ? (profit / avgInv) * 100 : 0;
+        }
 
         return {
             date: point.date,
             value: returnPercent,
-            invested: invested
+            invested: invested,
+            marketValue: value // Pass USD Market Value for Tooltip
         };
     });
 
     // Calculate change in return (Last - First)
     let returnChange = 0;
+    let valueChange = 0; // PnL Amount
+
     if (chartData.length > 0) {
         const firstPoint = chartData[0];
         const lastPoint = chartData[chartData.length - 1];
+
+        // % Return Change based on our TMW/NAV calculation
         returnChange = lastPoint.value - firstPoint.value;
+
+        // PnL Calculation: (Delta Market Value) - (Delta Invested)
+        // This gives the actual monetary gain/loss for the period
+        const startVal = firstPoint.marketValue || 0;
+        const endVal = lastPoint.marketValue || 0;
+        const startInv = firstPoint.invested || 0; // Cumulative invested at start
+        const endInv = lastPoint.invested || 0; // Cumulative invested at end
+
+        const startDiv = firstPoint.dividend || 0;
+        const endDiv = lastPoint.dividend || 0;
+
+        // Value Change = (EndVal - StartVal) - (Net New Money) + (Dividends Received)
+        // Net New Money = EndInv - StartInv
+        // Dividend Income = EndDiv - StartDiv
+        // Total Return = Capital Gains + Dividends
+        valueChange = (endVal - startVal) - (endInv - startInv) + (endDiv - startDiv);
     }
 
     const isPositive = returnChange >= 0;
@@ -143,6 +193,9 @@ export default function PerformanceChart({
                     <h3>Portfolio Returns</h3>
                     {chartData.length > 0 && (
                         <div className={`${styles.change} ${isPositive ? styles.positive : styles.negative}`}>
+                            <span style={{ marginRight: '10px', fontSize: '1.1em', color: 'var(--text-primary)' }}>
+                                {valueChange > 0 ? '+' : ''}{new Intl.NumberFormat('en-US', { style: 'currency', currency: currency }).format(valueChange)}
+                            </span>
                             {returnChange > 0 ? '+' : ''}{returnChange.toFixed(2)}% <span style={{ opacity: 0.8, fontWeight: 'bold' }}>({getRangeLabel(range)})</span>
                         </div>
                     )}
@@ -248,13 +301,13 @@ export default function PerformanceChart({
                             fontSize={10}
                             tickMargin={5}
                             domain={['auto', 'auto']}
-                            width={25}
+                            width={35}
                             tickCount={4}
                             tickLine={false}
                             axisLine={false}
                         />
                         <Tooltip
-                            formatter={(val: number) => [`${val.toFixed(2)}%`, 'ROAI']}
+                            formatter={(val: number) => [`${val.toFixed(2)}%`, 'TWR']}
                             labelFormatter={(label) => formatDate(label)}
                             contentStyle={{
                                 backgroundColor: 'var(--card-bg)',

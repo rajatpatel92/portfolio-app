@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ClientCache } from '@/lib/client-cache';
 import Link from 'next/link';
 import styles from './page.module.css';
 import ReportFilters from '@/components/ReportFilters';
@@ -74,6 +75,21 @@ export default function ComparePage() {
         if (!filters) return; // Wait for init
 
         const fetchData = async () => {
+            // Generate Cache Key
+            const filterHash = JSON.stringify(filters); // Ordered stringification would be safer but filters usually don't jitter
+            const cacheKey = `comparison-${timeRange}-${benchmark}-${filterHash}-v2`;
+
+            // 1. Try Cache
+            const cached = ClientCache.get<any>(cacheKey);
+            if (cached) {
+                if (cached.portfolio) {
+                    setPortfolioData(cached.portfolio);
+                    setBenchmarkData(cached.benchmark);
+                    if (cached.summary) setSummary(cached.summary);
+                    if (cached.performers) setPerformers(cached.performers);
+                }
+            }
+
             setIsLoading(true);
             try {
                 const res = await fetch('/api/analytics/benchmark', {
@@ -94,6 +110,10 @@ export default function ComparePage() {
                     // Set enhanced data
                     if (data.summary) setSummary(data.summary);
                     if (data.performers) setPerformers(data.performers);
+
+                    // Update Cache
+                    // Update Cache
+                    ClientCache.set(cacheKey, data);
                 }
             } catch (err) {
                 console.error(err);

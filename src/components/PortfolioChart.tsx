@@ -60,7 +60,7 @@ export default function PortfolioChart({
         const fetchData = async () => {
             setLoading(true);
             try {
-                let url = `/api/portfolio/history?range=${range}`;
+                let url = `/api/portfolio/history?range=${range}&currency=${currency}`;
                 if (range === 'CUSTOM' && customStart && customEnd) {
                     url += `&startDate=${customStart}&endDate=${customEnd}`;
                 }
@@ -80,13 +80,17 @@ export default function PortfolioChart({
         if (range !== 'CUSTOM' || (customStart && customEnd)) {
             fetchData();
         }
-    }, [range, customStart, customEnd, externalData]);
+    }, [range, customStart, customEnd, externalData, currency]);
 
     // Convert data to selected currency (only if not external, as external data is already converted)
     const chartData = displayData.map(point => ({
         ...point,
-        value: externalData ? point.value : convert(point.value, 'USD'), // API returns USD
-        invested: externalData ? point.invested : convert(point.invested, 'USD')
+        // API returns data in the requested currency, so NO conversion needed.
+        // We only use convert if we suspect the data is raw USD, but we fixed the API call.
+        // To be safe: If externalData is passed, assume it's correct. 
+        // If data comes from our API, it's already in 'currency'.
+        value: point.value,
+        invested: point.invested
     }));
 
     // Calculate Average Contribution

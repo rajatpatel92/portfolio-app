@@ -556,6 +556,28 @@ export class MarketDataService {
      */
     static async getDailyHistory(symbol: string, fromDate?: Date): Promise<Record<string, number>> {
         try {
+            // 1. Check Cache
+            const cached = await prisma.marketDataCache.findUnique({
+                where: { symbol }
+            });
+
+            // Cache Validity: 12 Hours (to ensure daily updates)
+            const CACHE_DURATION = 12 * 60 * 60 * 1000;
+            const now = new Date();
+
+            if (cached?.history && (now.getTime() - cached.lastUpdated.getTime() < CACHE_DURATION)) {
+                // Return cached history if it looks like a full map (has many keys)
+                const h = cached.history as Record<string, number>;
+                const keys = Object.keys(h).filter(k => k.match(/^\d{4}-\d{2}-\d{2}$/)); // Filter YYYY-MM-DD
+
+                // If we have a reasonable amount of history (e.g. > 10 points), use it
+                // We rely on the caller to handle missing specific dates if the cache is slightly out of sync
+                if (keys.length > 10) {
+                    return h;
+                }
+            }
+
+            // 2. Fetch from API
             const endDate = new Date();
             const startDate = fromDate || new Date(new Date().setFullYear(endDate.getFullYear() - 5)); // Default 5Y
 
@@ -563,22 +585,148 @@ export class MarketDataService {
                 period1: startDate,
                 period2: endDate,
                 interval: '1d' as const,
+                events: 'split'
             };
 
             const result = await yahooFinance.chart(symbol, queryOptions) as any;
             const quotes = result?.quotes || [];
+            const splits = result?.events?.splits || {};
+            // Splits is an Object: { "173874623": { date:..., numerator:3, denominator:1, splitRatio:"3:1" } }
+            // Map splits to Date String for easy lookup
+            // Yahoo usually puts event on the Ex-Date.
+            // Split of 3:1 means on Ex-Date, opening price is 1/3.
+            // So Previous Close must be * 3.
+
+            const splitMap: Record<string, number> = {};
+            if (splits && typeof splits === 'object') {
+                const keys = Object.keys(splits);
+                // const keys = Object.keys(splits);
+                Object.values(splits).forEach((s: any) => {
+                    // Parse Ratio assuming "Num:Den" or usage of numerator/denominator
+                    let ratio = 1;
+                    if (s.numerator && s.denominator) {
+                        ratio = s.numerator / s.denominator;
+                    }
+                    // Date can be Date object, string, or unix timestamp (seconds)
+                    let dObj: Date;
+                    if (s.date instanceof Date) {
+                        dObj = s.date;
+                    } else if (typeof s.date === 'string') {
+                        dObj = new Date(s.date);
+                    } else {
+                        dObj = new Date(s.date * 1000);
+                    }
+                    const d = dObj.toISOString().split('T')[0];
+                    splitMap[d] = ratio;
+                });
+            }
 
             const prices: Record<string, number> = {};
-            for (const quote of quotes) {
-                const price = quote.close || quote.adjClose;
-                if (quote.date && price && price > 0) {
-                    const dateStr = new Date(quote.date).toISOString().split('T')[0];
+            const availableDates: Date[] = [];
+
+            // Process Backwards to accumulate split factor
+            let splitFactor = 1;
+
+            // Sort Descending (Newest First)
+            const sortedQuotes = [...quotes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+            for (const quote of sortedQuotes) {
+                const d = new Date(quote.date);
+                const dateStr = d.toISOString().split('T')[0];
+
+                // If ID matches a split date? Or date matches?
+                // Yahoo events usually align with quote dates.
+                // If Split happened ON this date (Ex-Date), then OLDER prices need adjustment.
+                // So we update factor AFTER processing this date?
+                // No, if today is Ex-Date, Today is already Low.
+                // Yesterday needs to be High.
+                // so we update factor AFTER reading this quote, for the NEXT (older) quote.
+
+                let price = quote.close || quote.adjClose;
+
+                if (price && price > 0) {
+                    // Apply cumulative factor
+                    price = price * splitFactor;
+
                     prices[dateStr] = price;
+                    availableDates.push(d); // Note: Order will be desc in availableDates, sorting might be needed for findPrice?
+                    // findPrice iterates all, so order doesn't matter for correctness, but perf.
+                }
+
+                if (splitMap[dateStr]) {
+                    splitFactor *= splitMap[dateStr];
                 }
             }
+
+            // Re-sort availableDates ascending for findPrice/consistency?
+            availableDates.sort((a, b) => a.getTime() - b.getTime());
+
+            // 3. Populate Summary Keys (1W, 1M, 1Y, YTD) to prevent cache thrashing by getHistoricalPrices()
+            // Helper to find closest price
+            const findPrice = (target: Date) => {
+                let closest: { date: Date, price: number } | null = null;
+                let minDiff = Infinity;
+                for (const d of availableDates) {
+                    const diff = Math.abs(d.getTime() - target.getTime());
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = { date: d, price: prices[d.toISOString().split('T')[0]] };
+                    }
+                }
+                // Allow matches within 4 days (weekends)
+                return (closest && minDiff < 4 * 24 * 60 * 60 * 1000) ? closest.price : 0;
+            };
+
+            const today = new Date();
+
+            // 1W
+            const oneWeekAgo = new Date(today);
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            prices['1W'] = findPrice(oneWeekAgo);
+
+            // 1M
+            const oneMonthAgo = new Date(today);
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            prices['1M'] = findPrice(oneMonthAgo);
+
+            // 1Y
+            const oneYearAgo = new Date(today);
+            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+            prices['1Y'] = findPrice(oneYearAgo);
+
+            // YTD
+            const ytd = new Date(today.getFullYear(), 0, 1);
+            prices['YTD'] = findPrice(ytd);
+
+
+            // console.log(`[MarketData] getDailyHistory(${symbol}): Fetched ${quotes.length} points. Updating Cache.`);
+
+            // 4. Update Cache
+            await prisma.marketDataCache.upsert({
+                where: { symbol },
+                update: {
+                    history: prices,
+                    lastUpdated: now
+                },
+                create: {
+                    symbol,
+                    price: 0,
+                    change: 0,
+                    changePercent: 0,
+                    currency: 'USD',
+                    history: prices,
+                    lastUpdated: now
+                }
+            });
+
             return prices;
         } catch (error) {
             console.error(`Error fetching daily history for ${symbol}:`, error);
+            // Fallback to cache without checking expiry
+            try {
+                const cached = await prisma.marketDataCache.findUnique({ where: { symbol } });
+                if (cached?.history) return cached.history as Record<string, number>;
+            } catch (ignore) { }
             return {};
         }
     }
