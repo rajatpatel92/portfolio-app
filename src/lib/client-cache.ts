@@ -39,19 +39,25 @@ export const ClientCache = {
 
     set: <T>(key: string, data: T): void => {
         if (typeof window === 'undefined') return;
+        const entry: CacheEntry<T> = {
+            timestamp: Date.now(),
+            data,
+            version: CURRENT_VERSION
+        };
         try {
-            const entry: CacheEntry<T> = {
-                timestamp: Date.now(),
-                data,
-                version: CURRENT_VERSION
-            };
             localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry));
         } catch (e) {
-            console.error('Cache Write Error', e);
             // Handle QuotaExceeded
             if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
-                console.warn('LocalStorage Quota Exceeded. Clearing old cache.');
+                console.warn('LocalStorage Quota Exceeded. Clearing old cache and retrying.');
                 ClientCache.clear();
+                try {
+                    localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry));
+                } catch (retryError) {
+                    console.error('Cache Write Error after clear', retryError);
+                }
+            } else {
+                console.error('Cache Write Error', e);
             }
         }
     },

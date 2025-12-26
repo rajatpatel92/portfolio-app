@@ -339,7 +339,33 @@ export class PortfolioAnalytics {
             const dateStr = currentDate.toISOString().split('T')[0];
             const isLastDay = dateStr === endDate.toISOString().split('T')[0];
 
-            // 1. Get Today's Value (Passive)
+            // 1. Identify Activities ON this day
+            // [FIX] STOCK SPLIT HANDLING
+            // We must process Stock Splits BEFORE calculating Passive Market Value.
+            // Why? Because Market Data (Price) for this day is likely already Split-Adjusted (Lower).
+            // If we use yesterday's Holdings (Low Count) * Today's Price (Low Price), we get a massive value drop.
+            // We must adjust Holdings FIRST to match the new Price regime.
+
+            const rawDaysActivities = activities.filter(a => {
+                const aDate = new Date(a.date).toISOString().split('T')[0];
+                return aDate === dateStr;
+            });
+
+            // Process Splits Pre-Market
+            const splitActivities = rawDaysActivities.filter(a => a.type === 'STOCK_SPLIT');
+            const otherActivities = rawDaysActivities.filter(a => a.type !== 'STOCK_SPLIT');
+
+            splitActivities.forEach(a => {
+                // Apply Split Multiplier
+                // e.g. 3:1 Split -> Quantity 3
+                holdings[a.investment.symbol] = (holdings[a.investment.symbol] || 0) * a.quantity;
+                log(`[Pre-Market Split] ${a.investment.symbol} multiplied by ${a.quantity}`);
+            });
+
+            // Use other activities for Net Flow calculation
+            const daysActivities = otherActivities;
+
+            // 2. Get Today's Value (Passive) - Now with Split-Adjusted Holdings if applicable
             const { mv: passiveMV, discovery: discoveryFlow } = this.calculateMarketValue(
                 holdings,
                 priceMaps,
@@ -350,14 +376,8 @@ export class PortfolioAnalytics {
                 targetCurrency,
                 symbolCurrencyMap,
                 // Pass log if date matches target range
-                (dateStr === '2023-10-15' || dateStr === '2023-10-16') ? log : undefined
+                (dateStr === '2023-10-15' || dateStr === '2023-10-16' || dateStr === '2024-08-09') ? log : undefined
             );
-
-            // 2. Identify Flows (Activities ON this day)
-            const daysActivities = activities.filter(a => {
-                const aDate = new Date(a.date).toISOString().split('T')[0];
-                return aDate === dateStr;
-            });
 
             // Calculate Net Flow & Dividends (Converted to Target Currency)
             let netFlow = 0;
@@ -474,9 +494,6 @@ export class PortfolioAnalytics {
             }
 
             dailyPerf.push({
-                date: dateStr,
-                marketValue: finalMV,
-                nav,
                 date: dateStr,
                 marketValue: finalMV,
                 nav,
