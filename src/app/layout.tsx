@@ -15,6 +15,11 @@ export const metadata: Metadata = {
     icon: '/favicon.png',
     apple: '/favicon.png',
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Ascend',
+  },
 };
 
 export const viewport: Viewport = {

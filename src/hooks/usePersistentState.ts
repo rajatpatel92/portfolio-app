@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 
-function usePersistentState<T>(key: string, defaultValue: T): [T, (value: T | ((val: T) => T)) => void] {
+function usePersistentState<T>(key: string, defaultValue: T): [T, (value: T | ((val: T) => T)) => void, boolean] {
     // Initialize with default value to match Server Side Rendering (SSR)
     const [state, setState] = useState<T>(defaultValue);
     const [isInitialized, setIsInitialized] = useState(false);
@@ -9,12 +9,12 @@ function usePersistentState<T>(key: string, defaultValue: T): [T, (value: T | ((
     // Load from storage after mount (Client only)
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            const saved = sessionStorage.getItem(key);
+            const saved = localStorage.getItem(key);
             if (saved !== null) {
                 try {
                     setState(JSON.parse(saved));
                 } catch (e) {
-                    console.error(`Error parsing session storage key "${key}":`, e);
+                    console.error(`Error parsing local storage key "${key}":`, e);
                 }
             }
         }
@@ -24,11 +24,11 @@ function usePersistentState<T>(key: string, defaultValue: T): [T, (value: T | ((
     // Save to storage when state changes, but NOT before initialization
     useEffect(() => {
         if (isInitialized && typeof window !== 'undefined') {
-            sessionStorage.setItem(key, JSON.stringify(state));
+            localStorage.setItem(key, JSON.stringify(state));
         }
     }, [key, state, isInitialized]);
 
-    return [state, setState];
+    return [state, setState, isInitialized];
 }
 
 export default usePersistentState;

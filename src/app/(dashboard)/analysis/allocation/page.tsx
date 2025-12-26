@@ -21,7 +21,7 @@ interface PortfolioSummary {
 export default function AnalysisPage() {
     const [summary, setSummary] = useState<PortfolioSummary | null>(null);
     // Global Filters (Layer 1)
-    const [globalFilters, setGlobalFilters] = usePersistentState<FilterOptions | null>('allocation_filters', null);
+    const [globalFilters, setGlobalFilters, isFiltersLoaded] = usePersistentState<FilterOptions | null>('allocation_filters', null);
     // Interactive Filters (Layer 2)
     const [interactiveFilters, setInteractiveFilters] = useState<{
         investmentType: string | null;
@@ -315,7 +315,9 @@ export default function AnalysisPage() {
                             Deep dive into your asset allocation and performance metrics.
                         </p>
                     </div>
-                    <ReportFilters onChange={setGlobalFilters} initialFilters={globalFilters || undefined} />
+                    {isFiltersLoaded && (
+                        <ReportFilters onChange={setGlobalFilters} initialFilters={globalFilters || undefined} />
+                    )}
                 </div>
 
                 {hasInteractiveFilters && (

@@ -55,7 +55,7 @@ export default function ComparePage() {
     // Controls
     const [timeRange, setTimeRange] = usePersistentState('comparison_range', '1Y');
     const [benchmark, setBenchmark] = usePersistentState('comparison_benchmark', '^GSPC'); // S&P 500
-    const [filters, setFilters] = usePersistentState<any>('comparison_filters', null);
+    const [filters, setFilters, isFiltersLoaded] = usePersistentState<any>('comparison_filters', null);
 
     const RANGES = ['1M', '6M', 'YTD', '1Y', '2Y', '3Y', '5Y', 'ALL'];
 
@@ -132,11 +132,13 @@ export default function ComparePage() {
     const startBench = benchmarkData.length > 0 ? benchmarkData[0].normalized : 1;
 
     const chartData = {
-        labels: portfolioData.map(d => new Date(d.date).toLocaleDateString()),
         datasets: [
             {
                 label: 'My Portfolio',
-                data: portfolioData.map(d => ((d.nav - startNav) / startNav) * 100),
+                data: portfolioData.map(d => ({
+                    x: d.date,
+                    y: ((d.nav - startNav) / startNav) * 100
+                })),
                 borderColor: '#10b981', // Emerald 500
                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 tension: 0.4,
@@ -145,7 +147,10 @@ export default function ComparePage() {
             },
             {
                 label: availableBenchmarks.find(b => b.symbol === benchmark)?.name || 'Benchmark',
-                data: benchmarkData.map(d => ((d.normalized - startBench) / startBench) * 100),
+                data: benchmarkData.map(d => ({
+                    x: d.date,
+                    y: ((d.normalized - startBench) / startBench) * 100
+                })),
                 borderColor: '#f59e0b', // Amber 500
                 tension: 0.4,
                 pointRadius: 0,
@@ -177,7 +182,7 @@ export default function ComparePage() {
                         if (label) {
                             label += ': ';
                         }
-                        if (context.parsed.y !== null) {
+                        if (context.parsed.y !== null && context.parsed.y !== undefined) {
                             label += (context.parsed.y > 0 ? '+' : '') + context.parsed.y.toFixed(2) + '%';
                         }
                         return label;
@@ -235,7 +240,9 @@ export default function ComparePage() {
                         ))}
                     </select>
 
-                    <ReportFilters onChange={setFilters} initialFilters={filters || undefined} />
+                    {isFiltersLoaded && (
+                        <ReportFilters onChange={setFilters} initialFilters={filters || undefined} />
+                    )}
                 </div>
             </header>
 

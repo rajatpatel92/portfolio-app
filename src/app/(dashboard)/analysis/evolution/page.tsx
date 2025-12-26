@@ -14,7 +14,7 @@ import { ClientCache } from '@/lib/client-cache';
 import usePersistentState from '@/hooks/usePersistentState';
 
 export default function EvolutionPage() {
-    const [filters, setFilters] = usePersistentState<FilterOptions | null>('evolution_filters', null);
+    const [filters, setFilters, isFiltersLoaded] = usePersistentState<FilterOptions | null>('evolution_filters', null);
 
     const [data, setData] = useState<{
         evolution?: any[];
@@ -36,6 +36,11 @@ export default function EvolutionPage() {
     useEffect(() => {
         // Safe filters: if null (initial load), treat as empty arrays (fetch all).
         const safeFilters = filters || { accountTypes: [], investmentTypes: [] };
+
+        // Only fetch if filters are loaded (or if we decide to fetch anyway with defaults)
+        // But to avoid double-fetch (one with null, one with loaded), we can wait?
+        // Actually the race condition was in ReportFilters resetting state.
+        // Fetching with empty filters is fine, but ReportFilters will overwrite `filters` if we render it too early.
 
         const fetchHistory = async () => {
             const cacheKey = ClientCache.generateKey('evolution_history', { filters: safeFilters, range, currency });
@@ -142,10 +147,12 @@ export default function EvolutionPage() {
                     <h1 className={styles.title}>Portfolio History</h1>
                     <p className={styles.subtitle}>Track your portfolio performance, contributions, and dividends over time.</p>
                 </div>
-                <ReportFilters
-                    onChange={setFilters}
-                    initialFilters={filters || undefined}
-                />
+                {isFiltersLoaded && (
+                    <ReportFilters
+                        onChange={setFilters}
+                        initialFilters={filters || undefined}
+                    />
+                )}
             </div>
 
             <div className={styles.analysisGrid}>
