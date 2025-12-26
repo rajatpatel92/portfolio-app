@@ -10,6 +10,7 @@ export interface DailyPerformance {
     netFlow: number;
     units: number;
     dividend: number;
+    discoveryFlow?: number;
 }
 
 export class PortfolioAnalytics {
@@ -476,7 +477,11 @@ export class PortfolioAnalytics {
                 date: dateStr,
                 marketValue: finalMV,
                 nav,
-                netFlow: totalEffectiveFlow, // Store total effective flow for transparency
+                date: dateStr,
+                marketValue: finalMV,
+                nav,
+                netFlow: netFlow, // Store USER flows only. Discovery flow is excluded from Contribution stats.
+                discoveryFlow: discoveryFlow,
                 units,
                 dividend: dividends // Daily dividend (in target currency)
             });

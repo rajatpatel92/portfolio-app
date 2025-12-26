@@ -26,6 +26,8 @@ export async function POST(req: Request) {
                 case '6M': startDate.setMonth(startDate.getMonth() - 6); break;
                 case 'YTD': startDate.setMonth(0, 1); break;
                 case '1Y': startDate.setFullYear(startDate.getFullYear() - 1); break;
+                case '2Y': startDate.setFullYear(startDate.getFullYear() - 2); break;
+                case '3Y': startDate.setFullYear(startDate.getFullYear() - 3); break;
                 case '5Y': startDate.setFullYear(startDate.getFullYear() - 5); break;
                 default: startDate.setFullYear(startDate.getFullYear() - 1);
             }

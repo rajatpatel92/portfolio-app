@@ -73,7 +73,7 @@ export default function ActivitiesPage() {
     const [range, setRange] = useState('ALL');
     const [customStart, setCustomStart] = useState('');
     const [customEnd, setCustomEnd] = useState('');
-    const RANGES = ['1W', '1M', '3M', '6M', '1Y', 'YTD', 'ALL'];
+    const RANGES = ['1W', '1M', '3M', '6M', 'YTD', '1Y', '2Y', '3Y', 'ALL'];
 
     const [filterAccount, setFilterAccount] = useState('');
     const [filterAccountType, setFilterAccountType] = useState('');
@@ -193,8 +193,10 @@ export default function ActivitiesPage() {
                     case '1M': startDate.setMonth(now.getMonth() - 1); break;
                     case '3M': startDate.setMonth(now.getMonth() - 3); break;
                     case '6M': startDate.setMonth(now.getMonth() - 6); break;
-                    case '1Y': startDate.setFullYear(now.getFullYear() - 1); break;
                     case 'YTD': startDate.setMonth(0, 1); break;
+                    case '1Y': startDate.setFullYear(now.getFullYear() - 1); break;
+                    case '2Y': startDate.setFullYear(now.getFullYear() - 2); break;
+                    case '3Y': startDate.setFullYear(now.getFullYear() - 3); break;
                 }
                 if (range !== 'ALL' && range !== 'CUSTOM') {
                     filtered = filtered.filter(a => new Date(a.date) >= startDate);

@@ -33,7 +33,7 @@ interface PortfolioChartProps {
     externalData?: HistoryPoint[]; // New prop for controlled mode
 }
 
-const RANGES = ['1D', '1W', '1M', '3M', '6M', '1Y', 'YTD', '5Y', '10Y', 'ALL'];
+const RANGES = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '2Y', '3Y', '5Y', '10Y', 'ALL'];
 
 export default function PortfolioChart({
     range,
@@ -103,7 +103,13 @@ export default function PortfolioChart({
         const endPoint = chartData[chartData.length - 1];
 
         // Invested represents Cumulative Net Flow
-        totalContribution = endPoint.invested - startPoint.invested;
+        // For 'ALL', we want the total accumulated invested amount (End Value).
+        // For specific ranges (e.g. 1Y), we want the delta (End - Start).
+        if (range === 'ALL' || range === 'MAX') {
+            totalContribution = endPoint.invested;
+        } else {
+            totalContribution = endPoint.invested - startPoint.invested;
+        }
 
         const startDate = new Date(startPoint.date);
         const endDate = new Date(endPoint.date);
@@ -126,8 +132,8 @@ export default function PortfolioChart({
                     {chartData.length > 0 && (
                         <div className={styles.change} style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 'normal' }}>
                             {periodMonths >= 1
-                                ? `Avg. Contribution: ${format(avgContribution)}/mo`
-                                : `Total Contribution: ${format(totalContribution)}`
+                                ? `Contribution: ${format(totalContribution)} (${format(avgContribution)}/mo)`
+                                : `Contribution: ${format(totalContribution)}`
                             }
                         </div>
                     )}

@@ -149,7 +149,7 @@ export async function GET(request: Request, props: { params: Promise<{ symbol: s
 
         // Get all dates from historical prices
         const historicalDates = Object.keys(historicalPrices)
-            .filter(key => !['1W', '1M', '1Y', 'YTD'].includes(key))
+            .filter(key => !['1W', '1M', '6M', 'YTD', '1Y', '2Y', '3Y', '5Y', '10Y', 'ALL'].includes(key))
             .sort();
 
         if (historicalDates.length > 0) {

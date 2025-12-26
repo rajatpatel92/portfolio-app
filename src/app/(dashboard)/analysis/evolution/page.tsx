@@ -113,10 +113,14 @@ export default function EvolutionPage() {
         const cutoff = new Date();
 
         switch (range) {
+            case '1D': cutoff.setDate(now.getDate() - 1); break;
+            case '1W': cutoff.setDate(now.getDate() - 7); break;
             case '1M': cutoff.setMonth(now.getMonth() - 1); break;
             case '3M': cutoff.setMonth(now.getMonth() - 3); break;
             case '6M': cutoff.setMonth(now.getMonth() - 6); break;
             case '1Y': cutoff.setFullYear(now.getFullYear() - 1); break;
+            case '2Y': cutoff.setFullYear(now.getFullYear() - 2); break;
+            case '3Y': cutoff.setFullYear(now.getFullYear() - 3); break;
             case 'YTD': cutoff.setMonth(0, 1); break; // Jan 1st
             case '5Y': cutoff.setFullYear(now.getFullYear() - 5); break;
             default: return data.evolution;

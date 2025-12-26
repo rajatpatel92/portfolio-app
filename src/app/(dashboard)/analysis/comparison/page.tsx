@@ -57,7 +57,7 @@ export default function ComparePage() {
     const [benchmark, setBenchmark] = usePersistentState('comparison_benchmark', '^GSPC'); // S&P 500
     const [filters, setFilters] = usePersistentState<any>('comparison_filters', null);
 
-    const RANGES = ['1M', '6M', 'YTD', '1Y', '5Y', 'ALL'];
+    const RANGES = ['1M', '6M', 'YTD', '1Y', '2Y', '3Y', '5Y', 'ALL'];
 
     // Fetch Available Benchmarks
     useEffect(() => {

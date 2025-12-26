@@ -19,7 +19,7 @@ interface StockChartProps {
     symbol?: string;
 }
 
-const RANGES = ['1D', '1W', '1M', '6M', 'YTD', '1Y', '5Y', '10Y', 'ALL'];
+const RANGES = ['1D', '1W', '1M', '6M', 'YTD', '1Y', '2Y', '3Y', '5Y', '10Y', 'ALL'];
 
 export default function StockChart({ data, currency: assetCurrency, avgPriceHistory, symbol }: StockChartProps) {
     const { format, convert } = useCurrency();
@@ -49,7 +49,7 @@ export default function StockChart({ data, currency: assetCurrency, avgPriceHist
     // Convert historical object to array and sort by date
     const allData = useMemo(() => {
         return Object.entries(data)
-            .filter(([key]) => !['1W', '1M', '1Y', 'YTD'].includes(key))
+            .filter(([key]) => !['1W', '1M', '6M', 'YTD', '1Y', '2Y', '3Y', '5Y', '10Y', 'ALL'].includes(key))
             .map(([date, price]) => ({
                 date,
                 value: convert(price, assetCurrency),
@@ -96,6 +96,8 @@ export default function StockChart({ data, currency: assetCurrency, avgPriceHist
             case '6M': startDate.setMonth(now.getMonth() - 6); break;
             case 'YTD': startDate = new Date(now.getFullYear(), 0, 1); break;
             case '1Y': startDate.setFullYear(now.getFullYear() - 1); break;
+            case '2Y': startDate.setFullYear(now.getFullYear() - 2); break;
+            case '3Y': startDate.setFullYear(now.getFullYear() - 3); break;
             case '5Y': startDate.setFullYear(now.getFullYear() - 5); break;
             case '10Y': startDate.setFullYear(now.getFullYear() - 10); break;
             case 'ALL': return allData;
@@ -141,6 +143,8 @@ export default function StockChart({ data, currency: assetCurrency, avgPriceHist
             case '6M': return '6-months';
             case 'YTD': return 'YTD';
             case '1Y': return '1-year';
+            case '2Y': return '2-years';
+            case '3Y': return '3-years';
             case '5Y': return '5-years';
             case '10Y': return '10-years';
             case 'ALL': return 'All-time';

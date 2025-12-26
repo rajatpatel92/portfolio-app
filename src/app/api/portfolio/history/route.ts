@@ -28,6 +28,8 @@ export async function GET(request: Request) {
                 case '3M': startDate.setMonth(startDate.getMonth() - 3); break;
                 case '6M': startDate.setMonth(startDate.getMonth() - 6); break;
                 case '1Y': startDate.setFullYear(startDate.getFullYear() - 1); break;
+                case '2Y': startDate.setFullYear(startDate.getFullYear() - 2); break;
+                case '3Y': startDate.setFullYear(startDate.getFullYear() - 3); break;
                 case '5Y': startDate.setFullYear(startDate.getFullYear() - 5); break;
                 case '10Y': startDate.setFullYear(startDate.getFullYear() - 10); break;
                 case 'YTD': startDate.setMonth(0, 1); break;
@@ -35,6 +37,10 @@ export async function GET(request: Request) {
                 default: startDate.setMonth(startDate.getMonth() - 1);
             }
         }
+
+        // Store the requested start date for filtering
+        const filterStartDate = new Date(startDate);
+        const filterStartDateStr = filterStartDate.toISOString().split('T')[0];
 
         // 2. Fetch ALL activities (Required for correct NAV seeding)
         const activities = await prisma.activity.findMany({
@@ -46,10 +52,16 @@ export async function GET(request: Request) {
             return NextResponse.json([]);
         }
 
-        // Adjust ALL start date
-        if (range === 'ALL' && activities.length > 0) {
+        // Set calculation start date to the beginning of history (or first activity)
+        // This ensures "Invested" and "Holdings" accumulators are correct.
+        if (activities.length > 0) {
             const firstDate = new Date(activities[0].date);
-            if (firstDate > startDate) startDate = firstDate;
+            // If requested range is ALL, ensure we cover it.
+            // If requested range is YTD, start from firstDate anyway.
+            startDate = firstDate;
+        } else {
+            // No activities, default to something reasonable or empty
+            return NextResponse.json([]);
         }
 
         // 3. Run Analytics
@@ -97,6 +109,9 @@ export async function GET(request: Request) {
             const endD = new Date(customEnd).toISOString().split('T')[0];
             finalPoints = finalPoints.filter(p => p.date <= endD);
         }
+
+        // Filter by requested Start Date (so we return only the slice, but with correct accumulators)
+        finalPoints = finalPoints.filter(p => p.date >= filterStartDateStr);
 
         return NextResponse.json(finalPoints);
 
