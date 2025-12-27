@@ -605,7 +605,7 @@ export class PortfolioAnalytics {
         };
     }
 
-    private static computeHoldingsState(activities: Activity[]) {
+    public static computeHoldingsState(activities: Activity[]) {
         const h: Record<string, number> = {};
         activities.forEach(a => {
             const s = (a as any).investment.symbol;

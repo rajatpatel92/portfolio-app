@@ -27,9 +27,9 @@ import {
     MdCompareArrows,
     MdTimeline,
     MdExpandMore,
-    MdChevronRight,
     MdCalculate,
-    MdBarChart
+    MdBarChart,
+    MdAutoAwesome
 } from 'react-icons/md';
 import { signOut } from 'next-auth/react';
 
@@ -70,6 +70,7 @@ export default function Sidebar() {
             ]
         },
         { name: 'Activities', href: '/activities', icon: <MdFormatListBulleted size={20} /> },
+        { name: 'AI Analysis', href: '/ai-analysis', icon: <MdAutoAwesome size={20} /> },
     ];
 
     if (role === 'ADMIN' || role === 'EDITOR') {

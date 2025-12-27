@@ -113,6 +113,7 @@ model User {
   username  String   @unique
   password  String
   role      String   @default("VIEWER") // ADMIN, EDITOR, VIEWER
+  preferredLLM String @default("GEMINI") // GEMINI, GPT, CLAUDE
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -139,4 +140,12 @@ model RateLimit {
   key       String   @id
   count     Int      @default(0)
   expiresAt DateTime
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  isEncrypted Boolean @default(false)
+  updatedAt DateTime @updatedAt
+  description String?
 }
