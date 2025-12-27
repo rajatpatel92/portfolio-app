@@ -22,8 +22,7 @@ A comprehensive, self-hosted portfolio management application designed to track 
     -   **Realized Gains**: Tracking for sold assets and historical performance.
 -   **Performance Tracking**:
     -   **XIRR Calculation**: Accurate return on investment considering cash flows.
-    -   **Portfolio Evolution**: Visualize growth vs. average contributions over time.
-    -   **Treemap Visualization**: Interact with portfolio composition at a glance.
+    -   **Portfolio Evolution**: Visualize Portfolio growth vs. average contributions over time. Visualize dividend history over time.
 -   **Privacy Focused**: Self-hosted solution ensures you own your financial data.
 -   **Dark Mode**: Sleek, eye-friendly interface.
 
