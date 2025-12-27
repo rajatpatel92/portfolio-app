@@ -34,8 +34,7 @@ export async function POST(req: Request) {
         // Fetch all activities to calculate current state
         const activities = await prisma.activity.findMany({
             include: {
-                investment: true,
-                currency: false // Activity has currency string, Investment has relation
+                investment: true
             },
             orderBy: { date: 'asc' }
         });

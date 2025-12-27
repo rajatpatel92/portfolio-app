@@ -10,7 +10,7 @@ const MarkdownRenderer = ({ content }: { content: string }) => {
     // Basic parser for Bold, Headers, Lists
     const parseMarkdown = (text: string) => {
         const lines = text.split('\n');
-        const elements: JSX.Element[] = [];
+        const elements: React.ReactNode[] = [];
         let i = 0;
 
         while (i < lines.length) {
