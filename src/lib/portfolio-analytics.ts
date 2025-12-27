@@ -1,6 +1,5 @@
 
 import { MarketDataService } from './market-data';
-import { prisma } from '@/lib/prisma';
 import { Activity } from '@prisma/client';
 
 export interface DailyPerformance {
@@ -11,6 +10,17 @@ export interface DailyPerformance {
     units: number;
     dividend: number;
     discoveryFlow?: number;
+}
+
+interface FlowData {
+    date: string;
+    inflow: number;
+    outflow: number;
+}
+
+interface DividendData {
+    date: string;
+    amount: number;
 }
 
 export class PortfolioAnalytics {
@@ -45,26 +55,26 @@ export class PortfolioAnalytics {
         // Formatting (Week/Month/Year) is better done here to keep logic encapsulated.
 
         const flows = {
-            week: new Map<string, any>(),
-            month: new Map<string, any>(),
-            year: new Map<string, any>()
+            week: new Map<string, FlowData>(),
+            month: new Map<string, FlowData>(),
+            year: new Map<string, FlowData>()
         };
 
         const dividends = {
-            month: new Map<string, any>(),
-            year: new Map<string, any>()
+            month: new Map<string, DividendData>(),
+            year: new Map<string, DividendData>()
         };
 
-        const processMap = (map: Map<string, any>, key: string, dateStr: string, inflow: number, outflow: number) => {
+        const processMap = (map: Map<string, FlowData>, key: string, dateStr: string, inflow: number, outflow: number) => {
             if (!map.has(key)) map.set(key, { date: dateStr, inflow: 0, outflow: 0 });
-            const e = map.get(key);
+            const e = map.get(key)!;
             e.inflow += inflow;
             e.outflow += outflow;
         };
 
-        const processDivMap = (map: Map<string, any>, key: string, dateStr: string, amount: number) => {
+        const processDivMap = (map: Map<string, DividendData>, key: string, dateStr: string, amount: number) => {
             if (!map.has(key)) map.set(key, { date: dateStr, amount: 0 });
-            const e = map.get(key);
+            const e = map.get(key)!;
             e.amount += amount;
         };
 
@@ -107,7 +117,7 @@ export class PortfolioAnalytics {
             }
         });
 
-        const sort = (map: Map<any, any>) => Array.from(map.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const sort = <T extends { date: string }>(map: Map<string, T>) => Array.from(map.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         return {
             contributions: {
@@ -224,7 +234,7 @@ export class PortfolioAnalytics {
         // 3. Replay Engine
         const dailyPerf: DailyPerformance[] = [];
 
-        let currentDate = new Date(startDate);
+        const currentDate = new Date(startDate);
         const endDate = new Date(); // To Today
 
         let holdings: Record<string, number> = {};
@@ -285,7 +295,8 @@ export class PortfolioAnalytics {
         });
 
         // Seed Dividend Accumulator
-        let dividends = initialDividends;
+        // Removed shadowed 'dividends' variable, just renamed locally for clarity if needed or use this.
+        let accDividends = initialDividends;
 
         // Map Symbol -> Currency for fast lookup
         const symbolCurrencyMap: Record<string, string> = {};
@@ -381,7 +392,7 @@ export class PortfolioAnalytics {
 
             // Calculate Net Flow & Dividends (Converted to Target Currency)
             let netFlow = 0;
-            let dividends = 0;
+            let dailyDividends = 0;
 
             daysActivities.forEach(a => {
                 // Determine FX Rate for this transaction's currency
@@ -399,7 +410,6 @@ export class PortfolioAnalytics {
                 if (a.type === 'BUY') {
                     // Cost = (Qty * Price) + Fee
                     // All in Asset Currency? Usually Price is Asset Currency. Fee might be Account Currency?
-                    // ASSUMPTION: Price is in Investment Currency. Fee is in Account Currency.
                     // Complex. For now, assume uniform currency for simplicity or map Fee separately if needed.
                     // Given previous impl just summed standard amounts, we assume everything is "Value" in Asset Currency.
                     const flowVal = (a.quantity * a.price) + (a.fee || 0);
@@ -425,8 +435,8 @@ export class PortfolioAnalytics {
                     }
                 } else if (a.type === 'DIVIDEND') {
                     const divVal = (a.quantity * a.price);
-                    dividends += divVal * fxRate;
-                    log(`[Dividend] ${a.date} ${symbol}: Qty=${a.quantity}, Price=${a.price}, FX=${fxRate} -> Val=${divVal * fxRate} (DailyTotal=${dividends})`);
+                    dailyDividends += divVal * fxRate;
+                    log(`[Dividend] ${a.date} ${symbol}: Qty=${a.quantity}, Price=${a.price}, FX=${fxRate} -> Val=${divVal * fxRate} (DailyTotal=${dailyDividends})`);
                 } else if (a.type === 'STOCK_SPLIT') {
                     holdings[a.investment.symbol] = (holdings[a.investment.symbol] || 0) * a.quantity;
                 }
@@ -448,7 +458,13 @@ export class PortfolioAnalytics {
             });
 
             // 3. Calculate Performance (NAV Change)
-            const adjustablePassiveMV = passiveMV + dividends;
+            // Accumulate dividends
+            accDividends += dailyDividends;
+
+            // Adjust passive MV to include the dividends received today for NAV calculation?
+            // "Price Return" usually ignores dividends. "Total Return" includes them.
+            // If we add dividends to 'passiveMV' effectively we simulate reinvesting them or just holding cash.
+            const adjustablePassiveMV = passiveMV + dailyDividends;
 
             // [FIX] Epsilon Start Protection
             // Use a threshold (0.01) to avoid division by floating point dust (e.g. 1e-15)
@@ -461,9 +477,6 @@ export class PortfolioAnalytics {
             }
 
             // 4. Update Structure
-            // 4. Update Structure
-            const totalEffectiveFlow = netFlow + discoveryFlow;
-
             // [FIX] Recalculate Final MV based on End-of-Day Holdings & Prices
             // Previously: const finalMV = passiveMV + netFlow; 
             // We use MTM (recalculated) to prevent Day 2 drops.
@@ -490,7 +503,7 @@ export class PortfolioAnalytics {
 
             // Log final day summary
             if (isLastDay) {
-                log(`[Final Day ${dateStr}] FinalMV: ${finalMV}, PassiveMV: ${passiveMV}, NetFlow: ${netFlow}, Discovery: ${discoveryFlow}, Nav: ${nav}, Dividends: ${dividends}`);
+                log(`[Final Day ${dateStr}] FinalMV: ${finalMV}, PassiveMV: ${passiveMV}, NetFlow: ${netFlow}, Discovery: ${discoveryFlow}, Nav: ${nav}, Dividends: ${accDividends}`);
             }
 
             dailyPerf.push({
@@ -500,7 +513,7 @@ export class PortfolioAnalytics {
                 netFlow: netFlow, // Store USER flows only. Discovery flow is excluded from Contribution stats.
                 discoveryFlow: discoveryFlow,
                 units,
-                dividend: dividends // Daily dividend (in target currency)
+                dividend: dailyDividends // Daily dividend (in target currency)
             });
 
             prevMarketValue = finalMV;
@@ -608,7 +621,7 @@ export class PortfolioAnalytics {
     public static computeHoldingsState(activities: Activity[]) {
         const h: Record<string, number> = {};
         activities.forEach(a => {
-            const s = (a as any).investment.symbol;
+            const s = (a as Activity & { investment: { symbol: string } }).investment.symbol;
             if (a.type === 'BUY') h[s] = (h[s] || 0) + a.quantity;
             if (a.type === 'SELL') h[s] = (h[s] || 0) - Math.abs(a.quantity);
             if (a.type === 'STOCK_SPLIT') h[s] = (h[s] || 0) * a.quantity;

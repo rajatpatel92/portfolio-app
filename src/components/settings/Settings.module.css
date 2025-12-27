@@ -107,3 +107,102 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+/* AI Settings Specific */
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.cardHeader .cardTitle {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.toggleWrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.switchLabel {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.toggleSwitch {
+    width: 44px;
+    height: 24px;
+    background: var(--card-border);
+    border-radius: 12px;
+    border: none;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s;
+    padding: 2px;
+}
+
+.toggleSwitch.active {
+    background: var(--primary);
+}
+
+.toggleHandle {
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.toggleSwitch.active .toggleHandle {
+    transform: translateX(20px);
+}
+
+.section {
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+.disabledSection {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.adminSection {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--card-border);
+}
+
+.subTitle {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.helpText {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.disabledMessage {
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-top: 1rem;
+}

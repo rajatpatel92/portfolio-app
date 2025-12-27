@@ -12,7 +12,9 @@ function usePersistentState<T>(key: string, defaultValue: T): [T, (value: T | ((
             const saved = localStorage.getItem(key);
             if (saved !== null) {
                 try {
-                    setState(JSON.parse(saved));
+                    const parsed = JSON.parse(saved);
+                    // eslint-disable-next-line react-hooks/set-state-in-effect
+                    setState(parsed);
                 } catch (e) {
                     console.error(`Error parsing local storage key "${key}":`, e);
                 }

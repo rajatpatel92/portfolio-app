@@ -274,5 +274,15 @@
 
 .resetBtn:hover {
     background: var(--hover-bg);
-    color: var(--danger);
+}
+
+.modelSelect {
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--card-border);
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    outline: none;
+    cursor: pointer;
 }

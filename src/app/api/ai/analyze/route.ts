@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { LLMService } from '@/lib/llm/service';
 import { NextResponse } from 'next/server';
 import { LLMModel } from '@/lib/llm/types';
+import { SystemSetting } from '@prisma/client';
 
 export async function POST(req: Request) {
     const session = await auth();
@@ -13,20 +14,43 @@ export async function POST(req: Request) {
         return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const { prompt, messages } = await req.json();
+    const { prompt, messages, model: requestedModel } = await req.json();
 
     if (!prompt) {
         return new NextResponse('Missing prompt', { status: 400 });
     }
 
     try {
-        // 1. Get User Preference
-        const user = await prisma.user.findUnique({
-            where: { username },
-            select: { preferredLLM: true, id: true } // Need ID for portfolio fetching
-        });
+        // 1. Get User Preference & Global Config
+        const [user, settings] = await Promise.all([
+            prisma.user.findUnique({
+                where: { username },
+                select: { preferredLLM: true, id: true }
+            }),
+            prisma.systemSetting.findMany({
+                where: { key: { in: ['AI_ENABLED', 'GEMINI_API_KEY', 'GPT_API_KEY', 'CLAUDE_API_KEY'] } }
+            })
+        ]);
 
-        const model = (user?.preferredLLM || 'GEMINI') as LLMModel;
+        const settingsMap = settings.reduce((acc: Record<string, string>, s: SystemSetting) => ({ ...acc, [s.key]: s.value }), {} as Record<string, string>);
+
+        // Check Global Toggle
+        if (settingsMap['AI_ENABLED'] === 'false') {
+            return new NextResponse('AI features are currently disabled by the administrator.', { status: 503 });
+        }
+
+        const model = (requestedModel || user?.preferredLLM || 'GEMINI') as LLMModel;
+
+        // Check API Key
+        const keyMap: Record<LLMModel, string> = {
+            'GEMINI': 'GEMINI_API_KEY',
+            'GPT': 'GPT_API_KEY',
+            'CLAUDE': 'CLAUDE_API_KEY'
+        };
+
+        if (!settingsMap[keyMap[model]]) {
+            return new NextResponse(`API Key for ${model} is not configured. Please contact the administrator.`, { status: 503 });
+        }
 
         // 2. Fetch Portfolio Data (Simplified Context)
         // In a real scenario, we might want to be selective about what data we send

@@ -9,7 +9,7 @@ export async function GET() {
         return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const keys = ['GEMINI_API_KEY', 'GPT_API_KEY', 'CLAUDE_API_KEY'];
+    const keys = ['GEMINI_API_KEY', 'GPT_API_KEY', 'CLAUDE_API_KEY', 'AI_ENABLED'];
     const settings = await prisma.systemSetting.findMany({
         where: { key: { in: keys } }
     });

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { FaPaperPlane, FaRobot, FaUser, FaSpinner, FaChartLine } from 'react-icons/fa';
-import Link from 'next/link';
+import { FaPaperPlane, FaRobot, FaUser, FaSpinner } from 'react-icons/fa';
 import styles from './ChatInterface.module.css';
 
 // Improved Markdown renderer
@@ -19,7 +18,6 @@ const MarkdownRenderer = ({ content }: { content: string }) => {
             // Table Detection (Basic)
             if (line.includes('|') && i + 1 < lines.length && lines[i + 1].includes('|') && lines[i + 1].includes('-')) {
                 const headerRow = line.split('|').filter(c => c.trim() !== '').map(c => c.trim());
-                const separatorRow = lines[i + 1];
 
                 // Collect rows
                 const rows: string[][] = [];
@@ -99,7 +97,24 @@ export default function ChatInterface() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [availableModels, setAvailableModels] = useState<string[]>([]);
+    const [selectedModel, setSelectedModel] = useState<string>('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        // Fetch Available Models
+        fetch('/api/ai/config')
+            .then(res => res.json())
+            .then(data => {
+                if (data.availableModels && data.availableModels.length > 0) {
+                    setAvailableModels(data.availableModels);
+                    // Set default (could fetch user pref, but here we just pick first or GEMINI if available)
+                    if (data.availableModels.includes('GEMINI')) setSelectedModel('GEMINI');
+                    else setSelectedModel(data.availableModels[0]);
+                }
+            })
+            .catch(err => console.error('Failed to fetch AI config:', err));
+    }, []);
 
     const scrollToBottom = () => {
         // Scroll only the message container using block: 'end' to prevent whole page jump
@@ -130,7 +145,8 @@ export default function ChatInterface() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     prompt: text,
-                    messages: messages // Send history
+                    messages: messages, // Send history
+                    model: selectedModel
                 })
             });
 
@@ -140,7 +156,7 @@ export default function ChatInterface() {
             const aiMsg: Message = { role: 'assistant', content: data.content };
 
             setMessages(prev => [...prev, aiMsg]);
-        } catch (error) {
+        } catch {
             setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error analyzing your request.' }]);
         } finally {
             setLoading(false);
@@ -172,11 +188,25 @@ export default function ChatInterface() {
         <div className={styles.container}>
             <div className={styles.chatHeader}>
                 <div style={{ fontWeight: 600 }}>Thread</div>
-                {messages.length > 0 && (
-                    <button onClick={handleReset} className={styles.resetBtn}>
-                        New Chat
-                    </button>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {availableModels.length > 0 && (
+                        <select
+                            value={selectedModel}
+                            onChange={(e) => setSelectedModel(e.target.value)}
+                            className={styles.modelSelect}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {availableModels.map(m => (
+                                <option key={m} value={m}>{m}</option>
+                            ))}
+                        </select>
+                    )}
+                    {messages.length > 0 && (
+                        <button onClick={handleReset} className={styles.resetBtn}>
+                            New Chat
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className={styles.messageList}>

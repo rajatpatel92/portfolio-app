@@ -9,8 +9,7 @@ import { useCurrency } from '@/context/CurrencyContext';
 import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 
 import BenchmarkSettings from '@/components/settings/BenchmarkSettings';
-import LLMConfiguration from '@/components/settings/LLMConfiguration';
-import UserAIPreferences from '@/components/settings/UserAIPreferences';
+import AISettings from '@/components/settings/AISettings';
 
 export default function SettingsHubPage() {
     const { theme, setTheme } = useTheme();
@@ -71,8 +70,7 @@ export default function SettingsHubPage() {
 
             <BenchmarkSettings />
 
-            <UserAIPreferences />
-            {role === 'ADMIN' && <LLMConfiguration />}
+            <AISettings />
         </div>
     );
 }
