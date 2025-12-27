@@ -1,4 +1,4 @@
-# Ascend - Personal Portfolio Manager
+# Ascend - Personal Portfolio Manager  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A comprehensive, self-hosted portfolio management application designed to track your investments across multiple accounts and currencies.
 
@@ -178,3 +178,43 @@ For development or running without Docker.
 -   **Styling**: CSS Modules
 -   **Charts**: Recharts & Chart.js
 -   **Authentication**: NextAuth.js
+
+## Acknowledgments
+
+This project makes use of the following open-source libraries:
+
+-   [Next.js](https://nextjs.org/) - The React Framework for the Web
+-   [React](https://react.dev/) - The library for web and native user interfaces
+-   [Prisma](https://www.prisma.io/) - Next-generation Node.js and TypeScript ORM
+-   [NextAuth.js](https://next-auth.js.org/) - Authentication for Next.js
+-   [Chart.js](https://www.chartjs.org/) - Simple yet flexible JavaScript charting for designers & developers
+-   [Recharts](https://recharts.org/) - Redefined chart library built with React and D3
+-   [Framer Motion](https://www.framer.com/motion/) - A production-ready motion library for React
+-   [Lucide React](https://lucide.dev/) - Beautiful & consistent icon toolkit made by the community
+-   [date-fns](https://date-fns.org/) - Modern JavaScript date utility library
+-   [yahoo-finance2](https://github.com/gadicc/node-yahoo-finance2) - Yahoo Finance API wrapper
+-   [react-icons](https://react-icons.github.io/react-icons/) - Include popular icons in your React projects easily
+
+## License
+
+MIT License
+
+Copyright (c) 2025 rajatpatel92
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
