@@ -30,6 +30,7 @@ export const authConfig = {
             if (user) {
                 token.role = (user as any).role;
                 token.id = user.id;
+                token.aiEnabled = (user as any).aiEnabled;
             }
             return token;
         },
@@ -37,6 +38,7 @@ export const authConfig = {
             if (session.user) {
                 (session.user as any).role = token.role;
                 session.user.id = token.id as string || token.sub as string;
+                (session.user as any).aiEnabled = token.aiEnabled;
             }
             return session;
         },

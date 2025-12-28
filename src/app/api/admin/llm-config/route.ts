@@ -16,6 +16,12 @@ export async function GET() {
 
     // Return masked values
     const config = settings.reduce((acc, setting) => {
+        // Don't mask AI_ENABLED
+        if (setting.key === 'AI_ENABLED') {
+            acc[setting.key] = setting.value;
+            return acc;
+        }
+
         const visibleChars = 4;
         const value = setting.value;
         const masked = value.length > visibleChars

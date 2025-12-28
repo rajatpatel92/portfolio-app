@@ -73,7 +73,7 @@ export default function UserManagementPage() {
     };
 
     const resetForm = () => {
-        setFormData({ username: '', password: '', role: 'VIEWER', name: '' });
+        setFormData({ username: '', password: '', role: 'VIEWER', name: '', aiEnabled: true } as any);
         setEditingId(null);
         setShowForm(false);
         setError('');
@@ -84,8 +84,9 @@ export default function UserManagementPage() {
             username: user.username,
             password: '', // Password not retrieved
             role: user.role,
-            name: user.name || ''
-        });
+            name: user.name || '',
+            aiEnabled: (user as any).aiEnabled ?? true
+        } as any);
         setEditingId(user.id);
         setShowForm(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -180,6 +181,16 @@ export default function UserManagementPage() {
                                     <option value="ADMIN">Admin</option>
                                 </select>
                             </div>
+                            <div className={styles.inputGroup} style={{ flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
+                                <input
+                                    type="checkbox"
+                                    id="aiEnabled"
+                                    checked={(formData as any).aiEnabled ?? true}
+                                    onChange={e => setFormData({ ...formData, aiEnabled: e.target.checked } as any)}
+                                    style={{ width: 'auto' }}
+                                />
+                                <label htmlFor="aiEnabled" className={styles.label} style={{ marginBottom: 0, cursor: 'pointer' }}>Enable AI Features</label>
+                            </div>
                             <button type="submit" className={styles.addButton} disabled={loading}>
                                 {loading ? 'Saving...' : (editingId ? 'Update User' : 'Create User')}
                             </button>
@@ -195,6 +206,7 @@ export default function UserManagementPage() {
                                 <th className={styles.th}>Name</th>
                                 <th className={styles.th}>Username</th>
                                 <th className={styles.th}>Role</th>
+                                <th className={styles.th}>AI Access</th>
                                 <th className={styles.th}>Created At</th>
                                 <th className={styles.th}>Actions</th>
                             </tr>
@@ -205,6 +217,17 @@ export default function UserManagementPage() {
                                     <td className={styles.td}>{user.name || '-'}</td>
                                     <td className={styles.td}>{user.username}</td>
                                     <td className={styles.td}>{user.role}</td>
+                                    <td className={styles.td}>
+                                        <span style={{
+                                            padding: '2px 8px',
+                                            borderRadius: '12px',
+                                            background: (user as any).aiEnabled ? 'var(--success-bg)' : 'var(--error-bg)',
+                                            color: (user as any).aiEnabled ? 'var(--success)' : 'var(--error)',
+                                            fontSize: '0.8rem'
+                                        }}>
+                                            {(user as any).aiEnabled ? 'Enabled' : 'Disabled'}
+                                        </span>
+                                    </td>
                                     <td className={styles.td}>{new Date(user.createdAt).toLocaleDateString()}</td>
                                     <td className={styles.td}>
                                         {/* Show actions if it's not the current user (for deletion) OR if it IS the current user (for editing) */

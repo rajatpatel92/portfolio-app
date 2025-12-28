@@ -17,17 +17,25 @@ export async function GET() {
 
         const settingsMap = settings.reduce((acc: Record<string, string>, s: SystemSetting) => ({ ...acc, [s.key]: s.value }), {} as Record<string, string>);
 
-        const isEnabled = settingsMap['AI_ENABLED'] !== 'false'; // Default to true if missing
+        const globalEnabled = settingsMap['AI_ENABLED'] === 'true';
+        const userEnabled = (session.user as any).aiEnabled !== false; // Default true
+
+        // If globally disabled or user disabled, return limited config
+        if (!globalEnabled || !userEnabled) {
+            return NextResponse.json({
+                availableModels: [], // No models available
+                isAIEnabled: false // Explicitly false
+            });
+        }
 
         const availableModels: string[] = [];
         if (settingsMap['GEMINI_API_KEY']) availableModels.push('GEMINI');
         if (settingsMap['GPT_API_KEY']) availableModels.push('GPT');
         if (settingsMap['CLAUDE_API_KEY']) availableModels.push('CLAUDE');
 
-        // Allow fetching this even if disabled, so UI can show "Disabled" state if needed
         return NextResponse.json({
-            enabled: isEnabled,
-            availableModels
+            availableModels,
+            isAIEnabled: true
         });
 
     } catch (error) {

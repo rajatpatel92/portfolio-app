@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './Settings.module.css';
 import { FaEye, FaEyeSlash, FaSave, FaRobot, FaPowerOff } from 'react-icons/fa';
 import { useSession } from 'next-auth/react';
@@ -11,6 +12,7 @@ export default function AISettings() {
     const userRole = (session?.user as any)?.role || 'VIEWER';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const currentModel = (session?.user as any)?.preferredLLM || 'GEMINI';
+    const router = useRouter();
 
     const [isAdmin, setIsAdmin] = useState(false);
 
@@ -69,6 +71,11 @@ export default function AISettings() {
 
             // Should we update local state? Yes.
             setConfig(prev => ({ ...prev, [key]: value }));
+
+            // If toggling AI_ENABLED, refresh the router to update Sidebar
+            if (key === 'AI_ENABLED') {
+                router.refresh();
+            }
 
         } catch {
             alert('Failed to save setting');
@@ -181,9 +188,10 @@ export default function AISettings() {
                                         </button>
                                     </div>
                                     <button
-                                        onClick={() => handleSaveConfig(p.key, config[p.key] || '')}
-                                        disabled={saving[p.key]}
+                                        onClick={() => handleSaveConfig(p.key, (config[p.key] || '').trim())}
+                                        disabled={saving[p.key] || (config[p.key] || '').includes('...')}
                                         className={styles.saveBtn}
+                                        title={(config[p.key] || '').includes('...') ? "Cannot save masked key. Please enter a new key." : "Save API Key"}
                                     >
                                         {saving[p.key] ? '...' : <FaSave />}
                                         Save

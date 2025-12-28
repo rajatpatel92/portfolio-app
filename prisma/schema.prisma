@@ -114,6 +114,7 @@ model User {
   password  String
   role      String   @default("VIEWER") // ADMIN, EDITOR, VIEWER
   preferredLLM String @default("GEMINI") // GEMINI, GPT, CLAUDE
+  aiEnabled    Boolean @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
