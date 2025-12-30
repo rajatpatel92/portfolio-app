@@ -102,17 +102,35 @@ export class MarketDataService {
             }
 
             // 2. Fetch from API
-            // We need 'summaryProfile' for sector/country and 'summaryDetail' for 52w stats
-            const quote = await yahooFinance.quoteSummary(symbol, { modules: ['price', 'summaryProfile', 'summaryDetail', 'topHoldings', 'calendarEvents', 'defaultKeyStatistics'] }) as any;
+            // Fetch both Quote (for realtime price) and Summary (for metadata)
+            const [quoteRealtime, quoteSummary] = await Promise.all([
+                yahooFinance.quote(symbol).catch(e => {
+                    console.error(`Error fetching quote for ${symbol}`, e);
+                    return null;
+                }),
+                yahooFinance.quoteSummary(symbol, { modules: ['summaryProfile', 'summaryDetail', 'topHoldings', 'calendarEvents', 'defaultKeyStatistics'] }).catch(e => {
+                    console.error(`Error fetching quoteSummary for ${symbol}`, e);
+                    return null;
+                })
+            ]) as [any, any];
 
-            if (!quote || !quote.price) return null;
+            if ((!quoteRealtime || !quoteRealtime.regularMarketPrice) && (!quoteSummary || !quoteSummary.price?.regularMarketPrice)) {
+                return null;
+            }
 
-            const priceData = quote.price;
-            const profile = quote.summaryProfile || {};
-            const detail = quote.summaryDetail || {};
-            const holdings = quote.topHoldings || {};
-            const calendar = quote.calendarEvents || {};
-            const keyStats = quote.defaultKeyStatistics || {};
+            // Prefer Realtime Quote for Price/Change
+            const priceVal = quoteRealtime?.regularMarketPrice || quoteSummary?.price?.regularMarketPrice || 0;
+            const changeVal = quoteRealtime?.regularMarketChange || quoteSummary?.price?.regularMarketChange || 0;
+            const changePercentVal = quoteRealtime?.regularMarketChangePercent || quoteSummary?.price?.regularMarketChangePercent || 0;
+            const currencyVal = quoteRealtime?.currency || quoteSummary?.price?.currency || 'USD';
+            const nameVal = quoteRealtime?.longName || quoteRealtime?.shortName || quoteSummary?.price?.longName || quoteSummary?.price?.shortName;
+
+            // Use Summary for Metadata
+            const profile = quoteSummary?.summaryProfile || {};
+            const detail = quoteSummary?.summaryDetail || {};
+            const holdings = quoteSummary?.topHoldings || {};
+            const calendar = quoteSummary?.calendarEvents || {};
+            const keyStats = quoteSummary?.defaultKeyStatistics || {};
 
             let dividendRate = detail.dividendRate;
             let dividendYield = detail.dividendYield;
@@ -136,22 +154,22 @@ export class MarketDataService {
             }
 
             // Calculate Rate if missing but Yield exists
-            if (!dividendRate && dividendYield && priceData.regularMarketPrice) {
-                dividendRate = priceData.regularMarketPrice * dividendYield;
+            if (!dividendRate && dividendYield && priceVal) {
+                dividendRate = priceVal * dividendYield;
             }
 
             // Calculate Yield if missing but Rate exists
-            if (!dividendYield && dividendRate && priceData.regularMarketPrice) {
-                dividendYield = dividendRate / priceData.regularMarketPrice;
+            if (!dividendYield && dividendRate && priceVal) {
+                dividendYield = dividendRate / priceVal;
             }
 
             const data: MarketData = {
-                symbol: priceData.symbol,
-                price: priceData.regularMarketPrice || 0,
-                currency: priceData.currency || 'USD',
-                regularMarketTime: priceData.regularMarketTime || new Date(),
-                regularMarketChange: priceData.regularMarketChange || 0,
-                regularMarketChangePercent: priceData.regularMarketChangePercent || 0,
+                symbol: symbol,
+                price: priceVal,
+                currency: currencyVal,
+                regularMarketTime: quoteRealtime?.regularMarketTime || new Date(),
+                regularMarketChange: changeVal,
+                regularMarketChangePercent: changePercentVal,
                 sector: profile.sector,
                 country: profile.country,
                 fiftyTwoWeekHigh: detail.fiftyTwoWeekHigh,
@@ -162,7 +180,7 @@ export class MarketDataService {
                 dividendRate: dividendRate,
                 dividendYield: dividendYield,
                 exDividendDate: calendar.exDividendDate ? new Date(calendar.exDividendDate) : undefined,
-                name: priceData.longName || priceData.shortName
+                name: nameVal
             };
 
             // 3. Update Cache

@@ -117,7 +117,11 @@ export default function Dashboard() {
 
         {/* Insights Grid */}
         <div className={styles.insightsGrid}>
-          <TopMovers constituents={summary.constituents} />
+          <TopMovers
+            constituents={summary.constituents}
+            portfolioTotalValue={summary.totalValue}
+            portfolioDayChange={summary.dayChange}
+          />
           <DividendSummary
             dividendsYTD={summary.dividendsYTD}
             upcomingDividends={summary.upcomingDividends}
