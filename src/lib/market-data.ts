@@ -103,19 +103,26 @@ export class MarketDataService {
 
             // 2. Fetch from API
             // Fetch both Quote (for realtime price) and Summary (for metadata)
-            const [quoteRealtime, quoteSummary] = await Promise.all([
-                yahooFinance.quote(symbol).catch(e => {
-                    console.error(`Error fetching quote for ${symbol}`, e);
-                    return null;
-                }),
-                yahooFinance.quoteSummary(symbol, { modules: ['summaryProfile', 'summaryDetail', 'topHoldings', 'calendarEvents', 'defaultKeyStatistics'] }).catch(e => {
-                    console.error(`Error fetching quoteSummary for ${symbol}`, e);
-                    return null;
-                })
-            ]) as [any, any];
+            // Execute sequentially to reduce rate-limiting (429) risk compared to Promise.all
+            let quoteRealtime = null;
+            try {
+                quoteRealtime = await yahooFinance.quote(symbol);
+            } catch (e: any) {
+                // if (process.env.DEBUG) console.warn(`API Error (Quote) for ${symbol}: ${e.message || e}`);
+            }
 
+            let quoteSummary = null;
+            try {
+                // Only fetch summary if we really need it or if quote failed? 
+                // We need it for sector/country/dividend info which are important.
+                quoteSummary = await yahooFinance.quoteSummary(symbol, { modules: ['summaryProfile', 'summaryDetail', 'topHoldings', 'calendarEvents', 'defaultKeyStatistics'] });
+            } catch (e: any) {
+                // console.warn(`API Error (Summary) for ${symbol}: ${e.message || e}`);
+            }
+
+            // If both failed, throw error to trigger cache fallback in outer catch block
             if ((!quoteRealtime || !quoteRealtime.regularMarketPrice) && (!quoteSummary || !quoteSummary.price?.regularMarketPrice)) {
-                return null;
+                throw new Error('Failed to fetch market data from API');
             }
 
             // Prefer Realtime Quote for Price/Change
@@ -126,11 +133,11 @@ export class MarketDataService {
             const nameVal = quoteRealtime?.longName || quoteRealtime?.shortName || quoteSummary?.price?.longName || quoteSummary?.price?.shortName;
 
             // Use Summary for Metadata
-            const profile = quoteSummary?.summaryProfile || {};
-            const detail = quoteSummary?.summaryDetail || {};
-            const holdings = quoteSummary?.topHoldings || {};
-            const calendar = quoteSummary?.calendarEvents || {};
-            const keyStats = quoteSummary?.defaultKeyStatistics || {};
+            const profile: any = quoteSummary?.summaryProfile || {};
+            const detail: any = quoteSummary?.summaryDetail || {};
+            const holdings: any = quoteSummary?.topHoldings || {};
+            const calendar: any = quoteSummary?.calendarEvents || {};
+            const keyStats: any = quoteSummary?.defaultKeyStatistics || {};
 
             let dividendRate = detail.dividendRate;
             let dividendYield = detail.dividendYield;
@@ -215,8 +222,13 @@ export class MarketDataService {
             });
 
             return data;
-        } catch (error) {
-            console.error(`Error fetching price for ${symbol}:`, error);
+        } catch (error: any) {
+            const msg = error.message || '';
+            if (msg.includes('Failed to fetch') || msg.includes('429') || msg.includes('crumb')) {
+                console.warn(`[MarketData] API Error for ${symbol} (${msg}). Using cache.`);
+            } else {
+                console.error(`Error fetching price for ${symbol}:`, error);
+            }
             // Fallback to cache if API fails, even if stale
             const cached = await prisma.marketDataCache.findUnique({ where: { symbol } });
             if (cached) {
@@ -351,8 +363,13 @@ export class MarketDataService {
 
                 return 1 / price;
             }
-        } catch (error) {
-            console.error(`Error fetching exchange rate for ${from}/${to}:`, error);
+        } catch (error: any) {
+            const msg = error.message || '';
+            if (msg.includes('429') || msg.includes('crumb')) {
+                // console.warn(`[MarketData] Exchange Rate API Error for ${from}/${to} (${msg}). Using cache.`);
+            } else {
+                console.error(`Error fetching exchange rate for ${from}/${to}:`, error);
+            }
 
             // Fallback: Check cache again, return it even if expired (stale data is better than no data)
             const cached = await prisma.marketDataCache.findUnique({
@@ -360,8 +377,8 @@ export class MarketDataService {
             });
 
             if (cached) {
-                console.warn(`Using stale cache for ${reverseSymbol} due to API error`); // Corrected to use reverseSymbol
-                return 1 / cached.price; // Invert the cached price as it's for the reverse symbol
+                // console.warn(`Using stale cache for ${reverseSymbol} due to API error`); 
+                return 1 / cached.price;
             }
         }
 
