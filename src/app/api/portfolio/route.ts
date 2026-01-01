@@ -302,6 +302,7 @@ export async function GET() {
                 return {
                     success: true,
                     symbol,
+                    marketData,
                     data,
                     price,
                     rateToUSD,
