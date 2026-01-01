@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
@@ -7,8 +7,10 @@ import { calculateXIRR, Transaction } from '@/lib/xirr';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+        const { searchParams } = new URL(request.url);
+        const targetCurrency = searchParams.get('currency') || 'USD';
         // 1. Fetch all activities and activity types
         const [activities, activityTypes] = await Promise.all([
             prisma.activity.findMany({
@@ -536,10 +538,37 @@ export async function GET() {
         })).sort((a, b) => b.value - a.value);
 
         // Calculate Total Growth Percent
-        const totalGrowth = (totalValue - totalCostBasis) + totalLifetimeDividends;
+        let totalGrowth = (totalValue - totalCostBasis) + totalLifetimeDividends;
         const totalGrowthPercent = totalCostBasis > 0 ? (totalGrowth / totalCostBasis) * 100 : 0;
 
-        console.log(`[PortfolioAPI] Total Value: ${totalValue.toFixed(2)}, Cost Basis: ${totalCostBasis.toFixed(2)}, Lifetime Divs: ${totalLifetimeDividends.toFixed(2)}, Growth: ${totalGrowth.toFixed(2)}`);
+        console.log(`[PortfolioAPI] Total Value (USD): ${totalValue.toFixed(2)}, Cost Basis: ${totalCostBasis.toFixed(2)}, Lifetime Divs: ${totalLifetimeDividends.toFixed(2)}, Growth: ${totalGrowth.toFixed(2)}`);
+
+        // Convert to Target Currency
+        let finalRate = 1;
+        if (targetCurrency !== 'USD') {
+            const r = await MarketDataService.getExchangeRate('USD', targetCurrency);
+            if (r) finalRate = r;
+        }
+
+        if (finalRate !== 1) {
+            console.log(`[PortfolioAPI] Converting to ${targetCurrency} at rate ${finalRate}`);
+            totalValue *= finalRate;
+            totalCostBasis *= finalRate;
+            totalDayChange *= finalRate;
+            totalGrowth *= finalRate;
+            totalLifetimeDividends *= finalRate;
+            dividendsYTD *= finalRate;
+            projectedDividends *= finalRate;
+
+            // Update Allocation Arrays
+            allocationByTypeArray.forEach(x => x.value *= finalRate);
+            allocationByPlatformArray.forEach(x => x.value *= finalRate);
+            allocationByAccountArray.forEach(x => x.value *= finalRate);
+            allocationByAccountTypeArray.forEach(x => x.value *= finalRate);
+
+            // Update Upcoming Dividends
+            upcomingDividends.forEach(x => x.estimatedAmount *= finalRate);
+        }
 
         return NextResponse.json({
             totalValue,
