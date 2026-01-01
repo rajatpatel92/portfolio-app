@@ -26,7 +26,7 @@
     "react-dom": "^19.2.3",
     "react-icons": "^5.5.0",
     "recharts": "^3.5.1",
-    "yahoo-finance2": "^3.10.2"
+    "yahoo-finance2": "^3.11.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

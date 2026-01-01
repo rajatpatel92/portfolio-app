@@ -28,6 +28,7 @@ interface PortfolioSummary {
   dividendsYTD: number;
   projectedDividends: number;
   upcomingDividends: any[];
+  lastUpdated: string | null;
 }
 
 export default function Dashboard() {
@@ -40,32 +41,37 @@ export default function Dashboard() {
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
 
+  // Last Updated Time State
+  const [timeAgo, setTimeAgo] = useState<string>('');
+
   useEffect(() => {
     // 1. Try to load from cache immediately
     const cached = localStorage.getItem('portfolio_summary');
     if (cached) {
       try {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSummary(JSON.parse(cached));
       } catch (e) {
         console.error('Failed to parse cached summary', e);
       }
     }
 
-    // 2. Fetch fresh data in background
-    fetch('/api/portfolio')
-      .then(res => res.json())
-      .then(data => {
+    // 2. Fetch fresh data
+    const fetchData = async () => {
+      try {
+        const res = await fetch('/api/portfolio');
+        const data = await res.json();
         setSummary(data);
-        // Update cache
         localStorage.setItem('portfolio_summary', JSON.stringify(data));
-      })
-      .catch(err => console.error('Failed to fetch portfolio', err));
+      } catch (err) {
+        console.error('Failed to fetch portfolio', err);
+      }
+    };
+    fetchData();
   }, []);
 
   if (!summary) return <DashboardSkeleton />;
 
-  const totalValue = convert(summary.totalValue, 'USD'); // Assuming API returns USD
+  const totalValue = convert(summary.totalValue, 'USD');
   const dayChange = convert(summary.dayChange, 'USD');
   const totalGrowth = convert(summary.totalGrowth, 'USD');
   const isPositive = dayChange >= 0;
@@ -80,8 +86,15 @@ export default function Dashboard() {
     <div className={styles.container}>
       {/* Header */}
       <header className={styles.header}>
-        <h1 className={styles.greeting}>{greeting}, {userName}</h1>
-        <p className={styles.date}>{dateStr}</p>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.greeting}>{greeting}, {userName}</h1>
+          <p className={styles.date}>{dateStr}</p>
+        </div>
+        {summary?.lastUpdated && (
+          <div className={styles.headerRight} style={{ textAlign: 'right', fontSize: '0.8rem', opacity: 0.7 }}>
+            Data updated: {new Date(summary.lastUpdated).toLocaleTimeString()}
+          </div>
+        )}
       </header>
 
       <div className={styles.dashboardGrid}>

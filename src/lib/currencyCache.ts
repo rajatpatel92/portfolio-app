@@ -8,7 +8,7 @@ interface CachedRate {
 export async function getExchangeRate(from: string, to: string): Promise<number | null> {
     if (from === to) return 1;
 
-    const CACHE_KEY = `rate_${from}_${to}`;
+    const CACHE_KEY = `rate_v3_${from}_${to}`;
 
     // Try to load from cache
     if (typeof window !== 'undefined') {

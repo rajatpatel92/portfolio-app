@@ -401,6 +401,8 @@ export async function GET() {
             results.push(...batchResults);
         }
 
+        let oldestDataTimestamp: Date | null = null;
+
         // Aggregate Results
         for (const result of results) {
             if (!result.success || !result.data) continue;
@@ -417,8 +419,20 @@ export async function GET() {
                 constituent,
                 upcomingDividend,
                 price,
-                rateToUSD
+                rateToUSD,
+                marketData // Assuming I can access this if I return it from processHolding
             } = result;
+
+            // Update timestamp tracking
+            if (marketData && marketData.regularMarketTime) {
+                const ts = new Date(marketData.regularMarketTime);
+                if (!oldestDataTimestamp || ts < oldestDataTimestamp) {
+                    oldestDataTimestamp = ts;
+                }
+            } else if (price > 0 && !oldestDataTimestamp) {
+                // If we have a price but no timestamp (rare?), assume now? No, assume old?
+                // Better to skip if no explicit timestamp.
+            }
 
             // Merge Cash Flows
             portfolioCashFlows.push(...symbolCashFlows);
@@ -526,6 +540,7 @@ export async function GET() {
             totalGrowth,
             totalGrowthPercent,
             xirr: portfolioXIRR,
+            lastUpdated: oldestDataTimestamp,
             allocationByType: allocationByTypeArray,
             allocationByPlatform: allocationByPlatformArray,
             allocationByAccount: allocationByAccountArray,

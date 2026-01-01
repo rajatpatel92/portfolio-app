@@ -3,7 +3,12 @@ import YahooFinance from 'yahoo-finance2';
 import { prisma } from '@/lib/prisma';
 
 const yahooFinance = new YahooFinance({
-    suppressNotices: ['yahooSurvey']
+    suppressNotices: ['yahooSurvey'],
+    //fetchOptions: {
+    //    headers: {
+    //        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    //    }
+    //}
 });
 
 // Throttler to prevent 429 Errors
@@ -148,49 +153,46 @@ export class MarketDataService {
 
     /**
      * Get current price for a symbol with caching (15 min)
+     * @param forceRefresh If true, forces a fresh fetch from Yahoo API (bypassing cache checks)
      */
-    static async getPrice(symbol: string): Promise<MarketData | null> {
+    static async getPrice(symbol: string, forceRefresh = false): Promise<MarketData | null> {
         try {
             // 1. Check Cache
             const cached = await prisma.marketDataCache.findUnique({
                 where: { symbol }
             });
 
-            const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
-            const now = new Date();
-
-            if (cached && (now.getTime() - cached.lastUpdated.getTime() < CACHE_DURATION)) {
-                // If we have cached data, check if we have the new fields (sector/country)
-                // For ETFs, sector/country might be null, so we check if we have allocations OR sector/country
-                // Also check if we have dividend data if it's expected
-                if (cached.sector || cached.country || (cached.sectorAllocations && (cached.sectorAllocations as any[]).length > 0)) {
-                    return {
-                        symbol: cached.symbol,
-                        price: cached.price,
-                        currency: cached.currency,
-                        regularMarketTime: cached.lastUpdated,
-                        regularMarketChange: cached.change,
-                        regularMarketChangePercent: cached.changePercent,
-                        sector: cached.sector || undefined,
-                        country: cached.country || undefined,
-                        sectorAllocations: cached.sectorAllocations as any[],
-                        countryAllocations: cached.countryAllocations as any[],
-                        dividendRate: cached.dividendRate || undefined,
-                        dividendYield: cached.dividendYield || undefined,
-                        exDividendDate: cached.exDividendDate || undefined,
-                        // Note: 52w high/low are not currently cached in the model
-                    };
-                }
-                // If missing critical data, fall through to fetch from API
+            // Async Architecture: Return cached data if available and we are NOT forcing a refresh.
+            // We ignore age here because the background cron job is responsible for freshness.
+            if (!forceRefresh && cached) {
+                // Return whatever we have in DB
+                return {
+                    symbol: cached.symbol,
+                    price: cached.price,
+                    currency: cached.currency,
+                    regularMarketTime: cached.lastUpdated,
+                    regularMarketChange: cached.change,
+                    regularMarketChangePercent: cached.changePercent,
+                    sector: cached.sector || undefined,
+                    country: cached.country || undefined,
+                    sectorAllocations: cached.sectorAllocations as any[],
+                    countryAllocations: cached.countryAllocations as any[],
+                    dividendRate: cached.dividendRate || undefined,
+                    dividendYield: cached.dividendYield || undefined,
+                    exDividendDate: cached.exDividendDate || undefined,
+                };
             }
 
-            // 2. Fetch from API
+            // 2. Fetch from API (Only if forceRefresh is true OR cache is missing)
             // Fetch both Quote (for realtime price) and Summary (for metadata)
+            const now = new Date();
             // Execute sequentially to reduce rate-limiting (429) risk compared to Promise.all
             let quoteRealtime = null;
+            let lastError: any = null;
             try {
                 quoteRealtime = await apiThrottler.add(() => yahooFinance.quote(symbol));
             } catch (e: any) {
+                lastError = e;
                 // if (process.env.DEBUG) console.warn(`API Error (Quote) for ${symbol}: ${e.message || e}`);
             }
 
@@ -200,12 +202,17 @@ export class MarketDataService {
                 // We need it for sector/country/dividend info which are important.
                 quoteSummary = await apiThrottler.add(() => yahooFinance.quoteSummary(symbol, { modules: ['summaryProfile', 'summaryDetail', 'topHoldings', 'calendarEvents', 'defaultKeyStatistics'] }));
             } catch (e: any) {
+                if (!lastError) lastError = e;
                 // console.warn(`API Error (Summary) for ${symbol}: ${e.message || e}`);
             }
 
-            // If both failed, throw error to trigger cache fallback in outer catch block
+            // If both failed, throw error to trigger cache fallback or cron retry
             if ((!quoteRealtime || !quoteRealtime.regularMarketPrice) && (!quoteSummary || !quoteSummary.price?.regularMarketPrice)) {
-                throw new Error('Failed to fetch market data from API');
+                if (forceRefresh && lastError) throw lastError; // Propagate Rate Limit or other specific errors
+
+                const msg = 'Failed to fetch market data from API';
+                if (forceRefresh) throw new Error(msg);
+                throw new Error(msg);
             }
 
             // Prefer Realtime Quote for Price/Change
@@ -257,7 +264,7 @@ export class MarketDataService {
                 symbol: symbol,
                 price: priceVal,
                 currency: currencyVal,
-                regularMarketTime: quoteRealtime?.regularMarketTime || new Date(),
+                regularMarketTime: now, // Always use Fetch Time for consistency with Cache Hits
                 regularMarketChange: changeVal,
                 regularMarketChangePercent: changePercentVal,
                 sector: profile.sector,
@@ -312,6 +319,10 @@ export class MarketDataService {
             } else {
                 console.error(`Error fetching price for ${symbol}:`, error);
             }
+
+            // Async Architecture: Re-throw if forcing refresh
+            if (forceRefresh) throw error;
+
             // Fallback to cache if API fails, even if stale
             const cached = await prisma.marketDataCache.findUnique({ where: { symbol } });
             if (cached) {
@@ -339,8 +350,9 @@ export class MarketDataService {
     /**
      * Get exchange rate between two currencies
      * Uses Yahoo Finance tickers like "USDINR=X"
+     * Refactored to use standard getPrice() for consistent caching/async architecture.
      */
-    static async getExchangeRate(from: string, to: string): Promise<number | null> {
+    static async getExchangeRate(from: string, to: string, forceRefresh = false): Promise<number | null> {
         if (from === to) return 1;
 
         // Try direct pair first
@@ -350,123 +362,22 @@ export class MarketDataService {
             symbol = `${to}=X`;
         }
 
-        // 1. Check Cache
-        try {
-            const cached = await prisma.marketDataCache.findUnique({
-                where: { symbol }
-            });
+        // Use getPrice to handle caching/fetching unified logic
+        const data = await this.getPrice(symbol, forceRefresh);
+        if (data?.price) return data.price;
 
-            const CACHE_DURATION = 8 * 60 * 60 * 1000; // 8 hours
-            const now = new Date();
-
-            if (cached && (now.getTime() - cached.lastUpdated.getTime() < CACHE_DURATION)) {
-                return cached.price;
-            }
-        } catch (error) {
-            console.error(`Error checking cache for ${symbol}:`, error);
-        }
-
-        try {
-            const quote = await apiThrottler.add(() => yahooFinance.quote(symbol)) as any;
-            if (quote && quote.regularMarketPrice) {
-                const price = quote.regularMarketPrice;
-
-                // Update Cache
-                await prisma.marketDataCache.upsert({
-                    where: { symbol },
-                    update: {
-                        price: price,
-                        change: quote.regularMarketChange || 0,
-                        changePercent: quote.regularMarketChangePercent || 0,
-                        currency: quote.currency || to,
-                        lastUpdated: new Date()
-                    },
-                    create: {
-                        symbol,
-                        price: price,
-                        change: quote.regularMarketChange || 0,
-                        changePercent: quote.regularMarketChangePercent || 0,
-                        currency: quote.currency || to,
-                        lastUpdated: new Date()
-                    }
-                });
-
-                return price;
-            }
-        } catch {
-            // Ignore and try reverse
-        }
-
-        // Try reverse pair (e.g., INRUSD=X) and invert
+        // Fallback: Try reverse pair (e.g., INRUSD=X) and invert
         let reverseSymbol = `${to}${from}=X`;
         if (to === 'USD') {
             reverseSymbol = `${from}=X`;
         }
 
-        // Check Cache for Reverse
-        try {
-            const cached = await prisma.marketDataCache.findUnique({
-                where: { symbol: reverseSymbol }
-            });
-
-            const CACHE_DURATION = 8 * 60 * 60 * 1000; // 8 hours
-            const now = new Date();
-
-            if (cached && (now.getTime() - cached.lastUpdated.getTime() < CACHE_DURATION)) {
-                return 1 / cached.price;
-            }
-        } catch (error) {
-            console.error(`Error checking cache for ${reverseSymbol}:`, error);
-        }
-
-        try {
-            const quote = await apiThrottler.add(() => yahooFinance.quote(reverseSymbol)) as any;
-            if (quote && quote.regularMarketPrice) {
-                const price = quote.regularMarketPrice;
-
-                // Update Cache for Reverse
-                await prisma.marketDataCache.upsert({
-                    where: { symbol: reverseSymbol },
-                    update: {
-                        price: price,
-                        change: quote.regularMarketChange || 0,
-                        changePercent: quote.regularMarketChangePercent || 0,
-                        currency: quote.currency || from,
-                        lastUpdated: new Date()
-                    },
-                    create: {
-                        symbol: reverseSymbol,
-                        price: price,
-                        change: quote.regularMarketChange || 0,
-                        changePercent: quote.regularMarketChangePercent || 0,
-                        currency: quote.currency || from,
-                        lastUpdated: new Date()
-                    }
-                });
-
-                return 1 / price;
-            }
-        } catch (error: any) {
-            const msg = error.message || '';
-            if (msg.includes('429') || msg.includes('crumb')) {
-                // console.warn(`[MarketData] Exchange Rate API Error for ${from}/${to} (${msg}). Using cache.`);
-            } else {
-                console.error(`Error fetching exchange rate for ${from}/${to}:`, error);
-            }
-
-            // Fallback: Check cache again, return it even if expired (stale data is better than no data)
-            const cached = await prisma.marketDataCache.findUnique({
-                where: { symbol: reverseSymbol } // Corrected to use reverseSymbol for fallback
-            });
-
-            if (cached) {
-                // console.warn(`Using stale cache for ${reverseSymbol} due to API error`); 
-                return 1 / cached.price;
-            }
-        }
+        const reverseData = await this.getPrice(reverseSymbol, forceRefresh);
+        if (reverseData?.price) return 1 / reverseData.price;
 
         return null;
     }
+
 
     /**
      * Get historical exchange rate for a specific date
@@ -597,29 +508,35 @@ export class MarketDataService {
     /**
      * Get historical prices for performance calculation with caching (24h)
      * Returns map of period -> price
+     * UPDATED: Async Architecture - returns stale cache by default.
      */
-    static async getHistoricalPrices(symbol: string): Promise<Record<string, number>> {
+    static async getHistoricalPrices(symbol: string, forceRefresh = false): Promise<Record<string, number>> {
         try {
             // 1. Check Cache
             const cached = await prisma.marketDataCache.findUnique({
                 where: { symbol }
             });
 
-            const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
-            const now = new Date();
-
-            if (cached?.history && (now.getTime() - cached.lastUpdated.getTime() < CACHE_DURATION)) {
+            // Async Architecture: Return cached history if available and NOT forcing refresh.
+            // We ignore expiry here because the background cron handles freshness.
+            if (!forceRefresh && cached?.history) {
                 // Check if history is valid JSON object
                 if (typeof cached.history === 'object' && cached.history !== null) {
-                    // Check if we have the required keys, if not, re-fetch
+                    // Check if we have the required keys, if not, allow re-fetch
+                    // Actually, for Async, we should return whatever we have to avoid API calls.
+                    // Only re-fetch if completely empty or missing critical keys?
+                    // Let's be strict: if we have history, return it. Cron will fix quality.
                     const h = cached.history as Record<string, number>;
-                    if (h['1W'] && h['1M'] && h['1Y'] && h['YTD']) {
+                    if (Object.keys(h).length > 0) {
                         return h;
                     }
                 }
             }
 
-            // 2. Fetch from API
+            // 2. Fetch from API (Only if forceRefresh=true OR cache is missing/empty)
+            // If we are here, it means we HAVE to fetch (Cold Start).
+            // This might trigger 429 if many symbols are new.
+            // Throttler handles it, but circuit breaker might trip.
             const endDate = new Date();
             const startDate = new Date();
             startDate.setFullYear(startDate.getFullYear() - 20); // Fetch up to 20 years back
@@ -638,6 +555,7 @@ export class MarketDataService {
             const prices = this.processHistory(quotes);
 
             // 3. Update Cache (merge with existing if possible, but here we just update history)
+            const now = new Date();
             await prisma.marketDataCache.upsert({
                 where: { symbol },
                 update: {
@@ -659,6 +577,11 @@ export class MarketDataService {
 
         } catch (error) {
             console.error(`Error fetching historical for ${symbol}:`, error);
+
+            // Async Architecture: If forcing refresh (Cron), re-throw error so we know it failed.
+            // Do NOT fallback to cache, because we want to retry or report error.
+            if (forceRefresh) throw error;
+
             // Fallback to cache
             const cached = await prisma.marketDataCache.findUnique({ where: { symbol } });
             if (cached?.history && typeof cached.history === 'object') {
@@ -672,27 +595,17 @@ export class MarketDataService {
      * Get full daily history for a symbol from a start date.
      * Essential for Portfolio Unitization.
      */
-    static async getDailyHistory(symbol: string, fromDate?: Date): Promise<Record<string, number>> {
+    static async getDailyHistory(symbol: string, fromDate?: Date, forceRefresh = false): Promise<Record<string, number>> {
         try {
             // 1. Check Cache
             const cached = await prisma.marketDataCache.findUnique({
                 where: { symbol }
             });
 
-            // Cache Validity: 12 Hours (to ensure daily updates)
-            const CACHE_DURATION = 12 * 60 * 60 * 1000;
-            const now = new Date();
-
-            if (cached?.history && (now.getTime() - cached.lastUpdated.getTime() < CACHE_DURATION)) {
-                // Return cached history if it looks like a full map (has many keys)
-                const h = cached.history as Record<string, number>;
-                const keys = Object.keys(h).filter(k => k.match(/^\d{4}-\d{2}-\d{2}$/)); // Filter YYYY-MM-DD
-
-                // If we have a reasonable amount of history (e.g. > 10 points), use it
-                // We rely on the caller to handle missing specific dates if the cache is slightly out of sync
-                if (keys.length > 10) {
-                    return h;
-                }
+            // Async Architecture: Return cached history if available and NOT forcing refresh.
+            // Check if history object has data (keys > 0)
+            if (!forceRefresh && cached?.history && typeof cached.history === 'object' && Object.keys(cached.history).length > 0) {
+                return cached.history as Record<string, number>;
             }
 
             // 2. Fetch from API
@@ -820,6 +733,7 @@ export class MarketDataService {
             // console.log(`[MarketData] getDailyHistory(${symbol}): Fetched ${quotes.length} points. Updating Cache.`);
 
             // 4. Update Cache
+            const now = new Date();
             await prisma.marketDataCache.upsert({
                 where: { symbol },
                 update: {
@@ -840,6 +754,10 @@ export class MarketDataService {
             return prices;
         } catch (error) {
             console.error(`Error fetching daily history for ${symbol}:`, error);
+
+            // Async Architecture: Re-throw if forcing refresh
+            if (forceRefresh) throw error;
+
             // Fallback to cache without checking expiry
             try {
                 const cached = await prisma.marketDataCache.findUnique({ where: { symbol } });

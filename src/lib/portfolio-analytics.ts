@@ -186,20 +186,22 @@ export class PortfolioAnalytics {
         const fxPairs = relevantCurrencies.map(c => ({ from: c, to: targetCurrency, symbol: `${c}${targetCurrency}=X` }));
         log(`[PortfolioAnalytics] Fetching FX Pairs: ${fxPairs.map(p => p.symbol).join(', ')}`);
 
-        // Helper to process items in batches with delay to respect rate limits
+        // Helper to process items in batches (Concurrency Control)
+        // MarketDataService handles API rate limits, but we batch to avoid overwhelming the DB/Event Loop if logical processing is heavy.
         const batchProcess = async <T>(
             items: T[],
             batchSize: number,
             delayMs: number,
             processor: (item: T) => Promise<void>
         ) => {
+            // Processing all at once (limited by batchSize chunks) but without artificial delay
+            // actually, we can just run them all if we trust MarketDataService.
+            // But to be safe, we keep batching but remove delay.
             for (let i = 0; i < items.length; i += batchSize) {
                 const batch = items.slice(i, i + batchSize);
-                log(`[PortfolioAnalytics] Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(items.length / batchSize)} (${batch.length} items)`);
+                // log(`[PortfolioAnalytics] Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(items.length / batchSize)}`);
                 await Promise.all(batch.map(item => processor(item)));
-                if (i + batchSize < items.length) {
-                    await new Promise(resolve => setTimeout(resolve, delayMs));
-                }
+                // No artificial delay needed for Cache Hits.
             }
         };
 
