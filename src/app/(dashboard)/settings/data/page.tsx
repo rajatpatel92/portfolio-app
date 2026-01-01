@@ -23,6 +23,10 @@ export default function MasterDataSettingsPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [editFormData, setEditFormData] = useState<any>({});
 
+    // Terminal State
+    const [logs, setLogs] = useState<string[]>([]);
+    const [isRunning, setIsRunning] = useState(false);
+
     const { data: session } = useSession();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const role = (session?.user as any)?.role || 'VIEWER';
@@ -249,6 +253,73 @@ export default function MasterDataSettingsPage() {
             {/* Admin Only Sections */}
             {role === 'ADMIN' && (
                 <>
+                    {/* Data Management */}
+                    <div className={styles.card}>
+                        <h2 className={styles.cardTitle}>Data Management</h2>
+                        <div className={styles.field}>
+                            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                                Manually trigger a full refresh of market data (Prices, History, Dividends). This runs in the background.
+                            </p>
+
+                            <button
+                                onClick={async () => {
+                                    if (isRunning) return;
+                                    if (!confirm('Start background market data refresh?')) return;
+
+                                    setIsRunning(true);
+                                    setLogs(['Initializing...']);
+
+                                    try {
+                                        const response = await fetch('/api/cron/market-data?stream=true');
+                                        const reader = response.body?.getReader();
+                                        const decoder = new TextDecoder();
+
+                                        if (!reader) throw new Error('No reader');
+
+                                        while (true) {
+                                            const { done, value } = await reader.read();
+                                            if (done) break;
+                                            const text = decoder.decode(value, { stream: true });
+                                            // Split by newline and append to logs
+                                            const newLines = text.split('\n').filter(Boolean);
+                                            setLogs(prev => [...prev, ...newLines]);
+                                        }
+                                    } catch (e) {
+                                        setLogs(prev => [...prev, 'Error: Failed to stream logs']);
+                                    } finally {
+                                        setIsRunning(false);
+                                    }
+                                }}
+                                className={styles.button}
+                                style={{ width: 'auto', opacity: isRunning ? 0.6 : 1, cursor: isRunning ? 'not-allowed' : 'pointer' }}
+                                disabled={isRunning}
+                            >
+                                {isRunning ? 'Running...' : 'Trigger Market Data Refresh'}
+                            </button>
+
+                            {/* Terminal UI */}
+                            {logs.length > 0 && (
+                                <div style={{
+                                    marginTop: '1rem',
+                                    background: '#1e1e1e',
+                                    color: '#00ff00',
+                                    padding: '1rem',
+                                    borderRadius: '0.5rem',
+                                    fontFamily: 'monospace',
+                                    fontSize: '0.8rem',
+                                    maxHeight: '300px',
+                                    overflowY: 'auto',
+                                    whiteSpace: 'pre-wrap'
+                                }}>
+                                    {logs.map((line, i) => (
+                                        <div key={i}>{line}</div>
+                                    ))}
+                                    {isRunning && <div className={styles.blinkingCursor}>_</div>}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Investment Types */}
                     <div className={`${styles.card} ${styles.invTypes}`}>
                         <h2 className={styles.cardTitle}>Investment Types</h2>

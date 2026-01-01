@@ -1,8 +1,10 @@
 
-import cron from 'node-cron';
 
 export async function register() {
     if (process.env.NEXT_RUNTIME === 'nodejs') {
+        // Only run on server-side
+        const cron = (await import('node-cron')).default;
+
         // Only run on server-side
         console.log('[Instrumentation] Registering Cron Jobs...');
 
@@ -11,16 +13,25 @@ export async function register() {
         // Instead, we can import the logic directly if possible, or retry.
         // But better: Just start the cron schedule.
 
-        // Schedule: Every hour at minute 0
+        // Schedule: Every hour at minute 0 (HEAVY REFRESH: History + Metadata)
         cron.schedule('0 * * * *', async () => {
-            console.log('[Cron] Triggering Scheduled Market Data Refresh...');
+            console.log('[Cron] Triggering Scheduled Market Data Refresh (Full)...');
             try {
-                // We use fetch to call our own API route to keep logic centralized
-                // We need the APP_URL or localhost
                 const baseUrl = process.env.APP_URL || 'http://localhost:3000';
                 await fetch(`${baseUrl}/api/cron/market-data`);
             } catch (e) {
-                console.error('[Cron] Failed to trigger market data refresh:', e);
+                console.error('[Cron] Failed to trigger full market data refresh:', e);
+            }
+        });
+
+        // Schedule: Every 2 minutes (LIGHT REFRESH: Price Only)
+        cron.schedule('*/2 * * * *', async () => {
+            // console.log('[Cron] Triggering Incremental Price Refresh...');
+            try {
+                const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+                await fetch(`${baseUrl}/api/cron/market-data/incremental`);
+            } catch (e) {
+                console.error('[Cron] Failed to trigger incremental refresh:', e);
             }
         });
 

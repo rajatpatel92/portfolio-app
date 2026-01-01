@@ -166,13 +166,50 @@
         height: 100%;
         max-height: 100vh;
         border-radius: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .header {
+        padding: 1rem;
+    }
+
+    .content {
+        flex: 1;
+        overflow-y: auto;
     }
 
     .name {
-        max-width: 120px;
+        max-width: 100px;
+        font-size: 0.75rem;
     }
 
-    .cell {
-        padding: 1rem 0.75rem;
+    .tableHeader {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    /* Hide the full name description to save space, keeping only the Symbol */
+    .name {
+        display: none;
+    }
+
+    .cell,
+    .tableHeader {
+        padding: 0.75rem 0.25rem;
+        /* Tighter padding */
+        font-size: 0.8rem;
+    }
+
+    /* Ensure Impact Column is visible */
+    .tableHeader:nth-child(4),
+    .cell:nth-child(4) {
+        display: table-cell;
+    }
+
+    /* Align Price Right properly */
+    .tableHeader:nth-child(2),
+    .cell:nth-child(2) {
+        text-align: right;
     }
 }

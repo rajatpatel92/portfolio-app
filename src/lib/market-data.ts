@@ -610,7 +610,7 @@ export class MarketDataService {
 
             // 2. Fetch from API
             const endDate = new Date();
-            const startDate = fromDate || new Date(new Date().setFullYear(endDate.getFullYear() - 5)); // Default 5Y
+            const startDate = fromDate || new Date(new Date().setFullYear(endDate.getFullYear() - 10)); // Default 10Y
 
             const queryOptions = {
                 period1: startDate,
@@ -912,6 +912,37 @@ export class MarketDataService {
         } catch (error) {
             console.error(`Error refreshing market data for ${symbol}:`, error);
             // We don't throw here to avoid crashing the background process
+        }
+
+    }
+
+    /**
+     * Efficiently updates ONLY current price and change data.
+     * Skips history, profiles, dividends.
+     * Used for frequent (e.g. 2 min) cron updates.
+     */
+    static async refreshPriceOnly(symbol: string): Promise<void> {
+        try {
+            const quote = await apiThrottler.add(() => yahooFinance.quote(symbol));
+            if (!quote) return;
+
+            const priceData = {
+                price: quote.regularMarketPrice || 0,
+                change: quote.regularMarketChange || 0,
+                changePercent: quote.regularMarketChangePercent || 0,
+                lastUpdated: new Date()
+            };
+
+            await prisma.marketDataCache.updateMany({
+                where: { symbol },
+                data: priceData
+            });
+
+            // If not exists, we don't insert partial data. 
+            // The full job handles creation.
+        } catch (error) {
+            // console.warn(`[FastRefresh] Failed for ${symbol}`, error);
+            throw error;
         }
     }
 

@@ -90,11 +90,7 @@ export default function Dashboard() {
           <h1 className={styles.greeting}>{greeting}, {userName}</h1>
           <p className={styles.date}>{dateStr}</p>
         </div>
-        {summary?.lastUpdated && (
-          <div className={styles.headerRight} style={{ textAlign: 'right', fontSize: '0.8rem', opacity: 0.7 }}>
-            Data updated: {new Date(summary.lastUpdated).toLocaleTimeString()}
-          </div>
-        )}
+
       </header>
 
       <div className={styles.dashboardGrid}>
@@ -167,8 +163,20 @@ export default function Dashboard() {
           />
         </section>
 
-
       </div>
+
+      {summary?.lastUpdated && (
+        <div style={{
+          textAlign: 'right',
+          fontSize: '0.75rem',
+          color: 'var(--text-secondary)',
+          marginTop: '2rem',
+          paddingRight: '1rem',
+          opacity: 0.8
+        }}>
+          Last Data Refresh: {new Date(summary.lastUpdated).toLocaleString()}
+        </div>
+      )}
     </div>
   );
 }
