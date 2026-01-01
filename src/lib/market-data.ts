@@ -92,7 +92,59 @@ class Throttler {
 }
 
 // Global instance: 2 concurrent requests, 300ms delay between completions
-const apiThrottler = new Throttler(2, 300);
+const apiThrottler = new Throttler(5, 300); // Adjust concurrency
+
+// Helper to estimate next dividend
+async function estimateNextDividend(symbol: string): Promise<Date | undefined> {
+    try {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setFullYear(endDate.getFullYear() - 1); // Last 12 months
+
+        // @ts-ignore - yahooFinance types might not support events='dividends' explicitly in some versions but it works
+        const events = await apiThrottler.add(() => yahooFinance.historical(symbol, {
+            period1: startDate,
+            period2: endDate,
+            events: 'dividends'
+        }));
+
+        if (!Array.isArray(events) || events.length < 2) return undefined;
+
+        // Sort descending
+        events.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        const lastDiv = new Date(events[0].date);
+        const prevDiv = new Date(events[1].date);
+
+        // Calculate interval in days
+        const diffTime = Math.abs(lastDiv.getTime() - prevDiv.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        let projectedDate = new Date(lastDiv);
+
+        // Simple logic: if ~30 days, add 30. If ~90, add 90.
+        if (diffDays >= 25 && diffDays <= 35) {
+            projectedDate.setDate(lastDiv.getDate() + 30);
+        } else if (diffDays >= 85 && diffDays <= 95) {
+            projectedDate.setDate(lastDiv.getDate() + 91);
+        } else if (diffDays >= 360) {
+            projectedDate.setFullYear(lastDiv.getFullYear() + 1);
+        } else {
+            // Irregular or unknown cadence, default to last known interval
+            projectedDate.setDate(lastDiv.getDate() + diffDays);
+        }
+
+        // Ensure projected date is in future (or close to now)
+        // If we projected a date that is already passed (e.g. today is Jan 5, projected was Jan 1), 
+        // it means we might have missed a payment or it's late. Still useful to return.
+
+        return projectedDate;
+
+    } catch (e) {
+        // console.warn(`Failed to estimate dividend for ${symbol}`);
+        return undefined;
+    }
+}
 
 export interface StockSearchResult {
     symbol: string;
@@ -276,9 +328,19 @@ export class MarketDataService {
 
                 dividendRate: dividendRate,
                 dividendYield: dividendYield,
-                exDividendDate: calendar.exDividendDate ? new Date(calendar.exDividendDate) : undefined,
+                exDividendDate: calendar.exDividendDate ? new Date(calendar.exDividendDate) : (quoteRealtime?.exDividendDate ? new Date(quoteRealtime.exDividendDate) : undefined),
                 name: nameVal
             };
+
+            // Smart Projection: If missing Ex-Date but we have Yield, try to estimate from history
+            // Only do this if we are forcing refresh (Background Job) to avoid slowing down user requests
+            if (!data.exDividendDate && (data.dividendYield || data.dividendRate) && forceRefresh) {
+                const estimated = await estimateNextDividend(symbol);
+                if (estimated) {
+                    data.exDividendDate = estimated;
+                    // console.log(`[SmartDiv] Projected ${symbol} next div: ${estimated.toISOString()}`);
+                }
+            }
 
             // 3. Update Cache
             await prisma.marketDataCache.upsert({
