@@ -11,6 +11,8 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const targetCurrency = searchParams.get('currency') || 'USD';
+        console.log(`[PortfolioAPI] Processing for currency: ${targetCurrency}`);
+
         // 1. Fetch all activities and activity types
         const [activities, activityTypes] = await Promise.all([
             prisma.activity.findMany({
@@ -568,6 +570,19 @@ export async function GET(request: NextRequest) {
 
             // Update Upcoming Dividends
             upcomingDividends.forEach(x => x.estimatedAmount *= finalRate);
+
+            // Update Constituents
+            constituents.forEach(c => {
+                c.value *= finalRate;
+                c.price *= finalRate; // Price in target currency
+                c.costBasis *= finalRate;
+                c.dayChange.absolute *= finalRate;
+                // percent remains same
+                c.dividendsYTD *= finalRate;
+                c.lifetimeDividends *= finalRate;
+                c.realizedGain *= finalRate;
+                if (c.avgPrice) c.avgPrice *= finalRate;
+            });
         }
 
         return NextResponse.json({

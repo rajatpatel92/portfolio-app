@@ -46,7 +46,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     // 1. Try to load from cache immediately
-    const cached = localStorage.getItem('portfolio_summary');
+    const cacheKey = `portfolio_summary_${currency}`;
+    const cached = localStorage.getItem(cacheKey);
     if (cached) {
       try {
         setSummary(JSON.parse(cached));
@@ -58,22 +59,22 @@ export default function Dashboard() {
     // 2. Fetch fresh data
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/portfolio');
+        const res = await fetch(`/api/portfolio?currency=${currency}`);
         const data = await res.json();
         setSummary(data);
-        localStorage.setItem('portfolio_summary', JSON.stringify(data));
+        localStorage.setItem(cacheKey, JSON.stringify(data));
       } catch (err) {
         console.error('Failed to fetch portfolio', err);
       }
     };
     fetchData();
-  }, []);
+  }, [currency]);
 
   if (!summary) return <DashboardSkeleton />;
 
-  const totalValue = convert(summary.totalValue, 'USD');
-  const dayChange = convert(summary.dayChange, 'USD');
-  const totalGrowth = convert(summary.totalGrowth, 'USD');
+  const totalValue = summary.totalValue;
+  const dayChange = summary.dayChange;
+  const totalGrowth = summary.totalGrowth;
   const isPositive = dayChange >= 0;
 
   // Greeting Logic
