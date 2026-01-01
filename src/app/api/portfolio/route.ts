@@ -427,6 +427,13 @@ export async function GET() {
             // Update timestamp tracking
             if (marketData && marketData.regularMarketTime) {
                 const ts = new Date(marketData.regularMarketTime);
+
+                // Debug Stale Data
+                const diff = (new Date().getTime() - ts.getTime()) / 1000 / 60; // Minutes
+                if (diff > 5) {
+                    console.log(`[PortfolioAPI] Stale Data Detected: ${result.symbol} is ${diff.toFixed(1)} mins old.`);
+                }
+
                 if (!oldestDataTimestamp || ts < oldestDataTimestamp) {
                     oldestDataTimestamp = ts;
                 }
