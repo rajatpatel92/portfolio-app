@@ -6,6 +6,89 @@ const yahooFinance = new YahooFinance({
     suppressNotices: ['yahooSurvey']
 });
 
+// Throttler to prevent 429 Errors
+// Throttler to prevent 429 Errors
+class Throttler {
+    private queue: Array<{ fn: () => Promise<any>, resolve: (v: any) => void, reject: (e: any) => void }> = [];
+    private activeCount = 0;
+    private isRateLimited = false;
+    private resetTime: Date | null = null;
+
+    constructor(private maxConcurrent: number, private delayMs: number) { }
+
+    add<T>(fn: () => Promise<T>): Promise<T> {
+        if (this.isRateLimited) {
+            const remaining = this.resetTime ? Math.ceil((this.resetTime.getTime() - Date.now()) / 1000) : 60;
+            return Promise.reject(new Error(`Rate limit exceeded. Cooling down for ${remaining}s.`));
+        }
+
+        return new Promise((resolve, reject) => {
+            this.queue.push({ fn, resolve, reject });
+            this.process();
+        });
+    }
+
+    private process() {
+        if (this.isRateLimited || this.activeCount >= this.maxConcurrent) return;
+
+        const item = this.queue.shift();
+        if (!item) return;
+
+        this.activeCount++;
+
+        item.fn()
+            .then(item.resolve)
+            .catch((error: any) => {
+                // Check for 429
+                // Log the keys to help debugging if this fails again
+                console.error('[THROTTLER ERROR]', JSON.stringify({ message: error.message, code: error.code, name: error.name }));
+
+                if (
+                    error.message?.includes('429') ||
+                    error.message?.includes('Too Many Requests') ||
+                    error.response?.status === 429 ||
+                    error.status === 429 ||
+                    error.code === 429 || // Yahoo Finance library often puts it here
+                    (error.name === 'HTTPError' && error.message === 'Too Many Requests')
+                ) {
+                    this.triggerCircuitBreaker();
+                }
+                item.reject(error);
+            })
+            .finally(() => {
+                setTimeout(() => {
+                    this.activeCount--;
+                    this.process();
+                }, this.delayMs);
+            });
+    }
+
+    private triggerCircuitBreaker() {
+        if (this.isRateLimited) return;
+
+        console.error(' [THROTTLER] 429 DETECTED! Triggering Circuit Breaker for 60 seconds.');
+        this.isRateLimited = true;
+        this.resetTime = new Date(Date.now() + 60000); // 1 minute
+
+        // Clear queue or let them fail? 
+        // Better to reject all pending to give immediate feedback to UI
+        while (this.queue.length > 0) {
+            const item = this.queue.shift();
+            item?.reject(new Error('Circuit Breaker: Rate limit exceeded. Request cancelled.'));
+        }
+
+        setTimeout(() => {
+            console.log(' [THROTTLER] Circuit Breaker Reset. Resuming requests.');
+            this.isRateLimited = false;
+            this.resetTime = null;
+            this.process();
+        }, 60000);
+    }
+}
+
+// Global instance: 2 concurrent requests, 300ms delay between completions
+const apiThrottler = new Throttler(2, 300);
+
 export interface StockSearchResult {
     symbol: string;
     name: string;
@@ -39,12 +122,12 @@ export class MarketDataService {
     static async searchSymbols(query: string): Promise<StockSearchResult[]> {
         try {
             // Simplify query options to reduce chance of 400 errors
-            const results = await yahooFinance.search(query, {
+            const results = await apiThrottler.add(() => yahooFinance.search(query, {
                 quotesCount: 10,
                 newsCount: 0,
                 enableNavLinks: false,
                 enableEnhancedTrivialQuery: false
-            }) as any;
+            })) as any;
 
             if (!results.quotes) return [];
 
@@ -106,7 +189,7 @@ export class MarketDataService {
             // Execute sequentially to reduce rate-limiting (429) risk compared to Promise.all
             let quoteRealtime = null;
             try {
-                quoteRealtime = await yahooFinance.quote(symbol);
+                quoteRealtime = await apiThrottler.add(() => yahooFinance.quote(symbol));
             } catch (e: any) {
                 // if (process.env.DEBUG) console.warn(`API Error (Quote) for ${symbol}: ${e.message || e}`);
             }
@@ -115,7 +198,7 @@ export class MarketDataService {
             try {
                 // Only fetch summary if we really need it or if quote failed? 
                 // We need it for sector/country/dividend info which are important.
-                quoteSummary = await yahooFinance.quoteSummary(symbol, { modules: ['summaryProfile', 'summaryDetail', 'topHoldings', 'calendarEvents', 'defaultKeyStatistics'] });
+                quoteSummary = await apiThrottler.add(() => yahooFinance.quoteSummary(symbol, { modules: ['summaryProfile', 'summaryDetail', 'topHoldings', 'calendarEvents', 'defaultKeyStatistics'] }));
             } catch (e: any) {
                 // console.warn(`API Error (Summary) for ${symbol}: ${e.message || e}`);
             }
@@ -284,7 +367,7 @@ export class MarketDataService {
         }
 
         try {
-            const quote = await yahooFinance.quote(symbol) as any;
+            const quote = await apiThrottler.add(() => yahooFinance.quote(symbol)) as any;
             if (quote && quote.regularMarketPrice) {
                 const price = quote.regularMarketPrice;
 
@@ -337,7 +420,7 @@ export class MarketDataService {
         }
 
         try {
-            const quote = await yahooFinance.quote(reverseSymbol) as any;
+            const quote = await apiThrottler.add(() => yahooFinance.quote(reverseSymbol)) as any;
             if (quote && quote.regularMarketPrice) {
                 const price = quote.regularMarketPrice;
 
@@ -399,11 +482,11 @@ export class MarketDataService {
                 const endDate = new Date(date);
                 endDate.setDate(endDate.getDate() + 1); // Look forward 1 day
 
-                const result = await yahooFinance.chart(ticker, {
+                const result = await apiThrottler.add(() => yahooFinance.chart(ticker, {
                     period1: startDate,
                     period2: endDate,
                     interval: '1d'
-                }) as any;
+                })) as any;
 
                 const quotes = result?.quotes || [];
                 if (quotes.length === 0) return null;
@@ -549,7 +632,7 @@ export class MarketDataService {
             };
 
             // Use chart() instead of historical() as the latter is deprecated/broken
-            const result = await yahooFinance.chart(symbol, queryOptions) as any;
+            const result = await apiThrottler.add(() => yahooFinance.chart(symbol, queryOptions)) as any;
             const quotes = result?.quotes || [];
 
             const prices = this.processHistory(quotes);
@@ -623,7 +706,7 @@ export class MarketDataService {
                 events: 'split'
             };
 
-            const result = await yahooFinance.chart(symbol, queryOptions) as any;
+            const result = await apiThrottler.add(() => yahooFinance.chart(symbol, queryOptions)) as any;
             const quotes = result?.quotes || [];
             const splits = result?.events?.splits || {};
             // Splits is an Object: { "173874623": { date:..., numerator:3, denominator:1, splitRatio:"3:1" } }
@@ -778,7 +861,7 @@ export class MarketDataService {
             const now = new Date();
 
             // 1. Fetch Quote (Price, Profile, Top Holdings for ETF)
-            const quote = await yahooFinance.quoteSummary(symbol, { modules: ['price', 'summaryProfile', 'summaryDetail', 'topHoldings', 'calendarEvents', 'defaultKeyStatistics'] }) as any;
+            const quote = await apiThrottler.add(() => yahooFinance.quoteSummary(symbol, { modules: ['price', 'summaryProfile', 'summaryDetail', 'topHoldings', 'calendarEvents', 'defaultKeyStatistics'] })) as any;
 
             let priceData = {
                 price: 0,

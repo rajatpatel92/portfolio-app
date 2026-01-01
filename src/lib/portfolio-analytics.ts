@@ -186,44 +186,70 @@ export class PortfolioAnalytics {
         const fxPairs = relevantCurrencies.map(c => ({ from: c, to: targetCurrency, symbol: `${c}${targetCurrency}=X` }));
         log(`[PortfolioAnalytics] Fetching FX Pairs: ${fxPairs.map(p => p.symbol).join(', ')}`);
 
-        await Promise.all([
-            // Fetch Asset Prices
-            ...symbols.map(async (sym) => {
+        // Helper to process items in batches with delay to respect rate limits
+        const batchProcess = async <T>(
+            items: T[],
+            batchSize: number,
+            delayMs: number,
+            processor: (item: T) => Promise<void>
+        ) => {
+            for (let i = 0; i < items.length; i += batchSize) {
+                const batch = items.slice(i, i + batchSize);
+                log(`[PortfolioAnalytics] Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(items.length / batchSize)} (${batch.length} items)`);
+                await Promise.all(batch.map(item => processor(item)));
+                if (i + batchSize < items.length) {
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                }
+            }
+        };
+
+        // 2. Fetch Data (Throttled)
+        // Fetch Asset Prices in batches
+        log(`[PortfolioAnalytics] Fetching history for ${symbols.length} symbols...`);
+        await batchProcess(symbols, 2, 1000, async (sym) => {
+            try {
                 const hist = await MarketDataService.getDailyHistory(sym, lookback);
                 priceMaps[sym] = hist;
-            }),
-            // Fetch Benchmark with extended lookback (10Y) to ensure we find a valid start price for normalization
-            (async () => {
-                const benchLookback = new Date(lookback);
-                benchLookback.setFullYear(benchLookback.getFullYear() - 5);
-                log(`[PortfolioAnalytics] Fetching Benchmark ${benchmarkSymbol} from ${benchLookback.toISOString()}`);
-                const hist = await MarketDataService.getDailyHistory(benchmarkSymbol, benchLookback);
-                priceMaps[benchmarkSymbol] = hist;
-                log(`[PortfolioAnalytics] Benchmark Points: ${Object.keys(hist).length}`);
-            })(),
-            // Fetch FX Rates
-            ...fxPairs.map(async ({ from, to, symbol }) => {
-                let hist = await MarketDataService.getDailyHistory(symbol, lookback);
+            } catch (e: any) {
+                log(`[PortfolioAnalytics] Error fetching ${sym}: ${e.message}`);
+            }
+        });
 
-                // Fallback: Try Reverse Pair if direct pair fails (e.g. CADUSD=X might not exist, but USDCAD=X does)
-                if (Object.keys(hist).length === 0) {
-                    const reverseSymbol = `${to}${from}=X`;
-                    log(`[PortfolioAnalytics] Direct FX ${symbol} empty. Trying reverse ${reverseSymbol}`);
+        // Fetch Benchmark (Single call, no batch needed but added for completeness/flow)
+        try {
+            const benchLookback = new Date(lookback);
+            benchLookback.setFullYear(benchLookback.getFullYear() - 5);
+            log(`[PortfolioAnalytics] Fetching Benchmark ${benchmarkSymbol} from ${benchLookback.toISOString()}`);
+            const hist = await MarketDataService.getDailyHistory(benchmarkSymbol, benchLookback);
+            priceMaps[benchmarkSymbol] = hist;
+            log(`[PortfolioAnalytics] Benchmark Points: ${Object.keys(hist).length}`);
+        } catch (e: any) {
+            log(`[PortfolioAnalytics] Error fetching Benchmark ${benchmarkSymbol}: ${e.message}`);
+        }
 
-                    const reverseHist = await MarketDataService.getDailyHistory(reverseSymbol, lookback);
-                    if (Object.keys(reverseHist).length > 0) {
-                        // Invert values
-                        hist = {};
-                        Object.entries(reverseHist).forEach(([date, rate]) => {
-                            if (rate > 0) hist[date] = 1 / rate;
-                        });
-                        log(`[PortfolioAnalytics] Inverted ${Object.keys(hist).length} points from ${reverseSymbol}`);
-                    }
+        // Fetch FX Rates in batches
+        log(`[PortfolioAnalytics] Fetching history for ${fxPairs.length} FX pairs...`);
+        await batchProcess(fxPairs, 2, 1000, async ({ from, to, symbol }) => {
+            let hist = await MarketDataService.getDailyHistory(symbol, lookback);
+
+            // Fallback: Try Reverse Pair if direct pair fails
+            if (Object.keys(hist).length === 0) {
+                const reverseSymbol = `${to}${from}=X`;
+                log(`[PortfolioAnalytics] Direct FX ${symbol} empty. Trying reverse ${reverseSymbol}`);
+
+                const reverseHist = await MarketDataService.getDailyHistory(reverseSymbol, lookback);
+                if (Object.keys(reverseHist).length > 0) {
+                    // Invert values
+                    hist = {};
+                    Object.entries(reverseHist).forEach(([date, rate]) => {
+                        if (rate > 0) hist[date] = 1 / rate;
+                    });
+                    log(`[PortfolioAnalytics] Inverted ${Object.keys(hist).length} points from ${reverseSymbol}`);
                 }
+            }
 
-                fxMaps[from] = hist;
-            })
-        ]);
+            fxMaps[from] = hist;
+        });
 
         log(`[PortfolioAnalytics] Fetch Complete. PriceKeys: ${Object.keys(priceMaps).length}, FXKeys: ${Object.keys(fxMaps).length}`);
         Object.keys(fxMaps).forEach(k => {

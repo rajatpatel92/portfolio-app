@@ -166,10 +166,11 @@ export async function GET() {
         const portfolioCashFlows: Transaction[] = [];
 
         // ... (Market Data Fetching Loop) ...
-        // Parallel Processing of Assets
-        const assetPromises = Array.from(holdingsMap.entries()).map(async ([symbol, data]) => {
+        // Process Assets (Batched)
+        const processHolding = async ([symbol, data]: [string, any]) => {
             try {
                 // 1. Fetch Market Data & History in Parallel
+                // Note: MarketDataService is now globally throttled, so these calls are safe
                 const [marketData, historicalPrices] = await Promise.all([
                     MarketDataService.getPrice(symbol),
                     MarketDataService.getHistoricalPrices(symbol)
@@ -339,13 +340,13 @@ export async function GET() {
                         lifetimeDividends: localLifetimeDividends * rateToUSD,
                         dividendsYTD: localDividendsYTD * rateToUSD,
                         realizedGain: realizedGainNative * rateToUSD,
-                        accountTypes: Array.from(new Set(Array.from(data.accounts.values()).map(a => a.accountType || 'Unassigned'))),
-                        accountNames: Array.from(new Set(Array.from(data.accounts.keys()).map(k => k.split(':')[0]))),
+                        accountTypes: Array.from(new Set(Array.from((data.accounts as Map<string, any>).values()).map((a: any) => a.accountType || 'Unassigned'))),
+                        accountNames: Array.from(new Set(Array.from((data.accounts as Map<string, any>).keys()).map((k: string) => k.split(':')[0]))),
 
                         accountsBreakdown: Object.fromEntries(
-                            Array.from(data.accounts.entries())
-                                .filter(([_, val]) => val.quantity > 0 || val.lifetimeDividends > 0 || Math.abs(val.realizedGain) > 0.01)
-                                .map(([key, val]) => {
+                            Array.from((data.accounts as Map<string, any>).entries())
+                                .filter(([_, val]: [string, any]) => val.quantity > 0 || val.lifetimeDividends > 0 || Math.abs(val.realizedGain) > 0.01)
+                                .map(([key, val]: [string, any]) => {
                                     // Parse name from composite key if needed
                                     const [accName] = key.split(':');
 
@@ -387,9 +388,18 @@ export async function GET() {
                 console.error(`Error processing asset ${symbol}:`, error);
                 return { success: false, symbol };
             }
-        });
+        };
 
-        const results = await Promise.all(assetPromises);
+        const holdingsEntries = Array.from(holdingsMap.entries());
+        const results: any[] = [];
+        const batchSize = 5;
+
+        // Execute Batches
+        for (let i = 0; i < holdingsEntries.length; i += batchSize) {
+            const batch = holdingsEntries.slice(i, i + batchSize);
+            const batchResults = await Promise.all(batch.map(processHolding));
+            results.push(...batchResults);
+        }
 
         // Aggregate Results
         for (const result of results) {
