@@ -114,7 +114,7 @@ export default function FireAnalysisPage() {
 
                 // Snapshot yearly
                 const simDate = new Date(startYear, startMonth + i);
-                if (simDate.getMonth() === 11 || i === monthsToAccumulate) {
+                if (simDate.getMonth() === 11) {
                     // Keep snapshots clean, usually we only chart separation after FIRE?
                     // User wants Chart to match Table. Table typically shows FIRE years?
                     // Let's show pre-fire years too for context.

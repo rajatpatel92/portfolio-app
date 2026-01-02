@@ -4,6 +4,7 @@
 import styles from './DividendSummary.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
 import { useDate } from '@/context/DateContext';
+import Link from 'next/link';
 
 interface DividendSummaryProps {
     dividendsYTD: number;
@@ -57,15 +58,24 @@ export default function DividendSummary({ dividendsYTD, upcomingDividends = [], 
                 <h4 className={styles.subtitle}>Upcoming (Ex-Date)</h4>
                 {upcomingDividends.length > 0 ? (
                     <ul className={styles.list}>
-                        {upcomingDividends.slice(0, 3).map((div, i) => (
+                        {upcomingDividends.slice(0, 4).map((div, i) => (
                             <li key={i} className={styles.item}>
-                                <div className={styles.symbolRow}>
-                                    <span className={styles.symbol}>{div.symbol}</span>
-                                    <span className={styles.date}>{formatDate(div.exDate)}</span>
-                                </div>
-                                <div className={styles.amount}>
-                                    Est. {format(convert(div.estimatedAmount, 'USD'))}
-                                </div>
+                                <Link
+                                    href={{
+                                        pathname: `/analysis/${div.symbol}`,
+                                        query: { from: 'dashboard' }
+                                    }}
+                                    onClick={() => sessionStorage.setItem('navContext', 'dashboard')}
+                                    style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}
+                                >
+                                    <div className={styles.symbolRow}>
+                                        <span className={styles.symbol}>{div.symbol}</span>
+                                        <span className={styles.date}>{formatDate(div.exDate)}</span>
+                                    </div>
+                                    <div className={styles.amount}>
+                                        Est. {format(convert(div.estimatedAmount, 'USD'))}
+                                    </div>
+                                </Link>
                             </li>
                         ))}
                     </ul>

@@ -36,7 +36,7 @@ export default function TopMovers({ constituents, portfolioTotalValue, portfolio
     const sorted = [...activeConstituents].sort((a, b) => b.impactPercent - a.impactPercent);
 
     // Gainers: Positive Impact, sorted desc
-    const gainers = sorted.filter(c => c.impactPercent > 0).slice(0, 3);
+    const gainers = sorted.filter(c => c.impactPercent > 0).slice(0, 4);
 
     // Losers: Negative Impact, sorted asc (biggest losers first)
     // "sorted" is desc, so negatives are at the end.
@@ -46,7 +46,7 @@ export default function TopMovers({ constituents, portfolioTotalValue, portfolio
     const losers = [...activeConstituents]
         .filter(c => c.impactPercent < 0)
         .sort((a, b) => a.impactPercent - b.impactPercent)
-        .slice(0, 3);
+        .slice(0, 4);
 
     if (gainers.length === 0 && losers.length === 0) {
         return (
@@ -95,13 +95,25 @@ export default function TopMovers({ constituents, portfolioTotalValue, portfolio
                                             exit={{ opacity: 0, transition: { duration: 0.05 } }}
                                             transition={{ duration: 0.2 }}
                                         >
-                                            <Link href={`/analysis/${c.symbol}?from=dashboard`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Link
+                                                href={{
+                                                    pathname: `/analysis/${c.symbol}`,
+                                                    query: { from: 'dashboard' }
+                                                }}
+                                                onClick={() => sessionStorage.setItem('navContext', 'dashboard')}
+                                                style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}
+                                            >
                                                 <div className={styles.symbolRow}>
                                                     <span className={styles.symbol}>{c.symbol}</span>
                                                     <span className={styles.price}>{format(convert(c.price, c.currency))}</span>
                                                 </div>
-                                                <div className={`${styles.change} ${styles.positive}`}>
-                                                    +{c.dayChange.percent.toFixed(2)}%
+                                                <div className={styles.changeContainer}>
+                                                    <span className={`${styles.badge} ${styles.positive}`}>
+                                                        +{format(convert(c.dayChange.absolute, c.currency))}
+                                                    </span>
+                                                    <span className={`${styles.badge} ${styles.positive}`}>
+                                                        +{c.dayChange.percent.toFixed(2)}%
+                                                    </span>
                                                 </div>
                                             </Link>
                                         </motion.li>
@@ -127,13 +139,25 @@ export default function TopMovers({ constituents, portfolioTotalValue, portfolio
                                             exit={{ opacity: 0, transition: { duration: 0.05 } }}
                                             transition={{ duration: 0.2 }}
                                         >
-                                            <Link href={`/analysis/${c.symbol}?from=dashboard`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Link
+                                                href={{
+                                                    pathname: `/analysis/${c.symbol}`,
+                                                    query: { from: 'dashboard' }
+                                                }}
+                                                onClick={() => sessionStorage.setItem('navContext', 'dashboard')}
+                                                style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}
+                                            >
                                                 <div className={styles.symbolRow}>
                                                     <span className={styles.symbol}>{c.symbol}</span>
                                                     <span className={styles.price}>{format(convert(c.price, c.currency))}</span>
                                                 </div>
-                                                <div className={`${styles.change} ${styles.negative}`}>
-                                                    {c.dayChange.percent.toFixed(2)}%
+                                                <div className={styles.changeContainer}>
+                                                    <span className={`${styles.badge} ${styles.negative}`}>
+                                                        {format(convert(c.dayChange.absolute, c.currency))}
+                                                    </span>
+                                                    <span className={`${styles.badge} ${styles.negative}`}>
+                                                        {c.dayChange.percent.toFixed(2)}%
+                                                    </span>
                                                 </div>
                                             </Link>
                                         </motion.li>

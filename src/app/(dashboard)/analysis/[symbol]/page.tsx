@@ -58,7 +58,9 @@ interface User {
 
 
 
-export default function AnalysisPage() {
+import { Suspense } from 'react';
+
+function AnalysisContent() {
     const { symbol } = useParams();
     const searchParams = useSearchParams();
     const from = searchParams.get('from');
@@ -66,6 +68,22 @@ export default function AnalysisPage() {
     const { format, convert } = useCurrency();
     const [activeTab, setActiveTab] = useState<'overview' | 'activities'>('overview');
     const [users, setUsers] = useState<User[]>([]);
+    const [navContext, setNavContext] = useState<string | null>(null);
+
+    useEffect(() => {
+        // Prioritize search param, then session storage
+        if (from) {
+            setNavContext(from);
+            sessionStorage.setItem('navContext', from);
+        } else {
+            const stored = sessionStorage.getItem('navContext');
+            if (stored) setNavContext(stored);
+        }
+    }, [from]);
+
+    const handleBack = () => {
+        sessionStorage.removeItem('navContext');
+    };
 
     useEffect(() => {
         // Fetch users for display names
@@ -100,7 +118,7 @@ export default function AnalysisPage() {
         }
     }, [symbol]);
 
-    if (!data) return <SymbolSkeleton />;
+    if (!data) return null; // Return null here, Suspense will handle the fallback
 
     if ('error' in data) {
         return <div className={styles.error}>Error: {(data as any).error}</div>;
@@ -157,10 +175,10 @@ export default function AnalysisPage() {
     let backHref = '/analysis/allocation';
     let backLabel = 'Back to Allocation Analysis';
 
-    if (from === 'dashboard') {
+    if (navContext === 'dashboard') {
         backHref = '/';
         backLabel = 'Back to Dashboard';
-    } else if (from === 'comparison') {
+    } else if (navContext === 'comparison') {
         backHref = '/analysis/comparison';
         backLabel = 'Back to Comparison';
     }
@@ -169,7 +187,7 @@ export default function AnalysisPage() {
         <div className={styles.container}>
 
             <div className={styles.backLinkContainer}>
-                <Link href={backHref} className={styles.backLink}>
+                <Link href={backHref} className={styles.backLink} onClick={handleBack}>
                     <MdArrowBack size={20} />
                     <span>{backLabel}</span>
                 </Link>
@@ -219,7 +237,20 @@ export default function AnalysisPage() {
                 </div>
             </header >
 
-            {/* ... tabs ... */}
+            <div className={styles.tabs}>
+                <button
+                    className={`${styles.tab} ${activeTab === 'overview' ? styles.activeTab : ''}`}
+                    onClick={() => setActiveTab('overview')}
+                >
+                    Overview
+                </button>
+                <button
+                    className={`${styles.tab} ${activeTab === 'activities' ? styles.activeTab : ''}`}
+                    onClick={() => setActiveTab('activities')}
+                >
+                    Activities & Lots
+                </button>
+            </div>
 
             {
                 activeTab === 'overview' && (
@@ -380,5 +411,13 @@ export default function AnalysisPage() {
                 )
             }
         </div >
+    );
+}
+
+export default function AnalysisPage() {
+    return (
+        <Suspense fallback={<SymbolSkeleton />}>
+            <AnalysisContent />
+        </Suspense>
     );
 }

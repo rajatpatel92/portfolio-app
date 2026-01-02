@@ -153,7 +153,15 @@ export default function TopMoversModal({
                                 return (
                                     <tr key={c.symbol} className={styles.row}>
                                         <td className={styles.cell}>
-                                            <Link href={`/analysis/${c.symbol}?from=dashboard`} className={styles.symbolLink} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                            <Link
+                                                href={{
+                                                    pathname: `/analysis/${c.symbol}`,
+                                                    query: { from: 'dashboard' }
+                                                }}
+                                                onClick={() => sessionStorage.setItem('navContext', 'dashboard')}
+                                                className={styles.symbolLink}
+                                                style={{ textDecoration: 'none', color: 'inherit' }}
+                                            >
                                                 <span className={styles.symbol}>{c.symbol}</span>
                                                 <span className={styles.name}>{c.name}</span>
                                             </Link>
