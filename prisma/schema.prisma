@@ -76,6 +76,7 @@ model MarketDataCache {
   dividendRate  Float?
   dividendYield Float?
   exDividendDate DateTime?
+  marketTime    DateTime? // Actual market timestamp of the data
   lastUpdated   DateTime @default(now())
 }
 

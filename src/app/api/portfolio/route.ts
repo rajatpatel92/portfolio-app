@@ -181,9 +181,22 @@ export async function GET(request: NextRequest) {
                 ]);
 
                 const price = marketData?.price || 0;
-                const regularMarketChange = marketData?.regularMarketChange || 0;
-                const regularMarketChangePercent = marketData?.regularMarketChangePercent || 0;
+                let regularMarketChange = marketData?.regularMarketChange || 0;
+                let regularMarketChangePercent = marketData?.regularMarketChangePercent || 0;
                 const currency = marketData?.currency || 'USD';
+
+                // 24-Hour Rule: If data is older than 24h, show 0 change
+                if (marketData?.regularMarketTime) {
+                    const dataTime = new Date(marketData.regularMarketTime).getTime();
+                    const nowTime = new Date().getTime();
+                    const diffHours = (nowTime - dataTime) / (1000 * 60 * 60);
+
+                    if (diffHours > 24) {
+                        // console.log(`[PortfolioAPI] Zeroing 1D change for ${symbol} (Data age: ${diffHours.toFixed(1)}h)`);
+                        regularMarketChange = 0;
+                        regularMarketChangePercent = 0;
+                    }
+                }
 
                 // Get exchange rate if needed
                 let rateToUSD = 1;

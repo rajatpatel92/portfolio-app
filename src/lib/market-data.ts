@@ -222,7 +222,7 @@ export class MarketDataService {
                     symbol: cached.symbol,
                     price: cached.price,
                     currency: cached.currency,
-                    regularMarketTime: cached.lastUpdated,
+                    regularMarketTime: cached.marketTime || cached.lastUpdated, // Use authentic market time if available
                     regularMarketChange: cached.change,
                     regularMarketChangePercent: cached.changePercent,
                     sector: cached.sector || undefined,
@@ -274,6 +274,14 @@ export class MarketDataService {
             const currencyVal = quoteRealtime?.currency || quoteSummary?.price?.currency || 'USD';
             const nameVal = quoteRealtime?.longName || quoteRealtime?.shortName || quoteSummary?.price?.longName || quoteSummary?.price?.shortName;
 
+            // Extract Market Time
+            let marketTime = now;
+            if (quoteRealtime?.regularMarketTime) {
+                marketTime = new Date(quoteRealtime.regularMarketTime);
+            } else if (quoteSummary?.price?.regularMarketTime) {
+                marketTime = new Date(quoteSummary.price.regularMarketTime);
+            }
+
             // Use Summary for Metadata
             const profile: any = quoteSummary?.summaryProfile || {};
             const detail: any = quoteSummary?.summaryDetail || {};
@@ -316,7 +324,7 @@ export class MarketDataService {
                 symbol: symbol,
                 price: priceVal,
                 currency: currencyVal,
-                regularMarketTime: now, // Always use Fetch Time for consistency with Cache Hits
+                regularMarketTime: marketTime,
                 regularMarketChange: changeVal,
                 regularMarketChangePercent: changePercentVal,
                 sector: profile.sector,
@@ -357,6 +365,7 @@ export class MarketDataService {
                     dividendRate: data.dividendRate,
                     dividendYield: data.dividendYield,
                     exDividendDate: data.exDividendDate,
+                    marketTime: data.regularMarketTime, // Store valid market time
                     lastUpdated: now
                 },
                 create: {
@@ -369,6 +378,7 @@ export class MarketDataService {
                     country: data.country,
                     sectorAllocations: data.sectorAllocations,
                     countryAllocations: data.countryAllocations,
+                    marketTime: data.regularMarketTime,
                     lastUpdated: now
                 }
             });
@@ -392,7 +402,7 @@ export class MarketDataService {
                     symbol: cached.symbol,
                     price: cached.price,
                     currency: cached.currency,
-                    regularMarketTime: cached.lastUpdated,
+                    regularMarketTime: cached.marketTime || cached.lastUpdated, // Use authentic time if possible
                     regularMarketChange: cached.change,
                     regularMarketChangePercent: cached.changePercent,
                     sector: cached.sector || undefined,
