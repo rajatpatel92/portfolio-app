@@ -391,16 +391,24 @@ function AnalysisContent() {
                             <tbody>
                                 {data.activities.map((activity: any) => (
                                     <tr key={activity.id}>
-                                        <td>{new Date(activity.date).toLocaleDateString()}</td>
-                                        <td>{activity.type}</td>
-                                        <td>{formatQuantity(activity.quantity)}</td>
-                                        <td>{format(activity.price)}</td>
-                                        <td>{format(activity.quantity * activity.price)}</td>
+                                        <td>{new Date(activity.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                                        <td>
+                                            <span className={`${styles.badge} ${styles[activity.type]}`}>
+                                                {activity.type === 'STOCK_SPLIT' ? 'SPLIT' : activity.type}
+                                            </span>
+                                        </td>
+                                        <td style={{ fontFamily: 'var(--font-mono)' }}>{formatQuantity(activity.quantity)}</td>
+                                        <td style={{ fontFamily: 'var(--font-mono)' }}>{format(activity.price)}</td>
+                                        <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{format(activity.quantity * activity.price)}</td>
                                         <td>
                                             {(() => {
                                                 const user = users.find(u => u.username === activity.account?.name);
                                                 const displayName = user?.name || activity.account?.name;
-                                                return activity.account ? `${displayName} - ${activity.account.type}` : '-';
+                                                return activity.account ? (
+                                                    <span style={{ fontSize: '0.85em', color: 'var(--text-secondary)' }}>
+                                                        {displayName} • {activity.account.type}
+                                                    </span>
+                                                ) : '-';
                                             })()}
                                         </td>
                                     </tr>

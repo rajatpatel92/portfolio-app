@@ -419,7 +419,7 @@ export async function GET(request: NextRequest) {
             results.push(...batchResults);
         }
 
-        let oldestDataTimestamp: Date | null = null;
+        let latestDataTimestamp: Date | null = null;
 
         // Aggregate Results
         for (const result of results) {
@@ -447,14 +447,14 @@ export async function GET(request: NextRequest) {
 
                 // Debug Stale Data
                 const diff = (new Date().getTime() - ts.getTime()) / 1000 / 60; // Minutes
-                if (diff > 5) {
-                    console.log(`[PortfolioAPI] Stale Data Detected: ${result.symbol} is ${diff.toFixed(1)} mins old.`);
+                if (diff > 20) {
+                    // console.log(`[PortfolioAPI] Stale Data Detected: ${result.symbol} is ${diff.toFixed(1)} mins old. (Market Time: ${ts.toISOString()})`);
                 }
 
-                if (!oldestDataTimestamp || ts < oldestDataTimestamp) {
-                    oldestDataTimestamp = ts;
+                if (!latestDataTimestamp || ts > latestDataTimestamp) {
+                    latestDataTimestamp = ts;
                 }
-            } else if (price > 0 && !oldestDataTimestamp) {
+            } else if (price > 0 && !latestDataTimestamp) {
                 // If we have a price but no timestamp (rare?), assume now? No, assume old?
                 // Better to skip if no explicit timestamp.
             }
@@ -596,7 +596,7 @@ export async function GET(request: NextRequest) {
             totalGrowth,
             totalGrowthPercent,
             xirr: portfolioXIRR,
-            lastUpdated: oldestDataTimestamp,
+            lastUpdated: latestDataTimestamp,
             allocationByType: allocationByTypeArray,
             allocationByPlatform: allocationByPlatformArray,
             allocationByAccount: allocationByAccountArray,

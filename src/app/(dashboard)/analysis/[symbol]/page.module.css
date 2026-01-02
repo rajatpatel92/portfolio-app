@@ -5,86 +5,6 @@
     color: var(--foreground);
 }
 
-@media (max-width: 768px) {
-    .container {
-        padding: 1rem;
-        padding-top: 5rem !important;
-        /* Space for fixed sidebar toggle */
-    }
-
-    .navButton {
-        display: none !important;
-    }
-
-    .price,
-    .returnValue {
-        font-size: 1.125rem;
-    }
-}
-
-.loading {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    font-size: 1.2rem;
-    color: var(--foreground-muted);
-}
-
-.error {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    font-size: 1.2rem;
-    color: var(--danger);
-}
-
-.backLinkContainer {
-    margin-bottom: 1rem;
-}
-
-.backLink {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: color 0.2s;
-    text-decoration: none;
-}
-
-.backLink:hover {
-    color: var(--primary);
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 2rem;
-}
-
-.title {
-    font-size: 2rem;
-    font-weight: 700;
-    margin: 0;
-}
-
-@media (max-width: 768px) {
-    .title {
-        font-size: 1.25rem;
-    }
-}
-
-.price {
-    font-size: 1.5rem;
-    font-weight: 500;
-    color: var(--foreground-muted);
-    margin-top: 0.5rem;
-}
-
 .headerRight {
     display: flex;
     align-items: center;
@@ -191,31 +111,172 @@
     color: var(--danger);
 }
 
-.tabs {
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+        padding-top: 5rem !important;
+        /* Space for fixed sidebar toggle */
+    }
+
+    .navButton {
+        display: none !important;
+    }
+
+    .price,
+    .returnValue {
+        font-size: 1.125rem;
+    }
+}
+
+.loading {
     display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    border-bottom: 1px solid var(--border);
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 1.2rem;
+    color: var(--foreground-muted);
+}
+
+.error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 1.2rem;
+    color: var(--danger);
+}
+
+.backLinkContainer {
+    margin-bottom: 1rem;
+}
+
+.backLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.2s;
+    text-decoration: none;
+}
+
+.backLink:hover {
+    color: var(--primary);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+}
+
+/* ... other styles ... */
+
+.tabs {
+    display: inline-flex;
+    background: var(--background-subtle);
+    padding: 0.25rem;
+    border-radius: 0.75rem;
+    gap: 0.25rem;
+    margin-bottom: 1.5rem;
+    border-bottom: none;
 }
 
 .tab {
     background: none;
     border: none;
-    padding: 1rem 1.5rem;
-    font-size: 1rem;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    /* Fixed weight to prevent jump */
     color: var(--foreground-muted);
     cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
 }
 
 .tab:hover {
     color: var(--foreground);
+    background: rgba(255, 255, 255, 0.05);
 }
 
-.tab.active {
+.activeTab {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    /* font-weight is inherited as 600 */
+}
+
+/* ... existing styles ... */
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.table th {
+    text-align: left;
+    padding: 1rem;
+    border-bottom: 1px solid var(--card-border);
+    color: var(--text-secondary);
+    font-weight: 600;
+    white-space: nowrap;
+    background: var(--background-subtle);
+}
+
+.table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--card-border);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.table tr:hover {
+    background-color: var(--hover-bg);
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge.BUY {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.badge.SELL {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+}
+
+.badge.DIVIDEND {
+    background: rgba(59, 130, 246, 0.1);
     color: var(--primary);
-    border-bottom-color: var(--primary);
+}
+
+.badge.Reinvest {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--primary);
+}
+
+.badge.INTEREST {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
 }
 
 .content {
@@ -328,27 +389,6 @@
     justify-content: center;
 }
 
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    background: var(--card-bg);
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.table th,
-.table td {
-    padding: 1rem;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-}
-
-.table th {
-    background: var(--background-subtle);
-    font-weight: 600;
-    color: var(--foreground-muted);
-}
-
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -420,7 +460,6 @@
     margin: 0;
 }
 
-/* ... existing styles ... */
 .mobileRefresh {
     display: none;
 }

@@ -713,4 +713,195 @@ export class PortfolioAnalytics {
 
         return { mv, discovery };
     }
+
+    static async calculateIntradayHistory(
+        activities: Activity[],
+        targetCurrency: string = 'CAD'
+    ): Promise<DailyPerformance[]> {
+        // 1. Calculate Current Holdings
+        const holdings = this.computeHoldingsState(activities);
+        const symbols = Object.keys(holdings).filter(s => holdings[s] !== 0);
+
+        if (symbols.length === 0) return [];
+
+        // 2. Identify Currencies
+        // We need a map of Symbol -> Currency. 
+        // We can get this from the activities list (last known currency for the symbol).
+        const symbolCurrencyMap: Record<string, string> = {};
+        const assetCurrencies = new Set<string>();
+
+        activities.forEach(a => {
+            const act = a as Activity & { investment: { symbol: string, currency: string, currencyCode: string } };
+            const sym = act.investment?.symbol;
+            const cur = act.investment?.currency || act.investment?.currencyCode;
+            if (sym && cur) {
+                symbolCurrencyMap[sym] = cur;
+            }
+        });
+
+        // Fill in currencies for current holdings
+        symbols.forEach(s => {
+            if (symbolCurrencyMap[s]) assetCurrencies.add(symbolCurrencyMap[s]);
+        });
+
+        const relevantCurrencies = Array.from(assetCurrencies).filter(c => c !== targetCurrency);
+        const fxPairs = relevantCurrencies.map(c => ({ from: c, to: targetCurrency, symbol: `${c}${targetCurrency}=X` }));
+
+        // 3. Fetch Intraday Data
+        const priceMaps: Record<string, Record<string, number>> = {};
+        const fxMaps: Record<string, Record<string, number>> = {};
+
+        // Fetch Asset Prices
+        await Promise.all(symbols.map(async (sym) => {
+            const hist = await MarketDataService.getIntradayHistory(sym);
+            if (Object.keys(hist).length > 0) priceMaps[sym] = hist;
+        }));
+
+        // Fetch FX
+        await Promise.all(fxPairs.map(async ({ from, symbol }) => {
+            const hist = await MarketDataService.getIntradayHistory(symbol);
+            if (Object.keys(hist).length > 0) fxMaps[from] = hist;
+            // Fallback to reverse? (Skipping for brevity, adds complexity)
+        }));
+
+        // 4. Time Aggregation
+        // Collect all unique timestamps
+        const allTimestamps = new Set<string>();
+        Object.values(priceMaps).forEach(map => Object.keys(map).forEach(t => allTimestamps.add(t)));
+
+        const sortedTimestamps = Array.from(allTimestamps).sort();
+
+        // Filter for "Today" (Last 24h or Same Day as latest data?)
+        // Usually 1D means "The most recent Trading Session".
+        // Let's take the Date of the *last* timestamp, and filter all points from that Date.
+        if (sortedTimestamps.length === 0) return [];
+
+        const lastTs = sortedTimestamps[sortedTimestamps.length - 1];
+        const lastDate = lastTs.split('T')[0]; // YYYY-MM-DD
+
+        // Filter to only include points from the last available trading day
+        const sessionTimestamps = sortedTimestamps.filter(t => t.startsWith(lastDate));
+
+        // 5. Replay
+        const result: DailyPerformance[] = [];
+        const lastKnownPrices: Record<string, number> = {};
+        const lastKnownFx: Record<string, number> = {};
+
+        // Seed with standard daily history (close) if intraday starts mid-day? 
+        // Or just assume 0.
+        // Better: Use the FIRST intraday value as the seed for that asset.
+
+        // 3a. Fetch Daily Data for Seeding
+        // We need the CLOSE price of the previous day to seed 'lastKnownPrices'
+        // This prevents massive dips at 9:30am if an illiquid asset hasn't traded yet (price=0).
+        await Promise.all(symbols.map(async (sym) => {
+            // Helper to treat daily history fetch safely
+            try {
+                // Fetch last 7 days of daily history
+                const dailyLookback = new Date();
+                dailyLookback.setDate(dailyLookback.getDate() - 7);
+                const dailyHist = await MarketDataService.getDailyHistory(sym, dailyLookback);
+
+                // Find latest price BEFORE the session date
+                const dates = Object.keys(dailyHist).sort();
+                let seedPrice = 0;
+
+                // If we have sessionTimestamps, we know the session date.
+                // If not (empty intraday), logic handles it below (returns empty).
+                const sessionDate = sortedTimestamps.length > 0
+                    ? sortedTimestamps[sortedTimestamps.length - 1].split('T')[0]
+                    : new Date().toISOString().split('T')[0];
+
+                for (let i = dates.length - 1; i >= 0; i--) {
+                    if (dates[i] < sessionDate) {
+                        seedPrice = dailyHist[dates[i]];
+                        break;
+                    }
+                }
+
+                if (seedPrice > 0) {
+                    lastKnownPrices[sym] = seedPrice;
+                    // console.log(`[Intraday Seed] ${sym} seeded at ${seedPrice} (Pre-${sessionDate})`);
+                }
+            } catch (e) {
+                // Ignore seed errors, fallback to 0 is default behavior
+            }
+        }));
+
+        // Seed FX as well
+        await Promise.all(fxPairs.map(async ({ from, symbol }) => {
+            try {
+                const dailyLookback = new Date();
+                dailyLookback.setDate(dailyLookback.getDate() - 7);
+                const dailyHist = await MarketDataService.getDailyHistory(symbol, dailyLookback);
+
+                const dates = Object.keys(dailyHist).sort();
+                let seedFx = 0;
+
+                const sessionDate = sortedTimestamps.length > 0
+                    ? sortedTimestamps[sortedTimestamps.length - 1].split('T')[0]
+                    : new Date().toISOString().split('T')[0];
+
+                for (let i = dates.length - 1; i >= 0; i--) {
+                    if (dates[i] < sessionDate) {
+                        seedFx = dailyHist[dates[i]];
+                        break;
+                    }
+                }
+                if (seedFx > 0) lastKnownFx[from] = seedFx;
+
+            } catch (e) { }
+        }));
+
+
+        sessionTimestamps.forEach(ts => {
+            let totalValue = 0;
+
+            symbols.forEach(sym => {
+                // Update Price
+                if (priceMaps[sym]?.[ts]) {
+                    lastKnownPrices[sym] = priceMaps[sym][ts];
+                }
+                const price = lastKnownPrices[sym] || 0; // If missing, assume 0 or hold previous
+
+                // Update FX
+                const cur = symbolCurrencyMap[sym];
+                let fx = 1;
+                if (cur && cur !== targetCurrency) {
+                    if (fxMaps[cur]?.[ts]) {
+                        lastKnownFx[cur] = fxMaps[cur][ts];
+                    }
+                    fx = lastKnownFx[cur] || 1;
+                }
+
+                totalValue += (holdings[sym] * price * fx);
+            });
+
+            if (totalValue > 0) {
+                result.push({
+                    date: ts, // ISO Timestamp
+                    marketValue: totalValue,
+                    nav: 0, // Not needed for simple chart
+                    netFlow: 0,
+                    units: 0,
+                    dividend: 0
+                });
+            }
+        });
+
+        // 6. Calculate % Return for the day (Simplified NAV)
+        // Base is the first point of the day
+        if (result.length > 0) {
+            const startVal = result[0].marketValue;
+            result.forEach(r => {
+                // Determine % change relative to start of day
+                // Store in 'netFlow' or 'nav' as a proxy? 
+                // The frontend expects 'value' and 'invested'.
+                // HistoryPoint interface: value, invested.
+                // We'll map this in the API route.
+            });
+        }
+
+        return result;
+    }
 }

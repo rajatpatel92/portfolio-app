@@ -37,7 +37,7 @@ export default function Dashboard() {
   const { format, convert, currency } = useCurrency();
 
   // Lifted state for chart synchronization
-  const [range, setRange] = useState('1M');
+  const [range, setRange] = useState('1D');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
 
@@ -149,6 +149,8 @@ export default function Dashboard() {
             setCustomStart={setCustomStart}
             customEnd={customEnd}
             setCustomEnd={setCustomEnd}
+            overrideChange={summary?.dayChange}
+            overrideChangePercent={summary?.dayChangePercent}
           />
         </section>
 

@@ -32,6 +32,8 @@ interface PerformanceChartProps {
     setCustomStart: (date: string) => void;
     customEnd: string;
     setCustomEnd: (date: string) => void;
+    overrideChange?: number;
+    overrideChangePercent?: number;
 }
 
 const RANGES = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '2Y', '3Y', '5Y', '10Y', 'ALL'];
@@ -42,7 +44,9 @@ export default function PerformanceChart({
     customStart,
     setCustomStart,
     customEnd,
-    setCustomEnd
+    setCustomEnd,
+    overrideChange,
+    overrideChangePercent
 }: PerformanceChartProps) {
     const [data, setData] = useState<HistoryPoint[]>([]);
     // Local state removed
@@ -131,24 +135,24 @@ export default function PerformanceChart({
         const firstPoint = chartData[0];
         const lastPoint = chartData[chartData.length - 1];
 
-        // % Return Change based on our TMW/NAV calculation
-        returnChange = lastPoint.value - firstPoint.value;
+        // Override logic for 1D to match Dashboard summary exactly
+        if (range === '1D' && overrideChange !== undefined && overrideChangePercent !== undefined) {
+            valueChange = overrideChange;
+            returnChange = overrideChangePercent;
+        } else {
+            // % Return Change based on our TMW/NAV calculation
+            returnChange = lastPoint.value - firstPoint.value;
 
-        // PnL Calculation: (Delta Market Value) - (Delta Invested)
-        // This gives the actual monetary gain/loss for the period
-        const startVal = firstPoint.marketValue || 0;
-        const endVal = lastPoint.marketValue || 0;
-        const startInv = firstPoint.invested || 0; // Cumulative invested at start
-        const endInv = lastPoint.invested || 0; // Cumulative invested at end
+            // PnL Calculation: (Delta Market Value) - (Delta Invested)
+            const startVal = firstPoint.marketValue || 0;
+            const endVal = lastPoint.marketValue || 0;
+            const startInv = firstPoint.invested || 0;
+            const endInv = lastPoint.invested || 0;
+            const startDiv = firstPoint.dividend || 0;
+            const endDiv = lastPoint.dividend || 0;
 
-        const startDiv = firstPoint.dividend || 0;
-        const endDiv = lastPoint.dividend || 0;
-
-        // Value Change = (EndVal - StartVal) - (Net New Money) + (Dividends Received)
-        // Net New Money = EndInv - StartInv
-        // Dividend Income = EndDiv - StartDiv
-        // Total Return = Capital Gains + Dividends
-        valueChange = (endVal - startVal) - (endInv - startInv) + (endDiv - startDiv);
+            valueChange = (endVal - startVal) - (endInv - startInv) + (endDiv - startDiv);
+        }
     }
 
     const isPositive = returnChange >= 0;
@@ -288,6 +292,9 @@ export default function PerformanceChart({
                             dataKey="date"
                             tickFormatter={(str) => {
                                 const date = new Date(str);
+                                if (range === '1D') {
+                                    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                }
                                 return range === '1W' || range === '1M'
                                     ? formatDate(date).split(',')[0]
                                     : formatDate(date);
@@ -311,8 +318,13 @@ export default function PerformanceChart({
                             axisLine={false}
                         />
                         <Tooltip
-                            formatter={(val: number) => [`${val.toFixed(2)}%`, 'TWR']}
-                            labelFormatter={(label) => formatDate(label)}
+                            formatter={(val: number) => [`${val.toFixed(2)}%`, 'Time-Weighted Return']}
+                            labelFormatter={(label) => {
+                                if (range === '1D') {
+                                    return new Date(label).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+                                }
+                                return formatDate(label);
+                            }}
                             contentStyle={{
                                 backgroundColor: 'var(--card-bg)',
                                 border: '1px solid var(--card-border)',

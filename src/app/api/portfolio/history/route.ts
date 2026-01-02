@@ -83,6 +83,32 @@ export async function GET(request: Request) {
             targetCurrency
         );
 
+        // 3.5. [NEW] Handle 1D Intraday Override
+        // If 1D, we replace the daily history with granular intraday history
+        if (range === '1D') {
+            try {
+                // Calculate Intraday
+                const intradayParams = mappedActivities; // already mapped with investment info
+                const intradayPortfolio = await PortfolioAnalytics.calculateIntradayHistory(intradayParams, targetCurrency);
+
+                if (intradayPortfolio.length > 0) {
+                    // Normalize for Chart
+                    // For 1D, 'invested' is usually the OPENING value of the day.
+                    const openValue = intradayPortfolio[0].marketValue;
+
+                    return NextResponse.json(intradayPortfolio.map(p => ({
+                        date: p.date, // This is ISO timestamp including time
+                        value: p.marketValue,
+                        nav: 100 * (p.marketValue / openValue), // Intraday NAV
+                        invested: openValue, // Flat line for 1D comparison
+                        dividend: 0
+                    })));
+                }
+            } catch (e) {
+                console.error('Intraday Calc Failed, falling back to daily', e);
+            }
+        }
+
         // 4. Map to Response
         let cumulativeFlow = 0;
         let cumulativeDividends = 0;

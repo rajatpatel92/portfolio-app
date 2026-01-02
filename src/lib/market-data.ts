@@ -214,15 +214,18 @@ export class MarketDataService {
                 where: { symbol }
             });
 
-            // Async Architecture: Return cached data if available and we are NOT forcing a refresh.
-            // We ignore age here because the background cron job is responsible for freshness.
-            if (!forceRefresh && cached) {
-                // Return whatever we have in DB
+            // Check Cache Age (e.g. 5 minutes)
+            const CACHE_DURATION = 5 * 60 * 1000;
+            const isStale = cached ? (new Date().getTime() - new Date(cached.lastUpdated).getTime() > CACHE_DURATION) : true;
+
+            if (!forceRefresh && cached && !isStale) {
+                // Return valid cache
                 return {
                     symbol: cached.symbol,
+                    // ... rest of return
                     price: cached.price,
                     currency: cached.currency,
-                    regularMarketTime: cached.marketTime || cached.lastUpdated, // Use authentic market time if available
+                    regularMarketTime: cached.marketTime || cached.lastUpdated,
                     regularMarketChange: cached.change,
                     regularMarketChangePercent: cached.changePercent,
                     sector: cached.sector || undefined,
@@ -234,6 +237,8 @@ export class MarketDataService {
                     exDividendDate: cached.exDividendDate || undefined,
                 };
             }
+
+            // console.log(`[MarketData] Fetching fresh data for ${symbol} (Force=${forceRefresh}, Stale=${isStale})`);
 
             // 2. Fetch from API (Only if forceRefresh is true OR cache is missing)
             // Fetch both Quote (for realtime price) and Summary (for metadata)
@@ -627,12 +632,14 @@ export class MarketDataService {
             const prices = this.processHistory(quotes);
 
             // 3. Update Cache (merge with existing if possible, but here we just update history)
+            // DO NOT update 'lastUpdated' here. 'lastUpdated' should represent PRICE freshness.
+            // If we update it here, 'getPrice' will think the price is fresh even if it's old.
             const now = new Date();
             await prisma.marketDataCache.upsert({
                 where: { symbol },
                 update: {
                     history: prices,
-                    lastUpdated: now
+                    // lastUpdated: now // DISABLED to prevent cache-freshness false positive
                 },
                 create: {
                     symbol,
@@ -641,7 +648,7 @@ export class MarketDataService {
                     changePercent: 0,
                     currency: 'USD', // Default
                     history: prices,
-                    lastUpdated: now
+                    lastUpdated: new Date(0) // Initialize as OLD so price fetch triggers immediately
                 }
             });
 
@@ -805,12 +812,13 @@ export class MarketDataService {
             // console.log(`[MarketData] getDailyHistory(${symbol}): Fetched ${quotes.length} points. Updating Cache.`);
 
             // 4. Update Cache
+            // DO NOT update 'lastUpdated' here. See getHistoricalPrices.
             const now = new Date();
             await prisma.marketDataCache.upsert({
                 where: { symbol },
                 update: {
                     history: prices,
-                    lastUpdated: now
+                    // lastUpdated: now
                 },
                 create: {
                     symbol,
@@ -819,7 +827,7 @@ export class MarketDataService {
                     changePercent: 0,
                     currency: 'USD',
                     history: prices,
-                    lastUpdated: now
+                    lastUpdated: new Date(0) // Start stale
                 }
             });
 
@@ -1018,11 +1026,40 @@ export class MarketDataService {
         }
     }
 
-    static async getIntradayPrices(symbol: string): Promise<{ date: string, value: number }[]> {
+
+    static async getIntradayHistory(symbol: string): Promise<Record<string, number>> {
+        const prices: Record<string, number> = {};
         try {
-            // Calculate start date (2 days ago to ensure we get full recent session)
+            const list = await this.getIntradayPrices(symbol);
+            list.forEach(p => {
+                // Ensure date is ISO string full timestamp
+                const d = new Date(p.date).toISOString();
+                prices[d] = p.value;
+            });
+        } catch (error) {
+            console.error(`[MarketData] Failed to get intraday history for ${symbol}`, error);
+        }
+        return prices;
+    }
+
+    private static intradayCache = new Map<string, { data: { date: string, value: number }[], timestamp: number }>();
+    private static INTRADAY_TTL = 60 * 1000; // 1 Minute
+
+    static async getIntradayPrices(symbol: string): Promise<{ date: string, value: number }[]> {
+        const now = Date.now();
+        const cached = this.intradayCache.get(symbol);
+
+        // 1. Return Cache if Valid
+        if (cached && (now - cached.timestamp < this.INTRADAY_TTL)) {
+            // console.log(`[MarketData] Serving intraday cache for ${symbol}`);
+            return cached.data;
+        }
+
+        try {
+            // Calculate start date (5 days ago to ensure we get full recent session)
+            // Yahoo sometimes returns empty if weekend, so we need enough buffer to find the last valid session
             const startDate = new Date();
-            startDate.setDate(startDate.getDate() - 2);
+            startDate.setDate(startDate.getDate() - 5);
 
             const queryOptions = {
                 period1: startDate,
@@ -1030,21 +1067,25 @@ export class MarketDataService {
                 includePrePost: false
             };
 
-            const result = await yahooFinance.chart(symbol, queryOptions) as any;
+            const result = await apiThrottler.add(() => yahooFinance.chart(symbol, queryOptions)) as any;
             const quotes = result?.quotes || [];
 
-            // Filter for only today/last session if needed, or just return the recent hourly data
-            // The chart component will filter for 1D view, but let's return the last 24-48h
-            return quotes
+            // Return all quotes, filtering will happen in Analytics
+            const data = quotes
                 .filter((q: any) => q.date && (q.close || q.open))
                 .map((q: any) => ({
-                    date: q.date.toISOString(),
+                    date: new Date(q.date).toISOString(),
                     value: q.close || q.open
                 }));
 
+            // 2. Set Cache
+            this.intradayCache.set(symbol, { data, timestamp: now });
+
+            return data;
+
         } catch (error) {
-            console.error(`Error fetching intraday for ${symbol}:`, error);
-            return [];
+            // console.warn(`[FastRefresh] Failed for ${symbol}`, error);
+            throw error;
         }
     }
 }
