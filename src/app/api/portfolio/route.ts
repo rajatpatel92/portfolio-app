@@ -528,8 +528,8 @@ export async function GET(request: NextRequest) {
         // Calculate Portfolio XIRR
         const portfolioXIRR = calculateXIRR(portfolioCashFlows);
 
-        // Sort constituents by value desc
-        constituents.sort((a, b) => b.value - a.value);
+        // Sort constituents by value (USD) desc
+        constituents.sort((a, b) => (b.value * b.rateToUSD) - (a.value * a.rateToUSD));
 
         const allocationByTypeArray = Object.entries(allocationByType).map(([name, value]) => ({
             name,
@@ -584,18 +584,9 @@ export async function GET(request: NextRequest) {
             // Update Upcoming Dividends
             upcomingDividends.forEach(x => x.estimatedAmount *= finalRate);
 
-            // Update Constituents
-            constituents.forEach(c => {
-                c.value *= finalRate;
-                c.price *= finalRate; // Price in target currency
-                c.costBasis *= finalRate;
-                c.dayChange.absolute *= finalRate;
-                // percent remains same
-                c.dividendsYTD *= finalRate;
-                c.lifetimeDividends *= finalRate;
-                c.realizedGain *= finalRate;
-                if (c.avgPrice) c.avgPrice *= finalRate;
-            });
+            // NOTE: Constituents remain in NATIVE currency to allow frontend to handle specific conversions
+            // converting them here would cause double-conversion errors in components like ConstituentsGrid
+            // which use the currency property for display.
         }
 
         return NextResponse.json({
