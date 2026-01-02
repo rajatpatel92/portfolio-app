@@ -584,10 +584,43 @@ export async function GET(request: NextRequest) {
             // Update Upcoming Dividends
             upcomingDividends.forEach(x => x.estimatedAmount *= finalRate);
 
+            // Enrich Constituents with Target Values
+            constituents.forEach(c => {
+                const absUSD = c.dayChange.absolute * c.rateToUSD;
+                c.dayChange.absoluteTarget = absUSD * finalRate;
+            });
+
             // NOTE: Constituents remain in NATIVE currency to allow frontend to handle specific conversions
             // converting them here would cause double-conversion errors in components like ConstituentsGrid
             // which use the currency property for display.
         }
+
+
+        // Generate Top Movers (Pre-converted for Dashboard)
+        const topMovers = constituents.map(c => {
+            // Calculate converted values
+            // We need to convert from c.currency -> targetCurrency.
+            // We have rateToUSD. And we have finalRate (USD -> Target).
+            // So rate = c.rateToUSD * finalRate;
+            const rate = (c.rateToUSD || 1) * finalRate;
+            const convertedAbsChange = c.dayChange.absolute * rate;
+            const convertedPrice = c.price * rate;
+
+            return {
+                symbol: c.symbol,
+                name: c.name,
+                price: convertedPrice,
+                avgPrice: c.avgPrice * rate, // New field for Modal
+                currency: targetCurrency, // explicitly set to target
+                itemRate: rate, // Store rate used for conversion for debugging/reverse math if needed
+                rateToUSD: 1, // Mock as 1 since values are already converted
+                dayChange: {
+                    absolute: convertedAbsChange,
+                    percent: c.dayChange.percent
+                },
+                impact: Math.abs(convertedAbsChange) // for sorting
+            };
+        }).sort((a, b) => b.impact - a.impact).slice(0, 10); // Take top 10 relevant
 
         return NextResponse.json({
             totalValue,
@@ -602,6 +635,7 @@ export async function GET(request: NextRequest) {
             allocationByAccount: allocationByAccountArray,
             allocationByAccountType: allocationByAccountTypeArray,
             constituents,
+            topMovers,
             dividendsYTD,
             projectedDividends,
             upcomingDividends: upcomingDividends.sort((a, b) => new Date(a.exDate).getTime() - new Date(b.exDate).getTime())

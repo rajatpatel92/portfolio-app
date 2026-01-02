@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import styles from './TopMovers.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
@@ -12,7 +14,7 @@ interface TopMoversProps {
 }
 
 export default function TopMovers({ constituents, portfolioTotalValue, portfolioDayChange }: TopMoversProps) {
-    const { format, convert } = useCurrency();
+    const { format, convert, currency, rates } = useCurrency();
     const [showModal, setShowModal] = useState(false);
 
     // Calculate previous portfolio value to determine impact
@@ -20,7 +22,10 @@ export default function TopMovers({ constituents, portfolioTotalValue, portfolio
 
     // Enrich constituents with impact data
     const constituentsWithImpact = constituents.map(c => {
-        const impactUSD = c.dayChange.absolute * c.rateToUSD;
+        // If coming from API topMovers, value is already converted and rateToUSD might be missing.
+        // If rateToUSD is missing, assume 1 (already converted or same currency).
+        const rate = c.rateToUSD ?? 1;
+        const impactUSD = c.dayChange.absolute * rate; // 'absolute' is already converted in topMovers object
         const impactPercent = prevValueUSD !== 0 ? (impactUSD / prevValueUSD) * 100 : 0;
         return { ...c, impactPercent };
     });

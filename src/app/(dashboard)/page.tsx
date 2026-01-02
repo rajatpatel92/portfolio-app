@@ -25,6 +25,7 @@ interface PortfolioSummary {
   allocationByPlatform: { name: string; value: number }[];
   allocationByAccount: { name: string; value: number; platformName: string }[];
   constituents: any[];
+  topMovers: any[];
   dividendsYTD: number;
   projectedDividends: number;
   upcomingDividends: any[];
@@ -128,7 +129,7 @@ export default function Dashboard() {
         {/* Insights Grid */}
         <div className={styles.insightsGrid}>
           <TopMovers
-            constituents={summary.constituents}
+            constituents={summary.topMovers || summary.constituents}
             portfolioTotalValue={summary.totalValue}
             portfolioDayChange={summary.dayChange}
           />

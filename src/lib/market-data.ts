@@ -1063,7 +1063,7 @@ export class MarketDataService {
 
             const queryOptions = {
                 period1: startDate,
-                interval: '60m' as const,
+                interval: '15m' as const,
                 includePrePost: false
             };
 
