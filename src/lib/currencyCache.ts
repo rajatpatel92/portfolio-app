@@ -8,7 +8,7 @@ interface CachedRate {
 export async function getExchangeRate(from: string, to: string): Promise<number | null> {
     if (from === to) return 1;
 
-    const CACHE_KEY = `rate_v3_${from}_${to}`;
+    const CACHE_KEY = `rate_v4_${from}_${to}`;
 
     // Try to load from cache
     if (typeof window !== 'undefined') {
@@ -28,18 +28,27 @@ export async function getExchangeRate(from: string, to: string): Promise<number 
     }
 
     try {
-        const res = await fetch(`/api/currencies?from=${from}&to=${to}`);
+        const url = `/api/exchange-rate`;
+        console.log(`[CurrencyCache] Fetching POST: ${url} for ${from}->${to}`);
+
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ from, to })
+        });
         const data = await res.json();
 
         const rateToCache = data.rate || null;
 
-        // Save to cache (even if null/failed, to prevent retry for 8h)
-        if (typeof window !== 'undefined') {
+        // Save to cache ONLY if successful to avoid poisoning with transient errors
+        if (typeof window !== 'undefined' && rateToCache !== null) {
             localStorage.setItem(CACHE_KEY, JSON.stringify({
                 rate: rateToCache,
                 timestamp: Date.now()
             }));
         }
+
+        return rateToCache;
 
         return rateToCache;
     } catch (error) {

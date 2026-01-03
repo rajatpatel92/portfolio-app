@@ -56,7 +56,7 @@ export default function PerformanceChart({
 
     useEffect(() => {
         const fetchData = async () => {
-            const cacheKey = `portfolio-history-${range}-${currency}-${customStart}-${customEnd}-v2`;
+            const cacheKey = `portfolio-history-${range}-${currency}-${customStart}-${customEnd}-v3`;
 
             // 1. Try cache first for instant load
             const cached = ClientCache.get<any[]>(cacheKey);
@@ -120,6 +120,7 @@ export default function PerformanceChart({
 
         return {
             date: point.date,
+            dateNumber: new Date(point.date).getTime(),
             value: returnPercent,
             invested: invested,
             marketValue: value, // Pass USD Market Value for Tooltip
@@ -289,9 +290,11 @@ export default function PerformanceChart({
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" strokeOpacity={0.5} />
                         <XAxis
-                            dataKey="date"
-                            tickFormatter={(str) => {
-                                const date = new Date(str);
+                            dataKey="dateNumber"
+                            type="number"
+                            domain={['dataMin', 'dataMax']}
+                            tickFormatter={(unixTime) => {
+                                const date = new Date(unixTime);
                                 if (range === '1D') {
                                     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                                 }

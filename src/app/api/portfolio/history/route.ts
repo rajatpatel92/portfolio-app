@@ -42,6 +42,8 @@ export async function GET(request: Request) {
         const filterStartDate = new Date(startDate);
         const filterStartDateStr = filterStartDate.toISOString().split('T')[0];
 
+        console.log(`[HistoryAPI] Range=${range}, FilterStart=${filterStartDateStr}, CalcStart=${startDate.toISOString()}`);
+
         // 2. Fetch ALL activities (Required for correct NAV seeding)
         const activities = await prisma.activity.findMany({
             include: { investment: true },
@@ -138,6 +140,8 @@ export async function GET(request: Request) {
 
         // Filter by requested Start Date (so we return only the slice, but with correct accumulators)
         finalPoints = finalPoints.filter(p => p.date >= filterStartDateStr);
+
+        console.log(`[HistoryAPI] Returning ${finalPoints.length} points for range ${range}. Dates: ${finalPoints.map(p => `${p.date}(${p.value.toFixed(2)})`).join(', ')}`);
 
         return NextResponse.json(finalPoints);
 

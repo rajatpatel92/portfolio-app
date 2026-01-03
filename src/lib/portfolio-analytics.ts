@@ -777,10 +777,12 @@ export class PortfolioAnalytics {
         if (sortedTimestamps.length === 0) return [];
 
         const lastTs = sortedTimestamps[sortedTimestamps.length - 1];
-        const lastDate = lastTs.split('T')[0]; // YYYY-MM-DD
+        const latestTime = new Date(lastTs).getTime();
+        const cutoffTime = latestTime - (24 * 60 * 60 * 1000); // 24 hours rolling window
 
-        // Filter to only include points from the last available trading day
-        const sessionTimestamps = sortedTimestamps.filter(t => t.startsWith(lastDate));
+        // Filter to only include points from the last 24 hours of available data
+        // This supports global portfolios where assets trade in different timezones
+        const sessionTimestamps = sortedTimestamps.filter(t => new Date(t).getTime() > cutoffTime);
 
         // 5. Replay
         const result: DailyPerformance[] = [];
@@ -808,8 +810,8 @@ export class PortfolioAnalytics {
 
                 // If we have sessionTimestamps, we know the session date.
                 // If not (empty intraday), logic handles it below (returns empty).
-                const sessionDate = sortedTimestamps.length > 0
-                    ? sortedTimestamps[sortedTimestamps.length - 1].split('T')[0]
+                const sessionDate = sessionTimestamps.length > 0
+                    ? sessionTimestamps[0].split('T')[0]
                     : new Date().toISOString().split('T')[0];
 
                 for (let i = dates.length - 1; i >= 0; i--) {
@@ -838,8 +840,8 @@ export class PortfolioAnalytics {
                 const dates = Object.keys(dailyHist).sort();
                 let seedFx = 0;
 
-                const sessionDate = sortedTimestamps.length > 0
-                    ? sortedTimestamps[sortedTimestamps.length - 1].split('T')[0]
+                const sessionDate = sessionTimestamps.length > 0
+                    ? sessionTimestamps[0].split('T')[0]
                     : new Date().toISOString().split('T')[0];
 
                 for (let i = dates.length - 1; i >= 0; i--) {
