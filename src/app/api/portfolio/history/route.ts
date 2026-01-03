@@ -89,6 +89,17 @@ export async function GET(request: Request) {
         // If 1D, we replace the daily history with granular intraday history
         if (range === '1D') {
             try {
+                // [CACHE] Check In-Memory Cache for 1D
+                // This avoids re-fetching and re-calculating (heavy) for every dashboard load
+                const CACHE_KEY = `1D_HISTORY_${targetCurrency}`;
+                const cached = (global as any)._portfolio1DCache;
+                const CACHE_TTL = 5 * 60 * 1000; // 5 Minutes
+
+                if (cached && cached.key === CACHE_KEY && (Date.now() - cached.timestamp < CACHE_TTL)) {
+                    console.log(`[HistoryAPI] Serving 1D Cache (${((Date.now() - cached.timestamp) / 1000).toFixed(0)}s old)`);
+                    return NextResponse.json(cached.data);
+                }
+
                 // Calculate Intraday
                 const intradayParams = mappedActivities; // already mapped with investment info
                 const intradayPortfolio = await PortfolioAnalytics.calculateIntradayHistory(intradayParams, targetCurrency);
@@ -98,13 +109,22 @@ export async function GET(request: Request) {
                     // For 1D, 'invested' is usually the OPENING value of the day.
                     const openValue = intradayPortfolio[0].marketValue;
 
-                    return NextResponse.json(intradayPortfolio.map(p => ({
+                    const normalized = intradayPortfolio.map(p => ({
                         date: p.date, // This is ISO timestamp including time
                         value: p.marketValue,
                         nav: 100 * (p.marketValue / openValue), // Intraday NAV
                         invested: openValue, // Flat line for 1D comparison
                         dividend: 0
-                    })));
+                    }));
+
+                    // [CACHE] Set Cache
+                    (global as any)._portfolio1DCache = {
+                        key: CACHE_KEY,
+                        data: normalized,
+                        timestamp: Date.now()
+                    };
+
+                    return NextResponse.json(normalized);
                 }
             } catch (e) {
                 console.error('Intraday Calc Failed, falling back to daily', e);
@@ -141,7 +161,7 @@ export async function GET(request: Request) {
         // Filter by requested Start Date (so we return only the slice, but with correct accumulators)
         finalPoints = finalPoints.filter(p => p.date >= filterStartDateStr);
 
-        console.log(`[HistoryAPI] Returning ${finalPoints.length} points for range ${range}. Dates: ${finalPoints.map(p => `${p.date}(${p.value.toFixed(2)})`).join(', ')}`);
+        console.log(`[HistoryAPI] Returning ${finalPoints.length} points for range ${range}`);
 
         return NextResponse.json(finalPoints);
 

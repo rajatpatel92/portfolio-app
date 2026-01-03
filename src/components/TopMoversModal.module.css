@@ -197,8 +197,19 @@
     .cell,
     .tableHeader {
         padding: 0.75rem 0.25rem;
-        /* Tighter padding */
+        /* Tighter padding generally, but safer edges below */
         font-size: 0.8rem;
+    }
+
+    /* Add safe edge spacing for mobile */
+    .cell:first-child,
+    .tableHeader:first-child {
+        padding-left: 1rem;
+    }
+
+    .cell:last-child,
+    .tableHeader:last-child {
+        padding-right: 1rem;
     }
 
     /* Ensure Impact Column is visible */

@@ -1042,8 +1042,16 @@ export class MarketDataService {
         return prices;
     }
 
-    private static intradayCache = new Map<string, { data: { date: string, value: number }[], timestamp: number }>();
-    private static INTRADAY_TTL = 60 * 1000; // 1 Minute
+    // Use global cache to survive module reloads
+    private static get intradayCache() {
+        if (!(global as any)._marketIntradayCache) {
+            (global as any)._marketIntradayCache = new Map<string, { data: { date: string, value: number }[], timestamp: number }>();
+        }
+        return (global as any)._marketIntradayCache as Map<string, { data: { date: string, value: number }[], timestamp: number }>;
+    }
+
+    // Increased to 5 minutes to improve 1D chart loading
+    private static INTRADAY_TTL = 5 * 60 * 1000; // 5 Minutes
 
     static async getIntradayPrices(symbol: string): Promise<{ date: string, value: number }[]> {
         const now = Date.now();
