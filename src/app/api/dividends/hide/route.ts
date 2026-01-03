@@ -10,10 +10,20 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing symbol or date' }, { status: 400 });
         }
 
-        const hiddenDividend = await prisma.hiddenDividend.create({
-            data: {
+        const d = new Date(date);
+        const hiddenDividend = await prisma.hiddenDividend.upsert({
+            where: {
+                symbol_date: {
+                    symbol,
+                    date: d
+                }
+            },
+            update: {
+                amount: amount ? parseFloat(amount) : undefined
+            },
+            create: {
                 symbol,
-                date: new Date(date),
+                date: d,
                 amount: amount ? parseFloat(amount) : null
             }
         });
