@@ -35,25 +35,27 @@ export default function TopMoversModal({
     }, [portfolioTotalValue, portfolioDayChange]);
 
     const sortedConstituents = useMemo(() => {
-        const data = constituents.map(c => {
-            const impactUSD = c.dayChange.absolute * c.rateToUSD;
-            const impactPercent = prevValueUSD !== 0 ? (impactUSD / prevValueUSD) * 100 : 0;
+        const data = constituents
+            .filter(c => Math.abs(c.dayChange.percent) > 0.001)
+            .map(c => {
+                const impactUSD = c.dayChange.absolute * c.rateToUSD;
+                const impactPercent = prevValueUSD !== 0 ? (impactUSD / prevValueUSD) * 100 : 0;
 
-            // Calculate Price Change Per Share from percentage to ensure consistency with displayed %
-            // Change % = (Change / PrevPrice) * 100
-            // Change = (Change % * PrevPrice) / 100
-            // Current Price = PrevPrice + Change
-            // PrevPrice = Current Price / (1 + Change%/100)
-            const prevPrice = c.price / (1 + (c.dayChange.percent / 100));
-            const priceChangePerShare = c.price - prevPrice;
+                // Calculate Price Change Per Share from percentage to ensure consistency with displayed %
+                // Change % = (Change / PrevPrice) * 100
+                // Change = (Change % * PrevPrice) / 100
+                // Current Price = PrevPrice + Change
+                // PrevPrice = Current Price / (1 + Change%/100)
+                const prevPrice = c.price / (1 + (c.dayChange.percent / 100));
+                const priceChangePerShare = c.price - prevPrice;
 
-            return {
-                ...c,
-                impactUSD,
-                impactPercent,
-                priceChangePerShare
-            };
-        });
+                return {
+                    ...c,
+                    impactUSD,
+                    impactPercent,
+                    priceChangePerShare
+                };
+            });
 
         return data.sort((a, b) => {
             let valA, valB;
