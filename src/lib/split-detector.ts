@@ -67,6 +67,20 @@ export class SplitService {
             for (const split of splits) {
                 const splitDate = new Date(split.date);
                 const ratio = split.numerator / split.denominator;
+                const now = new Date();
+
+                // 1. Ignore Future Splits
+                if (splitDate > now) {
+                    console.warn(`[SplitService] Warning: Found future split for ${symbol} on ${splitDate.toISOString()}. Ignoring.`);
+                    continue;
+                }
+
+                // 2. Ignore Noise/Phantom Splits (ratios very close to 1.0, e.g. 0.99 or 1.01)
+                // Real splits are usually significant (at least 3:2 or 2:3). We use a safe range of 0.90-1.10 to filter noise.
+                if (ratio > 0.90 && ratio < 1.10) {
+                    console.warn(`[SplitService] Warning: Found phantom split (ratio ${ratio}) for ${symbol} on ${splitDate.toISOString()}. Ignoring.`);
+                    continue;
+                }
 
                 // Check if already exists in DB (approximate match on date)
                 const existing = inv.activities.find(a =>
