@@ -123,7 +123,8 @@ export default function ActivitiesPage() {
     const handleEdit = (activity: Activity) => {
         setEditingActivity(activity);
         setShowAddForm(true);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // The main content area scrolls, not the window
+        document.querySelector('.main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleDelete = async (id: string) => {

@@ -80,6 +80,38 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
         });
     }, []);
 
+    // Populate form with initial data when editing
+    useEffect(() => {
+        if (initialData) {
+            setSymbol(initialData.investment.symbol);
+            setSymbolName(initialData.investment.name);
+            setSymbolType(initialData.investment.type);
+            setInvestmentType(initialData.investment.type);
+            setCurrency(initialData.investment.currencyCode || 'CAD');
+
+            setType(initialData.type);
+            setDate(new Date(initialData.date).toISOString().split('T')[0]);
+            setQuantity(initialData.quantity.toString());
+            setPrice(initialData.price.toString());
+            setFee(initialData.fee ? initialData.fee.toString() : '');
+
+            if (initialData.account) {
+                setAccountId(initialData.account.id);
+                // Platform is derived from account usually, but we can set it explicitly if available
+                // or let the account selection logic handle it. 
+                // However, setting it explicitly ensures it matches the record.
+                if (initialData.platform) {
+                    setPlatformId(initialData.platform.id);
+                } else if (initialData.account.platformId) {
+                    setPlatformId(initialData.account.platformId);
+                }
+            } else if (initialData.platform) {
+                // Case where only platform is known (unlikely given schema, but possible in legacy data)
+                setPlatformId(initialData.platform.id);
+            }
+        }
+    }, [initialData]);
+
     const handleSelectSymbol = async (result: SearchResult) => {
         isSelectionRef.current = true;
         setSymbol(result.symbol);
