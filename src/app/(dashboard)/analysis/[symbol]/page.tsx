@@ -70,6 +70,12 @@ function AnalysisContent() {
     const [users, setUsers] = useState<User[]>([]);
     const [navContext, setNavContext] = useState<string | null>(null);
 
+    // Filters
+    const [filterType, setFilterType] = useState('');
+    const [filterAccount, setFilterAccount] = useState('');
+    const [filterAccountType, setFilterAccountType] = useState('');
+    const [filterPlatform, setFilterPlatform] = useState('');
+
     useEffect(() => {
         // Prioritize search param, then session storage
         if (from) {
@@ -248,7 +254,7 @@ function AnalysisContent() {
                     className={`${styles.tab} ${activeTab === 'activities' ? styles.activeTab : ''}`}
                     onClick={() => setActiveTab('activities')}
                 >
-                    Activities & Lots
+                    Activities
                 </button>
             </div>
 
@@ -377,6 +383,55 @@ function AnalysisContent() {
             {
                 activeTab === 'activities' && (
                     <div className={styles.content}>
+                        {/* Filters */}
+                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                            <select
+                                className={styles.select}
+                                value={filterType}
+                                onChange={(e) => setFilterType(e.target.value)}
+                            >
+                                <option value="">All Types</option>
+                                {Array.from(new Set(data.activities.map((a: any) => a.type))).sort().map((type: any) => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
+                            </select>
+
+                            <select
+                                className={styles.select}
+                                value={filterAccount}
+                                onChange={(e) => setFilterAccount(e.target.value)}
+                            >
+                                <option value="">All Accounts</option>
+                                {Array.from(new Set(data.activities.map((a: any) => a.account?.name).filter(Boolean))).sort().map((name: any) => {
+                                    const user = users.find(u => u.username === name);
+                                    const displayName = user?.name || name;
+                                    return <option key={name} value={name}>{displayName}</option>
+                                })}
+                            </select>
+
+                            <select
+                                className={styles.select}
+                                value={filterAccountType}
+                                onChange={(e) => setFilterAccountType(e.target.value)}
+                            >
+                                <option value="">All Account Types</option>
+                                {Array.from(new Set(data.activities.map((a: any) => a.account?.type).filter(Boolean))).sort().map((type: any) => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
+                            </select>
+
+                            <select
+                                className={styles.select}
+                                value={filterPlatform}
+                                onChange={(e) => setFilterPlatform(e.target.value)}
+                            >
+                                <option value="">All Platforms</option>
+                                {Array.from(new Set(data.activities.map((a: any) => a.platform?.name).filter(Boolean))).sort().map((name: any) => (
+                                    <option key={name} value={name}>{name}</option>
+                                ))}
+                            </select>
+                        </div>
+
                         <table className={styles.table}>
                             <thead>
                                 <tr>
@@ -386,33 +441,44 @@ function AnalysisContent() {
                                     <th>Price</th>
                                     <th>Total</th>
                                     <th>Account</th>
+                                    <th>Platform</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.activities.map((activity: any) => (
-                                    <tr key={activity.id}>
-                                        <td>{new Date(activity.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
-                                        <td>
-                                            <span className={`${styles.badge} ${styles[activity.type]}`}>
-                                                {activity.type === 'STOCK_SPLIT' ? 'SPLIT' : activity.type}
-                                            </span>
-                                        </td>
-                                        <td style={{ fontFamily: 'var(--font-mono)' }}>{formatQuantity(activity.quantity)}</td>
-                                        <td style={{ fontFamily: 'var(--font-mono)' }}>{format(activity.price)}</td>
-                                        <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{format(activity.quantity * activity.price)}</td>
-                                        <td>
-                                            {(() => {
-                                                const user = users.find(u => u.username === activity.account?.name);
-                                                const displayName = user?.name || activity.account?.name;
-                                                return activity.account ? (
-                                                    <span style={{ fontSize: '0.85em', color: 'var(--text-secondary)' }}>
-                                                        {displayName} • {activity.account.type}
-                                                    </span>
-                                                ) : '-';
-                                            })()}
-                                        </td>
-                                    </tr>
-                                ))}
+                                {data.activities
+                                    .filter((a: any) => !filterType || a.type === filterType)
+                                    .filter((a: any) => !filterAccount || a.account?.name === filterAccount)
+                                    .filter((a: any) => !filterAccountType || a.account?.type === filterAccountType)
+                                    .filter((a: any) => !filterPlatform || a.platform?.name === filterPlatform)
+                                    .map((activity: any) => (
+                                        <tr key={activity.id}>
+                                            <td>{new Date(activity.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                                            <td>
+                                                <span className={`${styles.badge} ${styles[activity.type]}`}>
+                                                    {activity.type === 'STOCK_SPLIT' ? 'SPLIT' : activity.type}
+                                                </span>
+                                            </td>
+                                            <td style={{ fontFamily: 'var(--font-mono)' }}>{formatQuantity(activity.quantity)}</td>
+                                            <td style={{ fontFamily: 'var(--font-mono)' }}>{format(activity.price)}</td>
+                                            <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{format(activity.quantity * activity.price)}</td>
+                                            <td>
+                                                {(() => {
+                                                    const user = users.find(u => u.username === activity.account?.name);
+                                                    const displayName = user?.name || activity.account?.name;
+                                                    return activity.account ? (
+                                                        <span style={{ fontSize: '0.85em', color: 'var(--text-secondary)' }}>
+                                                            {displayName} • {activity.account.type}
+                                                        </span>
+                                                    ) : '-';
+                                                })()}
+                                            </td>
+                                            <td>
+                                                <span style={{ fontSize: '0.85em', color: 'var(--text-secondary)' }}>
+                                                    {activity.platform?.name || '-'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
                             </tbody>
                         </table>
                     </div>

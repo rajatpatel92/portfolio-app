@@ -499,3 +499,26 @@
         font-size: 1rem;
     }
 }
+
+.select {
+    padding: 0.5rem 1rem;
+    background-color: var(--background-subtle);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    color: var(--foreground);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    outline: none;
+    min-width: 120px;
+}
+
+.select:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--foreground-muted);
+}
+
+.select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
