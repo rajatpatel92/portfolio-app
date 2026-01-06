@@ -53,27 +53,31 @@ export async function getHoldingsAtDate(symbol: string, date: Date): Promise<Rec
 }
 
 /**
- * Checks if a dividend activity already exists to prevent duplicates.
+ * Checks if a dividend activity already exists using a fuzzy date match (+/- 10 days).
  * 
  * @param symbol 
  * @param date 
  * @param amount 
- * @returns true if duplicate exists
+ * @returns The matching activity if found, null otherwise
  */
-export async function checkDividendExists(symbol: string, date: Date, _amount: number): Promise<boolean> {
-    const existing = await prisma.activity.findFirst({
+export async function findDividendMatch(symbol: string, date: Date, _amount: number): Promise<any | null> {
+    const start = new Date(date);
+    start.setDate(start.getDate() - 10);
+
+    const end = new Date(date);
+    end.setDate(end.getDate() + 10);
+
+    const match = await prisma.activity.findFirst({
         where: {
             investment: {
                 symbol: symbol
             },
             type: 'DIVIDEND',
             date: {
-                equals: date
-            },
-            // We can also check amount, but sometimes amounts might differ slightly due to rounding.
-            // Checking date and symbol for a DIVIDEND is usually a strong enough signal for a duplicate 
-            // on the same day.
+                gte: start,
+                lte: end
+            }
         }
     });
-    return !!existing;
+    return match;
 }

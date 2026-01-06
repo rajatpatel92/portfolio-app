@@ -937,6 +937,7 @@ export default function ActivitiesPage() {
                                                     <th>Date</th>
                                                     <th>Symbol</th>
                                                     <th>Amount</th>
+                                                    <th>Existing Match</th>
                                                     <th>Reinvest?</th>
                                                     <th>Status</th>
                                                     <th>Account</th>
@@ -950,7 +951,7 @@ export default function ActivitiesPage() {
                                                         const key = getDivKey(div);
                                                         const isHidden = !!div.isHidden;
                                                         return (
-                                                            <tr key={key} style={{ opacity: isHidden ? 0.5 : (div.isDuplicate ? 0.6 : 1), background: div.isDuplicate ? 'var(--bg-secondary)' : 'transparent' }}>
+                                                            <tr key={key} style={{ opacity: isHidden ? 0.5 : 1, background: div.isDuplicate ? 'var(--bg-secondary)' : 'transparent' }}>
                                                                 <td>
                                                                     <input
                                                                         type="checkbox"
@@ -962,12 +963,20 @@ export default function ActivitiesPage() {
                                                                 <td>{formatDate(div.date)}</td>
                                                                 <td>{div.symbol}</td>
                                                                 <td>{format(div.amount)} {div.currency}</td>
+                                                                <td>
+                                                                    {div.existingMatch ? (
+                                                                        <div style={{ fontSize: '0.85rem', color: 'var(--warning-dark)' }}>
+                                                                            <div>{formatDate(div.existingMatch.date)}</div>
+                                                                            <div>~ {format(div.existingMatch.amount)}</div>
+                                                                        </div>
+                                                                    ) : '-'}
+                                                                </td>
                                                                 <td><input type="checkbox" checked={reinvestSelection.has(key)} onChange={() => toggleReinvestSelection(key)} disabled={isHidden} /></td>
                                                                 <td>
                                                                     {isHidden ? (
                                                                         <span style={{ fontSize: '0.75rem', background: 'var(--text-secondary)', color: 'white', padding: '0.25rem 0.5rem', borderRadius: '1rem' }}>Hidden</span>
                                                                     ) : div.isDuplicate ? (
-                                                                        <span style={{ fontSize: '0.75rem', background: 'var(--warning-light)', color: 'var(--warning-dark)', padding: '0.25rem 0.5rem', borderRadius: '1rem' }}>Already Added</span>
+                                                                        <span style={{ fontSize: '0.75rem', background: 'var(--warning-light)', color: 'var(--warning-dark)', padding: '0.25rem 0.5rem', borderRadius: '1rem' }}>Match Found</span>
                                                                     ) : (
                                                                         <span style={{ fontSize: '0.75rem', background: 'var(--success-light)', color: 'var(--success-dark)', padding: '0.25rem 0.5rem', borderRadius: '1rem' }}>New</span>
                                                                     )}

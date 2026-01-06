@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import YahooFinance from 'yahoo-finance2';
-import { getHoldingsAtDate, checkDividendExists } from '@/lib/portfolio-helper';
+import { getHoldingsAtDate, findDividendMatch } from '@/lib/portfolio-helper';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,8 +89,8 @@ export async function POST(request: Request) {
                     for (const div of chartResult.events.dividends) {
                         const divDate = new Date(div.date);
 
-                        // Check if already exists
-                        const exists = await checkDividendExists(symbol, divDate, div.amount);
+                        // Check for fuzzy match
+                        const match = await findDividendMatch(symbol, divDate, div.amount);
 
                         // Calculate holdings on Ex-Date - 1 day
                         const checkDate = new Date(divDate);
@@ -127,7 +127,11 @@ export async function POST(request: Request) {
                                     currency: chartResult.meta.currency || 'USD',
                                     accountId: accountId === 'unknown' ? null : accountId,
                                     price: price,
-                                    isDuplicate: exists,
+                                    isDuplicate: !!match,
+                                    existingMatch: match ? {
+                                        date: match.date,
+                                        amount: match.price * match.quantity // Total amount
+                                    } : null,
                                     isHidden: hiddenMap.has(`${symbol}-${divDate.toISOString().split('T')[0]}`),
                                     accountName: account?.name,
                                     accountDisplayName: displayName,
