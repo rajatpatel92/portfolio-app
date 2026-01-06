@@ -807,7 +807,7 @@ export default function ActivitiesPage() {
             {/* Dividend Modal */}
             {showDividendModal && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
-                    <div style={{ background: 'var(--card-bg)', padding: '2rem', borderRadius: '1rem', maxWidth: '800px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+                    <div style={{ background: 'var(--card-bg)', padding: '2rem', borderRadius: '1rem', maxWidth: '1200px', width: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
 
                         {dividendStep === 'SELECTION' && (
                             <>
