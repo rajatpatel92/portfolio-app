@@ -55,7 +55,7 @@ export default function DividendSummary({ dividendsYTD, upcomingDividends = [], 
             </div>
 
             <div className={styles.upcomingSection}>
-                <h4 className={styles.subtitle}>Upcoming (Ex-Date)</h4>
+                <h4 className={styles.subtitle}>Upcoming (Ex-Date) - Est. Payout</h4>
                 {upcomingDividends.length > 0 ? (
                     <ul className={styles.list}>
                         {upcomingDividends.slice(0, 4).map((div, i) => (
@@ -73,7 +73,7 @@ export default function DividendSummary({ dividendsYTD, upcomingDividends = [], 
                                         <span className={styles.date}>{formatDate(div.exDate)}</span>
                                     </div>
                                     <div className={styles.amount}>
-                                        Est. {format(convert(div.estimatedAmount, 'USD'))}
+                                        {format(convert(div.estimatedAmount, 'USD'))}
                                     </div>
                                 </Link>
                             </li>

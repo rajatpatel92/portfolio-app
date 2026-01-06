@@ -8,7 +8,13 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const symbol = searchParams.get('symbol');
 
-        const where = symbol ? { symbol: symbol } : undefined;
+        const where: any = symbol ? { symbol: symbol } : {};
+
+        // Only return investments that have at least one activity (Active or Sold)
+        // This hides investments that exist in DB but have no associated transactions (e.g. all deleted)
+        where.activities = {
+            some: {}
+        };
 
         const investments = await prisma.investment.findMany({
             where,

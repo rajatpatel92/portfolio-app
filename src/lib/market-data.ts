@@ -95,7 +95,7 @@ class Throttler {
 const apiThrottler = new Throttler(5, 300); // Adjust concurrency
 
 // Helper to estimate next dividend
-async function estimateNextDividend(symbol: string): Promise<Date | undefined> {
+async function estimateNextDividend(symbol: string): Promise<{ date: Date, amount: number } | undefined> {
     try {
         const endDate = new Date();
         const startDate = new Date();
@@ -138,7 +138,11 @@ async function estimateNextDividend(symbol: string): Promise<Date | undefined> {
         // If we projected a date that is already passed (e.g. today is Jan 5, projected was Jan 1), 
         // it means we might have missed a payment or it's late. Still useful to return.
 
-        return projectedDate;
+        // Return valid data
+        return {
+            date: projectedDate,
+            amount: events[0].dividends // Use the most recent dividend amount as the estimate
+        };
 
     } catch (e) {
         // console.warn(`Failed to estimate dividend for ${symbol}`);
@@ -169,6 +173,7 @@ export interface MarketData {
     dividendRate?: number;
     dividendYield?: number;
     exDividendDate?: Date;
+    estNextDividendAmount?: number;
     name?: string;
 }
 
@@ -345,13 +350,14 @@ export class MarketDataService {
                 name: nameVal
             };
 
-            // Smart Projection: If missing Ex-Date but we have Yield, try to estimate from history
+            // Smart Projection: If missing Ex-Date OR Amount, try to estimate from history
             // Only do this if we are forcing refresh (Background Job) to avoid slowing down user requests
-            if (!data.exDividendDate && (data.dividendYield || data.dividendRate) && forceRefresh) {
+            if ((!data.exDividendDate || !data.estNextDividendAmount) && (data.dividendYield || data.dividendRate) && forceRefresh) {
                 const estimated = await estimateNextDividend(symbol);
                 if (estimated) {
-                    data.exDividendDate = estimated;
-                    // console.log(`[SmartDiv] Projected ${symbol} next div: ${estimated.toISOString()}`);
+                    data.exDividendDate = estimated.date;
+                    data.estNextDividendAmount = estimated.amount;
+                    // console.log(`[SmartDiv] Projected ${symbol} next div: ${estimated.date.toISOString()} = ${estimated.amount}`);
                 }
             }
 
@@ -370,6 +376,7 @@ export class MarketDataService {
                     dividendRate: data.dividendRate,
                     dividendYield: data.dividendYield,
                     exDividendDate: data.exDividendDate,
+                    estNextDividendAmount: data.estNextDividendAmount,
                     marketTime: data.regularMarketTime, // Store valid market time
                     lastUpdated: now
                 },
@@ -416,7 +423,8 @@ export class MarketDataService {
                     countryAllocations: cached.countryAllocations as any[],
                     dividendRate: cached.dividendRate || undefined,
                     dividendYield: cached.dividendYield || undefined,
-                    exDividendDate: cached.exDividendDate || undefined
+                    exDividendDate: cached.exDividendDate || undefined,
+                    estNextDividendAmount: cached.estNextDividendAmount || undefined
                 };
             };
         }

@@ -305,13 +305,20 @@ export async function GET(request: NextRequest) {
                 let upcomingDividend = null;
                 if (data.quantity > 0 && marketData?.exDividendDate) {
                     const exDate = new Date(marketData.exDividendDate);
-                    if (exDate >= new Date()) {
+                    const now = new Date();
+                    const cutoff = new Date();
+                    cutoff.setDate(now.getDate() + 45); // Next 45 days (~1.5 months)
+
+                    if (exDate >= now && exDate <= cutoff) {
+                        // Estimate Amount: Use exact estimate if available, else assume Quarterly (Rate/4) as crude fallback
+                        const estimatedAmountPerShare = marketData.estNextDividendAmount || ((marketData.dividendRate || 0) / 4);
+
                         upcomingDividend = {
                             symbol,
                             exDate: exDate.toISOString(),
                             rate: marketData.dividendRate || 0,
                             quantity: data.quantity,
-                            estimatedAmount: ((marketData.dividendRate || 0) * data.quantity) * rateToUSD
+                            estimatedAmount: estimatedAmountPerShare * data.quantity * rateToUSD
                         };
                     }
                 }
@@ -333,7 +340,7 @@ export async function GET(request: NextRequest) {
                     dividendsYTD: localDividendsYTD * rateToUSD,
                     lifetimeDividends: localLifetimeDividends * rateToUSD,
                     projectedDividends: ((data.quantity > 0 && marketData?.dividendRate) ? (marketData.dividendRate * data.quantity) : 0) * rateToUSD,
-                    constituent: data.quantity > 0 ? {
+                    constituent: (data.quantity > 0 || localLifetimeDividends > 0 || Math.abs(realizedGainNative) > 0.01) ? {
                         symbol,
                         name: data.investment.name,
                         type: data.investment.type,
@@ -586,13 +593,32 @@ export async function GET(request: NextRequest) {
 
             // Enrich Constituents with Target Values
             constituents.forEach(c => {
+                // Calculate Composite Rate: Native -> USD -> Target
+                const conversionRate = (c.rateToUSD || 1) * finalRate;
+                c.conversionRate = conversionRate; // Pass to frontend for consistent math
+
+                // Pre-calculate Target Values to ensure Sum(Parts) matches Backend Total
+                c.valueTarget = c.value * conversionRate;
+                c.bookValueTarget = c.bookValue * conversionRate;
+                c.realizedGainTarget = (c.realizedGain || 0) * conversionRate;
+                c.lifetimeDividendsTarget = (c.lifetimeDividends || 0) * conversionRate;
+
                 const absUSD = c.dayChange.absolute * c.rateToUSD;
                 c.dayChange.absoluteTarget = absUSD * finalRate;
             });
 
-            // NOTE: Constituents remain in NATIVE currency to allow frontend to handle specific conversions
-            // converting them here would cause double-conversion errors in components like ConstituentsGrid
-            // which use the currency property for display.
+            // NOTE: Constituents remain in NATIVE currency structure, but now carry target values
+            // for precise display independent of frontend context rates.
+        } else {
+            // Even if rate is 1 (USD selected), we popuplate target values for consistency
+            constituents.forEach(c => {
+                c.conversionRate = 1;
+                c.valueTarget = c.value;
+                c.bookValueTarget = c.bookValue;
+                c.realizedGainTarget = c.realizedGain || 0;
+                c.lifetimeDividendsTarget = c.lifetimeDividends || 0;
+                c.dayChange.absoluteTarget = c.dayChange.absolute;
+            });
         }
 
 

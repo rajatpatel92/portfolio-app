@@ -14,16 +14,18 @@ interface AllocationChartProps {
     data: DataPoint[];
     onSelect?: (name: string | null, event?: React.MouseEvent) => void;
     selectedName?: string | null;
+    isPreConverted?: boolean;
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
 
-export default function AllocationChart({ title, data, onSelect, selectedName }: AllocationChartProps) {
+export default function AllocationChart(props: AllocationChartProps) {
+    const { title, data, onSelect, selectedName } = props;
     const { format, convert, currency } = useCurrency();
 
     const chartData = data.map(item => ({
         ...item,
-        value: convert(item.value, 'USD')
+        value: (props.isPreConverted ? item.value : convert(item.value, 'USD'))
     })).filter(item => item.value > 0);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

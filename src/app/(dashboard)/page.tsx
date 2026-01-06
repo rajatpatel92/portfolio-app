@@ -73,9 +73,21 @@ export default function Dashboard() {
 
   if (!summary) return <DashboardSkeleton />;
 
-  const totalValue = summary.totalValue;
-  const dayChange = summary.dayChange;
-  const totalGrowth = summary.totalGrowth;
+  // Handle API Error Case
+  if ('error' in summary) {
+    return (
+      <div className={styles.container}>
+        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-error)' }}>
+          <h3>Failed to load portfolio data</h3>
+          <p>Please try again later. {(summary as any).error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const totalValue = summary.totalValue || 0;
+  const dayChange = summary.dayChange || 0;
+  const totalGrowth = summary.totalGrowth || 0;
   const isPositive = dayChange >= 0;
 
   // Greeting Logic

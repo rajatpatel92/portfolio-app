@@ -11,6 +11,7 @@ import { formatQuantity } from '@/lib/format';
 interface ChangeData {
     absolute: number;
     percent: number;
+    absoluteTarget?: number;
 }
 
 interface Constituent {
@@ -21,7 +22,9 @@ interface Constituent {
     price: number;
     avgPrice: number;
     bookValue: number;
+    bookValueTarget?: number;
     value: number;
+    valueTarget?: number;
     currency: string;
     dayChange: ChangeData;
     change1W: ChangeData | null;
@@ -33,7 +36,9 @@ interface Constituent {
     xirr?: number | null;
     dividendYield?: number;
     lifetimeDividends?: number;
+    lifetimeDividendsTarget?: number;
     realizedGain?: number;
+    realizedGainTarget?: number;
     dividendsYTD?: number;
 }
 
@@ -96,7 +101,7 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
 
         const isPositive = change.absolute >= 0;
         const className = isPositive ? styles.positive : styles.negative;
-        const val = convert(change.absolute, baseCurrency || 'USD');
+        const val = change.absoluteTarget ?? convert(change.absolute, baseCurrency || 'USD');
 
         return (
             <div className={className}>
@@ -154,13 +159,13 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                                         <div className={styles.sharesText}>{formatQuantity(item.quantity)} Shares</div>
                                     </td>
                                     <td className={`${styles.td} ${styles.right}`}>
-                                        <div>{format(convert(item.bookValue, item.currency))}</div>
+                                        <div>{format(item.bookValueTarget ?? convert(item.bookValue, item.currency))}</div>
                                         <div className={styles.subtext}>
                                             {format(convert(item.avgPrice, item.currency))} / unit
                                         </div>
                                     </td>
                                     <td className={`${styles.td} ${styles.right}`}>
-                                        <div>{format(convert(item.value, item.currency))}</div>
+                                        <div>{format(item.valueTarget ?? convert(item.value, item.currency))}</div>
                                         <div className={styles.subtext}>
                                             {format(convert(item.price, item.currency))} / unit
                                         </div>
@@ -184,7 +189,7 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                                         {renderChange(item.inceptionChange, item.currency)}
                                     </td>
                                     <td className={`${styles.td} ${styles.right}`}>
-                                        <div>{format(convert(item.lifetimeDividends || 0, item.currency))}</div>
+                                        <div>{format(item.lifetimeDividendsTarget ?? convert(item.lifetimeDividends || 0, item.currency))}</div>
                                         <div className={styles.subtext}>
                                             {(() => {
                                                 const yieldVal = item.dividendYield || (item.value > 0 ? (item.dividendsYTD || 0) / item.value : 0);
@@ -211,7 +216,7 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                                 <td className={styles.td}></td>
                                 <td className={`${styles.td} ${styles.right}`}>
                                     {(() => {
-                                        const totalRealized = soldAssets.reduce((sum, item) => sum + convert(item.realizedGain || 0, item.currency), 0);
+                                        const totalRealized = soldAssets.reduce((sum, item) => sum + (item.realizedGainTarget ?? convert(item.realizedGain || 0, item.currency)), 0);
                                         return (
                                             <div className={getColorClass(totalRealized)}>
                                                 <div>{format(totalRealized)}</div>
@@ -220,7 +225,7 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                                     })()}
                                 </td>
                                 <td className={`${styles.td} ${styles.right}`}>
-                                    {format(soldAssets.reduce((sum, item) => sum + convert(item.lifetimeDividends || 0, item.currency), 0))}
+                                    {format(soldAssets.reduce((sum, item) => sum + (item.lifetimeDividendsTarget ?? convert(item.lifetimeDividends || 0, item.currency)), 0))}
                                 </td>
                                 <td className={styles.td}></td>
                             </tr>
@@ -231,15 +236,15 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                             <tr className={styles.tr} style={{ fontWeight: 'bold', background: 'var(--card-bg)', position: 'sticky', bottom: 0, zIndex: 20, boxShadow: '0 -1px 0 var(--card-border)' }}>
                                 <td className={styles.td}>TOTAL</td>
                                 <td className={`${styles.td} ${styles.right}`}>
-                                    {format(data.reduce((sum, item) => sum + convert(item.bookValue, item.currency), 0))}
+                                    {format(data.reduce((sum, item) => sum + (item.bookValueTarget ?? convert(item.bookValue, item.currency)), 0))}
                                 </td>
                                 <td className={`${styles.td} ${styles.right}`}>
-                                    {format(data.reduce((sum, item) => sum + convert(item.value, item.currency), 0))}
+                                    {format(data.reduce((sum, item) => sum + (item.valueTarget ?? convert(item.value, item.currency)), 0))}
                                 </td>
                                 <td className={`${styles.td} ${styles.right}`}>
                                     {(() => {
-                                        const totalAbs = data.reduce((sum, item) => sum + convert(item.dayChange.absolute, item.currency), 0);
-                                        const totalVal = data.reduce((sum, item) => sum + convert(item.value, item.currency), 0);
+                                        const totalAbs = data.reduce((sum, item) => sum + (item.dayChange.absoluteTarget ?? convert(item.dayChange.absolute, item.currency)), 0);
+                                        const totalVal = data.reduce((sum, item) => sum + (item.valueTarget ?? convert(item.value, item.currency)), 0);
                                         const prevVal = totalVal - totalAbs;
                                         const pct = prevVal !== 0 ? (totalAbs / prevVal) * 100 : 0;
                                         return (
@@ -257,9 +262,9 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                                 <td className={styles.td}></td>
                                 <td className={`${styles.td} ${styles.right}`}>
                                     {(() => {
-                                        const totalValue = data.reduce((sum, item) => sum + convert(item.value, item.currency), 0);
-                                        const totalCost = data.reduce((sum, item) => sum + convert(item.bookValue, item.currency), 0);
-                                        const totalRealized = data.reduce((sum, item) => sum + convert(item.realizedGain || 0, item.currency), 0);
+                                        const totalValue = data.reduce((sum, item) => sum + (item.valueTarget ?? convert(item.value, item.currency)), 0);
+                                        const totalCost = data.reduce((sum, item) => sum + (item.bookValueTarget ?? convert(item.bookValue, item.currency)), 0);
+                                        const totalRealized = data.reduce((sum, item) => sum + (item.realizedGainTarget ?? convert(item.realizedGain || 0, item.currency)), 0);
 
                                         const totalPnl = (totalValue - totalCost) + totalRealized;
                                         const pct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
@@ -273,13 +278,14 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                                     })()}
                                 </td>
                                 <td className={`${styles.td} ${styles.right}`}>
-                                    <div>{format(data.reduce((sum, item) => sum + convert(item.lifetimeDividends || 0, item.currency), 0))}</div>
+                                    <div>{format(data.reduce((sum, item) => sum + (item.lifetimeDividendsTarget ?? convert(item.lifetimeDividends || 0, item.currency)), 0))}</div>
                                     <div className={styles.subtext}>
                                         {(() => {
-                                            const totalVal = data.reduce((sum, item) => sum + convert(item.value, item.currency), 0);
+                                            const totalVal = data.reduce((sum, item) => sum + (item.valueTarget ?? convert(item.value, item.currency)), 0);
                                             const weightedYieldSum = data.reduce((sum, item) => {
                                                 const itemYield = item.dividendYield || (item.value > 0 ? (item.dividendsYTD || 0) / item.value : 0);
-                                                return sum + (convert(item.value, item.currency) * itemYield);
+                                                // weight by value target
+                                                return sum + ((item.valueTarget ?? convert(item.value, item.currency)) * itemYield);
                                             }, 0);
                                             const avgYield = totalVal > 0 ? (weightedYieldSum / totalVal) : 0;
                                             return `(${(avgYield * 100).toFixed(2)}%)`;
@@ -316,7 +322,7 @@ export default function ConstituentsGrid({ data }: ConstituentsGridProps) {
                                 )}
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{format(convert(item.value, item.currency))}</div>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{format(item.valueTarget ?? convert(item.value, item.currency))}</div>
                                 {renderChange(item.dayChange, item.currency)}
                             </div>
                         </div>

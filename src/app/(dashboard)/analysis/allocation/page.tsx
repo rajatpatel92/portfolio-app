@@ -136,19 +136,26 @@ export default function AnalysisPage() {
                     if (!metric) return metric;
                     return {
                         ...metric,
-                        absolute: metric.absolute * quantityRatio
+                        absolute: metric.absolute * quantityRatio,
+                        absoluteTarget: metric.absoluteTarget ? metric.absoluteTarget * quantityRatio : undefined
                         // Percent remains same for asset
                     };
                 };
 
+                const conversionRate = item.conversionRate || 1;
+
                 return {
                     ...item,
                     quantity: newQuantity,
-                    value: newValue,
+                    value: newValue, // Native
+                    valueTarget: newValue * conversionRate, // Pre-calculated target value
                     bookValue: newCostBasis,
+                    bookValueTarget: newCostBasis * conversionRate,
                     lifetimeDividends: newLifetimeDividends,
+                    lifetimeDividendsTarget: newLifetimeDividends * conversionRate,
                     dividendsYTD: newDividendsYTD,
                     realizedGain: newRealizedGain,
+                    realizedGainTarget: newRealizedGain * conversionRate,
                     accountsBreakdown: newBreakdown, // Important: pass filtered breakdown for next layer
 
                     // Scaled Metrics
@@ -176,18 +183,27 @@ export default function AnalysisPage() {
         const byAccount = new Map<string, number>();
 
         globalConstituents.forEach((item: any) => {
-            // Type Allocation (Convert to USD first)
-            const itemUSD = item.value * (item.rateToUSD || 1);
-            byType.set(item.type, (byType.get(item.type) || 0) + itemUSD);
+            // Type Allocation (Using PRE-CALCULATED Target Value)
+            // item.valueTarget handles specific rates used by backend
+            const itemTargetValue = item.valueTarget ?? (item.value * (item.conversionRate || 1));
+            byType.set(item.type, (byType.get(item.type) || 0) + itemTargetValue);
 
             // Account & AccountType Allocation (from breakdown)
             if (item.accountsBreakdown) {
+                const conversionRate = item.conversionRate || 1;
                 Object.values(item.accountsBreakdown).forEach((acc: any) => {
-                    byAccountType.set(acc.accountType, (byAccountType.get(acc.accountType) || 0) + acc.value);
+                    // Convert Breakdown Value (Native -> Target)
+                    // acc.valueNative is the source. 
+                    // Use item.conversionRate (which is rateToUSD * FinalRate)
+                    // Note: acc.value is USD. We could convert acc.value * FinalRate?
+                    // Better to rely on Native * ConversionRate for consistency with Item
+                    const targetValue = (acc.valueNative ?? 0) * conversionRate;
+
+                    byAccountType.set(acc.accountType, (byAccountType.get(acc.accountType) || 0) + targetValue);
 
                     // Use Composite Key: "Name - Platform"
                     const compositeKey = `${acc.name} - ${acc.platformName}`;
-                    byAccount.set(compositeKey, (byAccount.get(compositeKey) || 0) + acc.value);
+                    byAccount.set(compositeKey, (byAccount.get(compositeKey) || 0) + targetValue);
                 });
             }
         });
@@ -279,17 +295,27 @@ export default function AnalysisPage() {
 
                 const scaleMetric = (metric: any) => {
                     if (!metric) return metric;
-                    return { ...metric, absolute: metric.absolute * quantityRatio };
+                    return {
+                        ...metric,
+                        absolute: metric.absolute * quantityRatio,
+                        absoluteTarget: metric.absoluteTarget ? metric.absoluteTarget * quantityRatio : undefined
+                    };
                 };
+
+                const conversionRate = item.conversionRate || 1;
 
                 return {
                     ...item,
                     quantity: newQuantity,
                     value: newValue,
+                    valueTarget: newValue * conversionRate,
                     bookValue: newCostBasis,
+                    bookValueTarget: newCostBasis * conversionRate,
                     lifetimeDividends: newLifetimeDividends,
+                    lifetimeDividendsTarget: newLifetimeDividends * conversionRate,
                     dividendsYTD: newDividendsYTD,
                     realizedGain: newRealizedGain,
+                    realizedGainTarget: newRealizedGain * conversionRate,
                     // breakdown can remain as is or be filtered, strictly speaking UI doesn't iterate it again usually
 
                     dayChange: scaleMetric(item.dayChange),
@@ -367,18 +393,21 @@ export default function AnalysisPage() {
                         data={chartAllocations.allocationByType}
                         onSelect={handleInvestmentSelect}
                         selectedName={interactiveFilters.investmentType}
+                        isPreConverted={true}
                     />
                     <AllocationChart
                         title="By Account Type"
                         data={chartAllocations.allocationByAccountType}
                         onSelect={handleAccountTypeSelect}
                         selectedName={interactiveFilters.accountType}
+                        isPreConverted={true}
                     />
                     <AllocationChart
                         title="By Account"
                         data={chartAllocations.allocationByAccount}
                         onSelect={handleAccountNameSelect}
                         selectedName={interactiveFilters.accountName}
+                        isPreConverted={true}
                     />
                 </div>
 
