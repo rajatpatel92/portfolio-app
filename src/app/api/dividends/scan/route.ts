@@ -58,6 +58,16 @@ export async function POST(request: Request) {
             hiddenMap.set(key, true);
         });
 
+        // Fetch all accounts for lookup
+        const allAccounts = await prisma.account.findMany({
+            include: { platform: true }
+        });
+        const accountMap = new Map(allAccounts.map(a => [a.id, a]));
+
+        // Fetch all users for Display Name lookup
+        const allUsers = await prisma.user.findMany();
+        const userMap = new Map(allUsers.map(u => [u.username, u.name]));
+
         const foundDividends = [];
 
         // 2. Scan each symbol
@@ -102,6 +112,12 @@ export async function POST(request: Request) {
 
                         for (const [accountId, quantity] of Object.entries(holdingsByAccount)) {
                             if (quantity > 0) {
+                                const account = accountMap.get(accountId);
+                                let displayName = account?.name;
+                                if (account && userMap.has(account.name)) {
+                                    displayName = userMap.get(account.name) || account.name;
+                                }
+
                                 foundDividends.push({
                                     symbol,
                                     date: divDate.toISOString(),
@@ -112,7 +128,11 @@ export async function POST(request: Request) {
                                     accountId: accountId === 'unknown' ? null : accountId,
                                     price: price,
                                     isDuplicate: exists,
-                                    isHidden: hiddenMap.has(`${symbol}-${divDate.toISOString().split('T')[0]}`)
+                                    isHidden: hiddenMap.has(`${symbol}-${divDate.toISOString().split('T')[0]}`),
+                                    accountName: account?.name,
+                                    accountDisplayName: displayName,
+                                    accountType: account?.type,
+                                    platformName: account?.platform?.name
                                 });
                             }
                         }

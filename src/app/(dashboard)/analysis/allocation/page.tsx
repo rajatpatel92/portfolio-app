@@ -184,7 +184,10 @@ export default function AnalysisPage() {
             if (item.accountsBreakdown) {
                 Object.values(item.accountsBreakdown).forEach((acc: any) => {
                     byAccountType.set(acc.accountType, (byAccountType.get(acc.accountType) || 0) + acc.value);
-                    byAccount.set(acc.name, (byAccount.get(acc.name) || 0) + acc.value);
+
+                    // Use Composite Key: "Name - Platform"
+                    const compositeKey = `${acc.name} - ${acc.platformName}`;
+                    byAccount.set(compositeKey, (byAccount.get(compositeKey) || 0) + acc.value);
                 });
             }
         });
@@ -217,9 +220,13 @@ export default function AnalysisPage() {
 
                     if (item.accountsBreakdown) {
                         Object.values(item.accountsBreakdown).forEach((acc: any) => {
+                            // Construct Composite Key for filtering
+                            const compositeKey = `${acc.name} - ${acc.platformName}`;
                             let breakdownMatch = true;
                             if (interactiveFilters.accountType && acc.accountType !== interactiveFilters.accountType) breakdownMatch = false;
-                            if (interactiveFilters.accountName && acc.name !== interactiveFilters.accountName) breakdownMatch = false;
+
+                            // Check against Composite Key
+                            if (interactiveFilters.accountName && compositeKey !== interactiveFilters.accountName) breakdownMatch = false;
 
                             if (breakdownMatch) matchesInteractiveAccount = true;
                         });
@@ -246,7 +253,9 @@ export default function AnalysisPage() {
                     Object.values(item.accountsBreakdown).forEach((acc: any) => {
                         let match = true;
                         if (interactiveFilters.accountType && acc.accountType !== interactiveFilters.accountType) match = false;
-                        if (interactiveFilters.accountName && acc.name !== interactiveFilters.accountName) match = false;
+
+                        const compositeKey = `${acc.name} - ${acc.platformName}`;
+                        if (interactiveFilters.accountName && compositeKey !== interactiveFilters.accountName) match = false;
 
                         if (match) {
                             newQuantity += acc.quantity;

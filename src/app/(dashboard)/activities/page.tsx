@@ -939,6 +939,7 @@ export default function ActivitiesPage() {
                                                     <th>Amount</th>
                                                     <th>Reinvest?</th>
                                                     <th>Status</th>
+                                                    <th>Account</th>
                                                     <th>Hide</th>
                                                 </tr>
                                             </thead>
@@ -970,6 +971,10 @@ export default function ActivitiesPage() {
                                                                     ) : (
                                                                         <span style={{ fontSize: '0.75rem', background: 'var(--success-light)', color: 'var(--success-dark)', padding: '0.25rem 0.5rem', borderRadius: '1rem' }}>New</span>
                                                                     )}
+                                                                </td>
+                                                                <td>
+                                                                    <div style={{ fontWeight: 600 }}>{div.accountDisplayName || div.accountName} - {div.accountType}</div>
+                                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{div.platformName}</div>
                                                                 </td>
                                                                 <td>
                                                                     <button
