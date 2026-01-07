@@ -39,22 +39,18 @@ export async function POST(req: NextRequest) {
         const platforms = await prisma.platform.findMany();
 
         // Create lookup maps
-        // Use composite key for Account: "name|type" to ensure uniqueness and correct matching
-        const accountMap = new Map(accounts.map(a => [`${a.name.toLowerCase()}|${a.type.toLowerCase()}`, a]));
+        // Map "name|type" -> Account[] because different platforms might have same account name/type
+        const accountMap = new Map<string, typeof accounts>();
+        accounts.forEach(a => {
+            const key = `${a.name.toLowerCase()}|${a.type.toLowerCase()}`;
+            const existing = accountMap.get(key) || [];
+            existing.push(a);
+            accountMap.set(key, existing);
+        });
+
         const platformMap = new Map(platforms.map(p => [p.name.toLowerCase(), p]));
 
         // Validate Symbols
-        // const uniqueSymbols = Array.from(new Set(rows.map(r => r.Symbol?.toString().trim()).filter(Boolean)));
-        // const invalidSymbols = new Set<string>();
-
-        // await Promise.all(uniqueSymbols.map(async (symbol) => {
-        //    const price = await MarketDataService.getPrice(symbol);
-        //    if (!price) {
-        //        invalidSymbols.add(symbol);
-        //    }
-        // }));
-
-        // Optimizing symbol validation: Process concurrently
         const uniqueSymbols = Array.from(new Set(rows.map(r => r.Symbol?.toString().trim()).filter(s => s)));
         const invalidSymbols = new Set<string>();
 
@@ -67,7 +63,7 @@ export async function POST(req: NextRequest) {
 
         // Validate each row
         rows.forEach((row, index) => {
-            const rowNum = index + 1; // 1-based index for user friendliness
+            const rowNum = index + 1;
             const rowErrors: string[] = [];
 
             // Check required fields
@@ -85,7 +81,7 @@ export async function POST(req: NextRequest) {
             // Validate Symbol
             const symbol = row['Symbol'].trim();
             if (invalidSymbols.has(symbol)) {
-                rowErrors.push(`Symbol '${symbol}' might be invalid or delisted or not supported by yahoo api`);
+                rowErrors.push(`Symbol '${symbol}' might be invalid or delisted`);
             }
 
             // Validate Date
@@ -103,23 +99,38 @@ export async function POST(req: NextRequest) {
             if (isNaN(price)) rowErrors.push(`Invalid Price: ${row['Price']}`);
             if (row['Fee'] && isNaN(fee)) rowErrors.push(`Invalid Fee: ${row['Fee']}`);
 
-            // Validate Account (Name + Type)
-            const accountName = row['Username'].trim();
-            const accountType = row['Account Type'].trim();
-            const accountKey = `${accountName.toLowerCase()}|${accountType.toLowerCase()}`;
-            const account = accountMap.get(accountKey);
-
-            if (!account) {
-                rowErrors.push(`Account/User not found: ${accountName} (${accountType})`);
-            }
-
-            // Validate Platform
+            // Validate Platform FIRST
             const platformName = row['Platform'].trim();
             const platform = platformMap.get(platformName.toLowerCase());
             if (!platform) {
                 rowErrors.push(`Platform not found: ${platformName}`);
-            } else if (account && account.platformId !== platform.id) {
-                // Optional: Warn if account doesn't match platform?
+            }
+
+            // Validate Account (Name + Type) AND match with Platform
+            const accountName = row['Username'].trim();
+            const accountType = row['Account Type'].trim();
+            const accountKey = `${accountName.toLowerCase()}|${accountType.toLowerCase()}`;
+
+            const prospectiveAccounts = accountMap.get(accountKey);
+            let account: typeof accounts[0] | undefined;
+
+            if (!prospectiveAccounts || prospectiveAccounts.length === 0) {
+                console.log(`[Validation Debug] No accounts found for key: ${accountKey}`);
+                rowErrors.push(`Account/User not found: ${accountName} (${accountType})`);
+            } else if (platform) {
+                // Find the account that belongs to this platform
+                console.log(`[Validation Debug] Looking for account with platformId: ${platform.id} among ${prospectiveAccounts.length} candidates for key ${accountKey}`);
+                prospectiveAccounts.forEach(a => console.log(`  - Candidate: ${a.id}, PlatformId: ${a.platformId}`));
+
+                account = prospectiveAccounts.find(a => a.platformId === platform.id);
+
+                if (!account) {
+                    console.log(`[Validation Debug] Failed to find match!`);
+                    // Found accounts with this name/type, but none linked to the specified platform
+                    rowErrors.push(`Account '${accountName} - ${accountType}' exists but is not linked to platform '${platform.name}'`);
+                } else {
+                    console.log(`[Validation Debug] Match found: ${account.id}`);
+                }
             }
 
             if (rowErrors.length > 0) {

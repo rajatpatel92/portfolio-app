@@ -60,7 +60,7 @@ export async function getHoldingsAtDate(symbol: string, date: Date): Promise<Rec
  * @param amount 
  * @returns The matching activity if found, null otherwise
  */
-export async function findDividendMatch(symbol: string, date: Date, _amount: number): Promise<any | null> {
+export async function findDividendMatch(symbol: string, date: Date, _amount: number, accountId?: string): Promise<any | null> {
     const start = new Date(date);
     start.setDate(start.getDate() - 10);
 
@@ -76,7 +76,8 @@ export async function findDividendMatch(symbol: string, date: Date, _amount: num
             date: {
                 gte: start,
                 lte: end
-            }
+            },
+            ...(accountId ? { accountId } : {})
         }
     });
     return match;

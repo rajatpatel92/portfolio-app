@@ -74,6 +74,7 @@ export default function ActivitiesPage() {
     const [customStart, setCustomStart] = useState('');
     const [customEnd, setCustomEnd] = useState('');
     const RANGES = ['1W', '1M', '3M', '6M', 'YTD', '1Y', '2Y', '3Y', 'ALL'];
+    const [scanYear, setScanYear] = useState('2023');
 
     const [filterAccount, setFilterAccount] = useState('');
     const [filterAccountType, setFilterAccountType] = useState('');
@@ -337,7 +338,10 @@ export default function ActivitiesPage() {
             const res = await fetch('/api/dividends/scan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ symbols: Array.from(selectedScanSymbols) })
+                body: JSON.stringify({
+                    symbols: Array.from(selectedScanSymbols),
+                    startYear: scanYear
+                })
             });
 
             const data = await res.json();
@@ -452,7 +456,7 @@ export default function ActivitiesPage() {
     const toggleAllDividends = () => {
         const displayedDividends = foundDividends.filter(d => (showDuplicates || !d.isDuplicate) && (showHidden || !d.isHidden));
         const displayedKeys = displayedDividends.map(getDivKey);
-        const allSelected = displayedKeys.every(k => selectedDividends.has(k));
+        const allSelected = displayedKeys.length > 0 && displayedKeys.every(k => selectedDividends.has(k));
 
         const newSelected = new Set(selectedDividends);
         if (allSelected) {
@@ -461,6 +465,47 @@ export default function ActivitiesPage() {
             displayedKeys.forEach(k => newSelected.add(k));
         }
         setSelectedDividends(newSelected);
+    };
+
+    const toggleAllReinvest = () => {
+        const displayedDividends = foundDividends.filter(d => (showDuplicates || !d.isDuplicate) && (showHidden || !d.isHidden));
+        const displayedKeys = displayedDividends.map(getDivKey);
+        // Only consider items strictly, or just all visible?
+        // Logic: If all visible are checked -> Uncheck all. Else -> Check all.
+        const allChecked = displayedKeys.length > 0 && displayedKeys.every(k => reinvestSelection.has(k));
+
+        const newReinvest = new Set(reinvestSelection);
+        if (allChecked) {
+            displayedKeys.forEach(k => newReinvest.delete(k));
+        } else {
+            displayedKeys.forEach(k => newReinvest.add(k));
+        }
+        setReinvestSelection(newReinvest);
+    };
+
+    const [isBulkHiding, setIsBulkHiding] = useState(false);
+    const toggleAllHide = async () => {
+        if (isBulkHiding) return;
+        const displayedDividends = foundDividends.filter(d => (showDuplicates || !d.isDuplicate) && (showHidden || !d.isHidden));
+        if (displayedDividends.length === 0) return;
+
+        // Determine target state:
+        // If ANY are NOT hidden (visible) -> Hide All.
+        // If ALL are hidden -> Unhide All.
+        const anyVisible = displayedDividends.some(d => !d.isHidden);
+        const targetIsHidden = anyVisible; // If any are visible, we want to hide them (set isHidden=true)
+
+        // Filter items that need changing
+        const itemsToUpdate = displayedDividends.filter(d => !!d.isHidden !== targetIsHidden);
+
+        if (itemsToUpdate.length === 0) return;
+
+        setIsBulkHiding(true);
+        try {
+            await Promise.all(itemsToUpdate.map(d => handleToggleHide(d)));
+        } finally {
+            setIsBulkHiding(false);
+        }
     };
 
 
@@ -813,6 +858,21 @@ export default function ActivitiesPage() {
                         {dividendStep === 'SELECTION' && (
                             <>
                                 <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Select Symbols to Scan</h2>
+
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label style={{ marginRight: '0.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>Scan From Year:</label>
+                                    <select
+                                        value={scanYear}
+                                        onChange={(e) => setScanYear(e.target.value)}
+                                        className={styles.select}
+                                        style={{ width: 'auto', display: 'inline-block' }}
+                                    >
+                                        {Array.from({ length: new Date().getFullYear() - 2019 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                                            <option key={year} value={year}>{year}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
                                 <div style={{ marginBottom: '1rem', maxHeight: '400px', overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '0.5rem' }}>
                                     {availableSymbols.map(item => (
                                         <label key={item.symbol} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', border: '1px solid var(--card-border)', borderRadius: '0.25rem', cursor: 'pointer', background: selectedScanSymbols.has(item.symbol) ? 'var(--bg-secondary)' : 'transparent' }}>
@@ -939,10 +999,26 @@ export default function ActivitiesPage() {
                                                     <th>Symbol</th>
                                                     <th>Amount</th>
                                                     <th>Existing Match</th>
-                                                    <th>Reinvest?</th>
+                                                    <th>
+                                                        Reinvest?
+                                                        <input
+                                                            type="checkbox"
+                                                            onChange={toggleAllReinvest}
+                                                            checked={foundDividends.filter(d => (showDuplicates || !d.isDuplicate) && (showHidden || !d.isHidden)).length > 0 && foundDividends.filter(d => (showDuplicates || !d.isDuplicate) && (showHidden || !d.isHidden)).every(d => reinvestSelection.has(getDivKey(d)))}
+                                                            style={{ marginLeft: '0.5rem', verticalAlign: 'middle' }}
+                                                        />
+                                                    </th>
                                                     <th>Status</th>
                                                     <th>Account</th>
-                                                    <th>Hide</th>
+                                                    <th>
+                                                        <button
+                                                            onClick={toggleAllHide}
+                                                            disabled={isBulkHiding}
+                                                            style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', textDecoration: 'underline' }}
+                                                        >
+                                                            {foundDividends.filter(d => (showDuplicates || !d.isDuplicate) && (showHidden || !d.isHidden)).some(d => !d.isHidden) ? 'Hide All' : 'Unhide All'}
+                                                        </button>
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>

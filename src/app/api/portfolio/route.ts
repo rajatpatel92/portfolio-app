@@ -84,7 +84,10 @@ export async function GET(request: NextRequest) {
 
             // Generate Unique Key for Account aggregation
             // User might have multiple accounts with same Name but different Type
-            const accountKey = `${accountName}:${accountType}`;
+            // Generate Unique Key for Account aggregation
+            // User might have multiple accounts with same Name but different Type
+            // AND same Name/Type across different Platforms. Must include Platform to separate.
+            const accountKey = `${accountName}:${accountType}:${platformName}`;
 
             // Get account data or init
             let acc = current.accounts.get(accountKey);
@@ -498,10 +501,11 @@ export async function GET(request: NextRequest) {
                         const accountValue = accData.quantity * price;
                         const accountValueUSD = accountValue * rateToUSD;
 
-                        // By Account Name (Aggregate by Name, stripping type)
-                        const [realAccountName] = accountKey.split(':');
-                        const existing = allocationByAccount[realAccountName] || { value: 0, platformName: accData.platformName };
-                        allocationByAccount[realAccountName] = {
+                        // By Account Name - Platform (Aggregate by Name + Platform)
+                        // This ensures accounts with same name on different platforms are split
+                        const compositeKey = `${accData.name} - ${accData.platformName}`;
+                        const existing = allocationByAccount[compositeKey] || { value: 0, platformName: accData.platformName };
+                        allocationByAccount[compositeKey] = {
                             value: existing.value + accountValueUSD,
                             platformName: accData.platformName
                         };

@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json();
-        const { symbols: requestedSymbols } = body;
+        const { symbols: requestedSymbols, startYear } = body;
 
         let symbolsToScan: string[] = [];
 
@@ -73,10 +73,24 @@ export async function POST(request: Request) {
         // 2. Scan each symbol
         for (const symbol of symbolsToScan) {
             try {
-                // Fetch dividends for the last year
+                // Fetch dividends from startYear
                 const endDate = new Date();
                 const startDate = new Date();
-                startDate.setFullYear(startDate.getFullYear() - 1);
+
+                if (startYear) {
+                    startDate.setFullYear(parseInt(startYear), 0, 1);
+                    endDate.setFullYear(parseInt(startYear), 11, 31); // Dec 31st
+                    endDate.setHours(23, 59, 59, 999);
+                } else {
+                    // Default to current year if no year selected (though frontend sends one)
+                    startDate.setFullYear(new Date().getFullYear(), 0, 1);
+                }
+
+                // Safety check: Period 1 must be before Period 2
+                if (startDate > endDate) {
+                    // Should not happen with above logic, but fallback
+                    startDate.setFullYear(endDate.getFullYear() - 1);
+                }
 
                 const chartResult = await yahooFinance.chart(symbol, {
                     period1: startDate,
@@ -88,9 +102,6 @@ export async function POST(request: Request) {
                 if (chartResult.events && chartResult.events.dividends) {
                     for (const div of chartResult.events.dividends) {
                         const divDate = new Date(div.date);
-
-                        // Check for fuzzy match
-                        const match = await findDividendMatch(symbol, divDate, div.amount);
 
                         // Calculate holdings on Ex-Date - 1 day
                         const checkDate = new Date(divDate);
@@ -112,6 +123,9 @@ export async function POST(request: Request) {
 
                         for (const [accountId, quantity] of Object.entries(holdingsByAccount)) {
                             if (quantity > 0) {
+                                // Check for fuzzy match specifically for this account
+                                const match = await findDividendMatch(symbol, divDate, div.amount, accountId);
+
                                 const account = accountMap.get(accountId);
                                 let displayName = account?.name;
                                 if (account && userMap.has(account.name)) {
