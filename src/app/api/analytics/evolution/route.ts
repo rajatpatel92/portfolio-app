@@ -100,7 +100,10 @@ export async function POST(req: Request) {
                 };
             });
             response.evolution = evolutionWithInvested;
-            response.debug = debug;
+            if (mode === 'flows') {
+                const keysM = response.dividends.month.map((d: any) => d.date);
+                console.log(`[DiffDebug] Dividend Month Keys: ${keysM.slice(-3)}`);
+            }
         }
 
         return NextResponse.json(response);

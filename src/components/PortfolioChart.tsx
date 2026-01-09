@@ -33,7 +33,7 @@ interface PortfolioChartProps {
     externalData?: HistoryPoint[]; // New prop for controlled mode
 }
 
-const RANGES = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '2Y', '3Y', '5Y', '10Y', 'ALL'];
+export const RANGES = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '2Y', '3Y', '5Y', '10Y', 'ALL'];
 
 export default function PortfolioChart({
     range,
@@ -42,8 +42,9 @@ export default function PortfolioChart({
     setCustomStart,
     customEnd,
     setCustomEnd,
-    externalData
-}: PortfolioChartProps) {
+    externalData,
+    hideControls
+}: PortfolioChartProps & { hideControls?: boolean }) {
     const [data, setData] = useState<HistoryPoint[]>([]);
     // Local state removed
     const [loading, setLoading] = useState(false);
@@ -138,56 +139,58 @@ export default function PortfolioChart({
                         </div>
                     )}
                 </div>
-                <div className={styles.controls}>
-                    <div className={styles.desktopControls}>
-                        <div className={styles.ranges}>
-                            {RANGES.map(r => (
+                {!hideControls && (
+                    <div className={styles.controls}>
+                        <div className={styles.desktopControls}>
+                            <div className={styles.ranges}>
+                                {RANGES.map(r => (
+                                    <button
+                                        key={r}
+                                        className={`${styles.rangeButton} ${range === r ? styles.active : ''}`}
+                                        onClick={() => setRange(r)}
+                                    >
+                                        {r}
+                                    </button>
+                                ))}
                                 <button
-                                    key={r}
-                                    className={`${styles.rangeButton} ${range === r ? styles.active : ''}`}
-                                    onClick={() => setRange(r)}
+                                    className={`${styles.rangeButton} ${range === 'CUSTOM' ? styles.active : ''}`}
+                                    onClick={() => setRange('CUSTOM')}
                                 >
-                                    {r}
+                                    Custom
                                 </button>
-                            ))}
-                            <button
-                                className={`${styles.rangeButton} ${range === 'CUSTOM' ? styles.active : ''}`}
-                                onClick={() => setRange('CUSTOM')}
+                            </div>
+                        </div>
+
+                        <div className={styles.mobileControls}>
+                            <select
+                                className={styles.mobileSelect}
+                                value={range}
+                                onChange={(e) => setRange(e.target.value)}
                             >
-                                Custom
-                            </button>
+                                {RANGES.map(r => (
+                                    <option key={r} value={r}>{r === 'ALL' ? 'All Time' : r}</option>
+                                ))}
+                                <option value="CUSTOM">Custom Range</option>
+                            </select>
                         </div>
-                    </div>
 
-                    <div className={styles.mobileControls}>
-                        <select
-                            className={styles.mobileSelect}
-                            value={range}
-                            onChange={(e) => setRange(e.target.value)}
-                        >
-                            {RANGES.map(r => (
-                                <option key={r} value={r}>{r === 'ALL' ? 'All Time' : r}</option>
-                            ))}
-                            <option value="CUSTOM">Custom Range</option>
-                        </select>
+                        {range === 'CUSTOM' && (
+                            <div className={styles.dateInputs}>
+                                <DateInput
+                                    value={customStart}
+                                    onChange={setCustomStart}
+                                    className={styles.dateInput}
+                                />
+                                <span className={styles.separator}>to</span>
+                                <DateInput
+                                    value={customEnd}
+                                    onChange={setCustomEnd}
+                                    className={styles.dateInput}
+                                />
+                            </div>
+                        )}
                     </div>
-
-                    {range === 'CUSTOM' && (
-                        <div className={styles.dateInputs}>
-                            <DateInput
-                                value={customStart}
-                                onChange={setCustomStart}
-                                className={styles.dateInput}
-                            />
-                            <span className={styles.separator}>to</span>
-                            <DateInput
-                                value={customEnd}
-                                onChange={setCustomEnd}
-                                className={styles.dateInput}
-                            />
-                        </div>
-                    )}
-                </div>
+                )}
             </div>
 
             <div className={styles.chartWrapper} style={{ position: 'relative' }}>

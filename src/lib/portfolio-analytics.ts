@@ -119,6 +119,109 @@ export class PortfolioAnalytics {
 
         const sort = <T extends { date: string }>(map: Map<string, T>) => Array.from(map.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+        // Gap Filling Logic
+        const fillGaps = (
+            map: Map<string, any>,
+            type: 'month' | 'year',
+            minDate: Date,
+            maxDate: Date = new Date()
+        ) => {
+            if (map.size === 0 && minDate > maxDate) return;
+
+            // Adjust minDate to start of period
+            const current = new Date(minDate);
+            current.setDate(1); // Start of month
+
+            while (current <= maxDate) {
+                let key = '';
+                let dateStr = '';
+
+                if (type === 'month') {
+                    key = `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
+                    dateStr = `${key}-01`;
+                    // Increment
+                    current.setMonth(current.getMonth() + 1);
+                } else if (type === 'year') {
+                    key = current.getFullYear().toString();
+                    dateStr = `${key}-01-01`;
+                    // Increment
+                    current.setFullYear(current.getFullYear() + 1);
+                }
+
+                if (!map.has(key)) {
+                    // Check structure type (FlowData vs DividendData)
+                    // We can infer or check existing, but "inflow" implies FlowData
+                    // Simplest is to pass factory or check what map holds? 
+                    // Let's assume generic fill based on known types.
+                    // Actually, we can just check if any value exists to get shape?
+                    // Or just use the known shape.
+
+                    // Since specific maps are passed, we handle them outside or make this generic.
+                    // Easier to just inline or strictly type.
+                }
+            }
+        };
+
+        // Inline simplified gap filler for specific maps
+        const now = new Date();
+        // Determine start date from activities (or 1 year ago if empty?)
+        let startDate = new Date();
+        if (activities.length > 0) {
+            activities.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            startDate = new Date(activities[0].date);
+        } else {
+            startDate.setFullYear(startDate.getFullYear() - 1);
+        }
+
+        // 1. Fill Months
+        {
+            const current = new Date(startDate);
+            current.setDate(1); // Start of month
+
+            // Go up to current month (inclusive)
+            const endMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0); // End of current month? Or just ensure we hit the month.
+            // Loop until current month is processed.
+            // current <= now is enough if we increment by month.
+
+            while (current <= now || (current.getMonth() === now.getMonth() && current.getFullYear() === now.getFullYear())) {
+                const key = `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}`;
+
+                // Flows
+                if (!flows.month.has(key)) {
+                    flows.month.set(key, { date: `${key}-01`, inflow: 0, outflow: 0 });
+                }
+
+                // Dividends
+                if (!dividends.month.has(key)) {
+                    dividends.month.set(key, { date: `${key}-01`, amount: 0 });
+                }
+
+                current.setMonth(current.getMonth() + 1);
+            }
+        }
+
+        // 2. Fill Years
+        {
+            const current = new Date(startDate);
+            current.setMonth(0, 1); // Start of year
+
+            while (current.getFullYear() <= now.getFullYear()) {
+                const key = current.getFullYear().toString();
+
+                // Flows
+                if (!flows.year.has(key)) {
+                    flows.year.set(key, { date: `${key}-01-01`, inflow: 0, outflow: 0 });
+                }
+
+                // Dividends
+                if (!dividends.year.has(key)) {
+                    dividends.year.set(key, { date: `${key}-01-01`, amount: 0 });
+                }
+
+                current.setFullYear(current.getFullYear() + 1);
+            }
+        }
+
         return {
             contributions: {
                 week: sort(flows.week),

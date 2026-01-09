@@ -20,8 +20,11 @@ export default function TopMovers({ constituents, portfolioTotalValue, portfolio
     // Calculate previous portfolio value to determine impact
     const prevValueUSD = portfolioTotalValue - portfolioDayChange;
 
+    // Filter out sold assets (quantity 0)
+    const heldConstituents = constituents.filter(c => c.quantity > 0);
+
     // Enrich constituents with impact data
-    const constituentsWithImpact = constituents.map(c => {
+    const constituentsWithImpact = heldConstituents.map(c => {
         // If coming from API topMovers, value is already converted and rateToUSD might be missing.
         // If rateToUSD is missing, assume 1 (already converted or same currency).
         const rate = c.rateToUSD ?? 1;
@@ -179,7 +182,7 @@ export default function TopMovers({ constituents, portfolioTotalValue, portfolio
             <TopMoversModal
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
-                constituents={constituents}
+                constituents={heldConstituents}
                 portfolioTotalValue={portfolioTotalValue}
                 portfolioDayChange={portfolioDayChange}
             />

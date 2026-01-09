@@ -1,8 +1,8 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import ReportFilters, { FilterOptions } from '@/components/ReportFilters';
+import RangeSelector from '@/components/RangeSelector';
 import PortfolioChart from '@/components/PortfolioChart';
 import ContributionChart from '@/components/ContributionChart';
 import DividendChart from '@/components/DividendChart';
@@ -29,6 +29,10 @@ export default function EvolutionPage() {
     // Chart toggles
     const [contributionPeriod, setContributionPeriod] = useState<'week' | 'month' | 'year'>('month');
     const [dividendPeriod, setDividendPeriod] = useState<'month' | 'year'>('year');
+
+    // Independent Ranges
+    const [contributionRange, setContributionRange] = useState('ALL');
+    const [dividendRange, setDividendRange] = useState('ALL');
 
     const [range, setRange] = usePersistentState('evolution_range', 'ALL');
     const { currency } = useCurrency();
@@ -109,15 +113,15 @@ export default function EvolutionPage() {
         return () => clearTimeout(timeout);
     }, [filters, range, currency]);
 
-    // Helper to slice data based on Range
-    const getFilteredEvolutionData = () => {
-        if (!data?.evolution) return [];
-        if (range === 'ALL') return data.evolution;
+    // Generic Range Filter
+    const filterByRange = (items: any[], rangeToUse: string) => {
+        if (!items) return [];
+        if (rangeToUse === 'ALL') return items;
 
         const now = new Date();
         const cutoff = new Date();
 
-        switch (range) {
+        switch (rangeToUse) {
             case '1D': cutoff.setDate(now.getDate() - 1); break;
             case '1W': cutoff.setDate(now.getDate() - 7); break;
             case '1M': cutoff.setMonth(now.getMonth() - 1); break;
@@ -128,17 +132,20 @@ export default function EvolutionPage() {
             case '3Y': cutoff.setFullYear(now.getFullYear() - 3); break;
             case 'YTD': cutoff.setMonth(0, 1); break; // Jan 1st
             case '5Y': cutoff.setFullYear(now.getFullYear() - 5); break;
-            default: return data.evolution;
+            default: return items;
         }
-
-        return data.evolution.filter((p: any) => new Date(p.date) >= cutoff);
+        // Comparison using string dates (YYYY-MM-DD or YYYY-MM or YYYY)
+        // ISO Strings compare correctly lexicographically if format is compatible.
+        // But our data.date can be '2026' or '2026-01'.
+        // '2026' < '2025-12-31' ? No.
+        // Safer to construct Date objects.
+        return items.filter((p: any) => {
+            // Handle partial dates e.g. "2023" -> "2023-01-01" for comparison
+            const dStr = p.date.length === 4 ? `${p.date}-01-01` :
+                p.date.length === 7 ? `${p.date}-01` : p.date;
+            return new Date(dStr) >= cutoff;
+        });
     };
-
-    // Only show full page skeleton if EVERYTHING is loading for the FIRST time?
-    // User wants "Async" style. Better to show structure and loaders inside.
-    // So removing global AnalysisSkeleton return.
-
-
 
     return (
         <div className={styles.container}>
@@ -147,12 +154,14 @@ export default function EvolutionPage() {
                     <h1 className={styles.title}>Portfolio History</h1>
                     <p className={styles.subtitle}>Track your portfolio performance, contributions, and dividends over time.</p>
                 </div>
-                {isFiltersLoaded && (
-                    <ReportFilters
-                        onChange={setFilters}
-                        initialFilters={filters || undefined}
-                    />
-                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-end' }}>
+                    {isFiltersLoaded && (
+                        <ReportFilters
+                            onChange={setFilters}
+                            initialFilters={filters || undefined}
+                        />
+                    )}
+                </div>
             </div>
 
             <div className={styles.analysisGrid}>
@@ -166,41 +175,45 @@ export default function EvolutionPage() {
                         setRange={setRange}
                         customStart="" setCustomStart={() => { }}
                         customEnd="" setCustomEnd={() => { }}
-                        externalData={getFilteredEvolutionData()}
+                        externalData={filterByRange(data.evolution || [], range)}
                     />
                 </div>
 
                 {/* 2. Contribution History */}
-                <div className={styles.chartCard} style={{ height: '500px', position: 'relative' }}>
+                <div className={styles.chartCard} style={{ height: '600px', position: 'relative' }}>
                     {loadingFlows && !data.contributions && (
                         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.1)', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading Flows...</div>
                     )}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                        <h3>Contribution History</h3>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            {/* Toggles */}
-                            {['week', 'month', 'year'].map(p => (
-                                <button
-                                    key={p}
-                                    onClick={() => setContributionPeriod(p as any)}
-                                    style={{
-                                        padding: '0.25rem 0.5rem',
-                                        borderRadius: '0.25rem',
-                                        border: '1px solid var(--border-color)',
-                                        background: contributionPeriod === p ? 'var(--primary-color)' : 'transparent',
-                                        color: contributionPeriod === p ? '#fff' : 'var(--text-secondary)',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    {p.charAt(0).toUpperCase() + p.slice(1)}
-                                </button>
-                            ))}
+                    <div style={{ marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                <h3 style={{ margin: 0 }}>Contribution History</h3>
+                                <div className={styles.filterGroup}>
+                                    {['week', 'month', 'year'].map(p => (
+                                        <button
+                                            key={p}
+                                            className={`${styles.filterButton} ${contributionPeriod === p ? styles.filterButtonActive : ''}`}
+                                            onClick={() => setContributionPeriod(p as any)}
+                                        >
+                                            {p.charAt(0).toUpperCase() + p.slice(1)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Range Selector */}
+                            <RangeSelector
+                                range={contributionRange}
+                                setRange={setContributionRange}
+                                customStart="" setCustomStart={() => { }}
+                                customEnd="" setCustomEnd={() => { }}
+                            />
                         </div>
                     </div>
                     <div style={{ flex: 1, minHeight: 0 }}>
                         {data?.contributions && data.contributions[contributionPeriod]?.length > 0 ? (
                             <ContributionChart
-                                data={data.contributions[contributionPeriod]}
+                                data={filterByRange(data.contributions[contributionPeriod], contributionRange)}
                                 period={contributionPeriod}
                             />
                         ) : (
@@ -210,36 +223,40 @@ export default function EvolutionPage() {
                 </div>
 
                 {/* 3. Dividend History */}
-                <div className={styles.chartCard} style={{ height: '500px', position: 'relative' }}>
+                <div className={styles.chartCard} style={{ height: '600px', position: 'relative' }}>
                     {loadingFlows && !data.dividends && (
                         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.1)', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading Dividends...</div>
                     )}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                        <h3>Dividend History</h3>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            {/* Toggles */}
-                            {['month', 'year'].map(p => (
-                                <button
-                                    key={p}
-                                    onClick={() => setDividendPeriod(p as any)}
-                                    style={{
-                                        padding: '0.25rem 0.5rem',
-                                        borderRadius: '0.25rem',
-                                        border: '1px solid var(--border-color)',
-                                        background: dividendPeriod === p ? 'var(--primary-color)' : 'transparent',
-                                        color: dividendPeriod === p ? '#fff' : 'var(--text-secondary)',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    {p.charAt(0).toUpperCase() + p.slice(1)}
-                                </button>
-                            ))}
+                    <div style={{ marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                <h3 style={{ margin: 0 }}>Dividend History</h3>
+                                <div className={styles.filterGroup}>
+                                    {['month', 'year'].map(p => (
+                                        <button
+                                            key={p}
+                                            className={`${styles.filterButton} ${dividendPeriod === p ? styles.filterButtonActive : ''}`}
+                                            onClick={() => setDividendPeriod(p as any)}
+                                        >
+                                            {p.charAt(0).toUpperCase() + p.slice(1)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Range Selector */}
+                            <RangeSelector
+                                range={dividendRange}
+                                setRange={setDividendRange}
+                                customStart="" setCustomStart={() => { }}
+                                customEnd="" setCustomEnd={() => { }}
+                            />
                         </div>
                     </div>
                     <div style={{ flex: 1, minHeight: 0 }}>
                         {data?.dividends && data.dividends[dividendPeriod]?.length > 0 ? (
                             <DividendChart
-                                data={data.dividends[dividendPeriod]}
+                                data={filterByRange(data.dividends[dividendPeriod], dividendRange)}
                                 period={dividendPeriod}
                             />
                         ) : (
