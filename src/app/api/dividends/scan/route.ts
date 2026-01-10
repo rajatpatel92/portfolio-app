@@ -122,7 +122,8 @@ export async function POST(request: Request) {
                         }
 
                         for (const [accountId, quantity] of Object.entries(holdingsByAccount)) {
-                            if (quantity > 0) {
+                            // Use epsilon for floating point comparison to avoid ghost dividends
+                            if (quantity > 0.0001) {
                                 // Check for fuzzy match specifically for this account
                                 const match = await findDividendMatch(symbol, divDate, div.amount, accountId);
 

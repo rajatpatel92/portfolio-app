@@ -258,9 +258,9 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
         }
     };
 
-    // Fetch holdings when type changes to DIVIDEND
+    // Fetch holdings when type changes to DIVIDEND (only for new activities)
     useEffect(() => {
-        if (type === 'DIVIDEND' && symbol) {
+        if (!initialData && type === 'DIVIDEND' && symbol) {
             fetch(`/api/holdings?symbol=${encodeURIComponent(symbol)}`)
                 .then(res => res.json())
                 .then(data => {
