@@ -91,10 +91,6 @@ export default function Sidebar({ aiEnabled }: { aiEnabled?: boolean }) {
         navItems.push({ name: 'Settings', href: '/settings', icon: <MdSettings size={20} /> });
     }
 
-    // Users Management - Available to all (Admins see all, others see self)
-    if (session) {
-        navItems.push({ name: 'Users', href: '/settings/users', icon: <MdPeople size={20} /> });
-    }
 
     // Auto-expand menu if active child
     useEffect(() => {
