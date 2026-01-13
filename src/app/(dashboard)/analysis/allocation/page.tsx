@@ -20,6 +20,7 @@ interface PortfolioSummary {
 
 export default function AnalysisPage() {
     const [summary, setSummary] = useState<PortfolioSummary | null>(null);
+    const { currency } = useCurrency();
     // Global Filters (Layer 1)
     const [globalFilters, setGlobalFilters, isFiltersLoaded] = usePersistentState<FilterOptions | null>('allocation_filters', null);
     // Interactive Filters (Layer 2)
@@ -45,14 +46,14 @@ export default function AnalysisPage() {
         }
 
         // 2. Fetch fresh data
-        fetch('/api/portfolio')
+        fetch(`/api/portfolio?currency=${currency}`)
             .then(res => res.json())
             .then(data => {
                 setSummary(data);
                 localStorage.setItem('portfolio_summary', JSON.stringify(data));
             })
             .catch(err => console.error('Failed to fetch portfolio', err));
-    }, []);
+    }, [currency]);
 
     const handleInvestmentSelect = (type: string | null, e?: React.MouseEvent) => {
         const isMulti = e?.ctrlKey || e?.metaKey;
