@@ -12,11 +12,13 @@ export async function GET(request: Request) {
     const targetCurrency = searchParams.get('currency') || 'CAD';
     const customStart = searchParams.get('startDate');
     const customEnd = searchParams.get('endDate');
+    const investmentTypes = searchParams.get('investmentTypes')?.split(',') || [];
+    const accountTypes = searchParams.get('accountTypes')?.split(',') || [];
 
     try {
-        // 1. Determine date range (Same logic as before)
+        // 1. Determine date range
         let startDate = new Date();
-        const endDate = new Date(); // To Today
+        // const endDate = new Date(); // Unused
 
         if (range === 'CUSTOM' && customStart && customEnd) {
             startDate = new Date(customStart);
@@ -42,28 +44,35 @@ export async function GET(request: Request) {
         const filterStartDate = new Date(startDate);
         const filterStartDateStr = filterStartDate.toISOString().split('T')[0];
 
-        console.log(`[HistoryAPI] Range=${range}, FilterStart=${filterStartDateStr}, CalcStart=${startDate.toISOString()}`);
+        // console.log(`[HistoryAPI] Range=${range}, FilterStart=${filterStartDateStr}, CalcStart=${startDate.toISOString()}`);
 
-        // 2. Fetch ALL activities (Required for correct NAV seeding)
-        const activities = await prisma.activity.findMany({
-            include: { investment: true },
+        // 2. Fetch ALL activities (include Account for filtering)
+        const allActivities = await prisma.activity.findMany({
+            include: {
+                investment: true,
+                account: true,
+                platform: true
+            },
             orderBy: { date: 'asc' }
         });
+
+        // Apply Filters
+        let activities = allActivities;
+        if (investmentTypes.length > 0) {
+            activities = activities.filter(a => investmentTypes.includes(a.investment.type));
+        }
+        if (accountTypes.length > 0) {
+            activities = activities.filter(a => a.account && accountTypes.includes(a.account.type));
+        }
 
         if (activities.length === 0) {
             return NextResponse.json([]);
         }
 
         // Set calculation start date to the beginning of history (or first activity)
-        // This ensures "Invested" and "Holdings" accumulators are correct.
         if (activities.length > 0) {
             const firstDate = new Date(activities[0].date);
-            // If requested range is ALL, ensure we cover it.
-            // If requested range is YTD, start from firstDate anyway.
             startDate = firstDate;
-        } else {
-            // No activities, default to something reasonable or empty
-            return NextResponse.json([]);
         }
 
         // 3. Run Analytics
@@ -86,27 +95,25 @@ export async function GET(request: Request) {
         );
 
         // 3.5. [NEW] Handle 1D Intraday Override
-        // If 1D, we replace the daily history with granular intraday history
         if (range === '1D') {
             try {
                 // [CACHE] Check In-Memory Cache for 1D
-                // This avoids re-fetching and re-calculating (heavy) for every dashboard load
-                const CACHE_KEY = `1D_HISTORY_${targetCurrency}`;
+                const filterKey = `${investmentTypes.sort().join('-')}_${accountTypes.sort().join('-')}`;
+                const CACHE_KEY = `1D_HISTORY_${targetCurrency}_${filterKey}`;
                 const cached = (global as any)._portfolio1DCache;
                 const CACHE_TTL = 5 * 60 * 1000; // 5 Minutes
 
                 if (cached && cached.key === CACHE_KEY && (Date.now() - cached.timestamp < CACHE_TTL)) {
-                    console.log(`[HistoryAPI] Serving 1D Cache (${((Date.now() - cached.timestamp) / 1000).toFixed(0)}s old)`);
+                    // console.log(`[HistoryAPI] Serving 1D Cache (${((Date.now() - cached.timestamp) / 1000).toFixed(0)}s old)`);
                     return NextResponse.json(cached.data);
                 }
 
                 // Calculate Intraday
-                const intradayParams = mappedActivities; // already mapped with investment info
+                const intradayParams = mappedActivities;
                 const intradayPortfolio = await PortfolioAnalytics.calculateIntradayHistory(intradayParams, targetCurrency);
 
                 if (intradayPortfolio.length > 0) {
                     // Normalize for Chart
-                    // For 1D, 'invested' is usually the OPENING value of the day.
                     const openValue = intradayPortfolio[0].marketValue;
 
                     const normalized = intradayPortfolio.map(p => ({
@@ -135,10 +142,6 @@ export async function GET(request: Request) {
         let cumulativeFlow = 0;
         let cumulativeDividends = 0;
         const historyPoints = result.portfolio.map(p => {
-            // p.netFlow is the NET FLOW for that day (Deposit/Withdrawal).
-            // p.discoveryFlow needed? Discovery flow is implicit inflow.
-            // Usually Analytics handles this.
-            // If we just sum p.netFlow, we get Total Invested Capital.
             cumulativeFlow += p.netFlow;
             cumulativeDividends += (p.dividend || 0);
 
@@ -151,17 +154,15 @@ export async function GET(request: Request) {
             };
         });
 
-        // Filter out future dates if customEnd was used? 
+        // Filter out future dates if customEnd was used
         let finalPoints = historyPoints;
         if (range === 'CUSTOM' && customEnd) {
             const endD = new Date(customEnd).toISOString().split('T')[0];
             finalPoints = finalPoints.filter(p => p.date <= endD);
         }
 
-        // Filter by requested Start Date (so we return only the slice, but with correct accumulators)
+        // Filter by requested Start Date
         finalPoints = finalPoints.filter(p => p.date >= filterStartDateStr);
-
-        console.log(`[HistoryAPI] Returning ${finalPoints.length} points for range ${range}`);
 
         return NextResponse.json(finalPoints);
 

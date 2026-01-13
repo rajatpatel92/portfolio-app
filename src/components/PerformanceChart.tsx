@@ -34,6 +34,8 @@ interface PerformanceChartProps {
     setCustomEnd: (date: string) => void;
     overrideChange?: number;
     overrideChangePercent?: number;
+    filterInvestmentTypes?: string[];
+    filterAccountTypes?: string[];
 }
 
 const RANGES = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '2Y', '3Y', '5Y', '10Y', 'ALL'];
@@ -46,7 +48,9 @@ export default function PerformanceChart({
     customEnd,
     setCustomEnd,
     overrideChange,
-    overrideChangePercent
+    overrideChangePercent,
+    filterInvestmentTypes,
+    filterAccountTypes
 }: PerformanceChartProps) {
     const [data, setData] = useState<HistoryPoint[]>([]);
     // Local state removed
@@ -56,7 +60,8 @@ export default function PerformanceChart({
 
     useEffect(() => {
         const fetchData = async () => {
-            const cacheKey = `portfolio-history-${range}-${currency}-${customStart}-${customEnd}-v3`;
+            const filterKey = `${(filterInvestmentTypes || []).sort().join('-')}_${(filterAccountTypes || []).sort().join('-')}`;
+            const cacheKey = `portfolio-history-${range}-${currency}-${customStart}-${customEnd}-${filterKey}-v4`;
 
             // 1. Try cache first for instant load
             const cached = ClientCache.get<any[]>(cacheKey);
@@ -70,12 +75,17 @@ export default function PerformanceChart({
                 if (range === 'CUSTOM' && customStart && customEnd) {
                     url += `&startDate=${customStart}&endDate=${customEnd}`;
                 }
+                if (filterInvestmentTypes && filterInvestmentTypes.length > 0) {
+                    url += `&investmentTypes=${filterInvestmentTypes.join(',')}`;
+                }
+                if (filterAccountTypes && filterAccountTypes.length > 0) {
+                    url += `&accountTypes=${filterAccountTypes.join(',')}`;
+                }
 
                 const res = await fetch(url);
                 const json = await res.json();
                 if (Array.isArray(json)) {
                     setData(json);
-                    // Update Cache
                     // Update Cache
                     ClientCache.set(cacheKey, json);
                 }
@@ -89,7 +99,7 @@ export default function PerformanceChart({
         if (range !== 'CUSTOM' || (customStart && customEnd)) {
             fetchData();
         }
-    }, [range, customStart, customEnd, currency]);
+    }, [range, customStart, customEnd, currency, filterInvestmentTypes, filterAccountTypes]);
 
     // Calculate Average Invested Capital for the period
     const totalInvested = data.reduce((sum, point) => sum + point.invested, 0);

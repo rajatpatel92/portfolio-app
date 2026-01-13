@@ -6,6 +6,8 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import styles from './page.module.css';
 import { useCurrency } from '@/context/CurrencyContext';
+import usePersistentState from '@/hooks/usePersistentState';
+import ReportFilters, { FilterOptions } from '@/components/ReportFilters';
 
 import PortfolioChart from '@/components/PortfolioChart';
 import PerformanceChart from '@/components/PerformanceChart';
@@ -37,6 +39,9 @@ export default function Dashboard() {
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const { format, convert, currency } = useCurrency();
 
+  // Filters
+  const [globalFilters, setGlobalFilters, isFiltersLoaded] = usePersistentState<FilterOptions | null>('dashboard_filters', null);
+
   // Lifted state for chart synchronization
   const [range, setRange] = useState('1D');
   const [customStart, setCustomStart] = useState('');
@@ -46,21 +51,28 @@ export default function Dashboard() {
   const [timeAgo, setTimeAgo] = useState<string>('');
 
   useEffect(() => {
-    // 1. Try to load from cache immediately
-    const cacheKey = `portfolio_summary_${currency}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      try {
-        setSummary(JSON.parse(cached));
-      } catch (e) {
-        console.error('Failed to parse cached summary', e);
-      }
-    }
-
     // 2. Fetch fresh data
     const fetchData = async () => {
       try {
-        const res = await fetch(`/api/portfolio?currency=${currency}`);
+        let url = `/api/portfolio?currency=${currency}`;
+        if (globalFilters) {
+          if (globalFilters.investmentTypes.length > 0) {
+            url += `&investmentTypes=${globalFilters.investmentTypes.join(',')}`;
+          }
+          if (globalFilters.accountTypes.length > 0) {
+            url += `&accountTypes=${globalFilters.accountTypes.join(',')}`;
+          }
+        }
+
+        const cacheKey = `portfolio_summary_${currency}_${globalFilters ? JSON.stringify(globalFilters) : 'ALL'}`;
+
+        // Try cache first
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          try { setSummary(JSON.parse(cached)); } catch (e) { }
+        }
+
+        const res = await fetch(url);
         const data = await res.json();
         setSummary(data);
         localStorage.setItem(cacheKey, JSON.stringify(data));
@@ -68,26 +80,32 @@ export default function Dashboard() {
         console.error('Failed to fetch portfolio', err);
       }
     };
-    fetchData();
-  }, [currency]);
+    if (isFiltersLoaded) {
+      fetchData();
+    }
+  }, [currency, globalFilters, isFiltersLoaded]);
 
   if (!summary) return <DashboardSkeleton />;
 
+  const activeSummary = summary;
+
+  if (!activeSummary) return <DashboardSkeleton />;
+
   // Handle API Error Case
-  if ('error' in summary) {
+  if ('error' in activeSummary) {
     return (
       <div className={styles.container}>
         <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-error)' }}>
           <h3>Failed to load portfolio data</h3>
-          <p>Please try again later. {(summary as any).error}</p>
+          <p>Please try again later. {(activeSummary as any).error}</p>
         </div>
       </div>
     );
   }
 
-  const totalValue = summary.totalValue || 0;
-  const dayChange = summary.dayChange || 0;
-  const totalGrowth = summary.totalGrowth || 0;
+  const totalValue = activeSummary.totalValue || 0;
+  const dayChange = activeSummary.dayChange || 0;
+  const totalGrowth = activeSummary.totalGrowth || 0;
   const isPositive = dayChange >= 0;
 
   // Greeting Logic
@@ -104,7 +122,9 @@ export default function Dashboard() {
           <h1 className={styles.greeting}>{greeting}, {userName}</h1>
           <p className={styles.date}>{dateStr}</p>
         </div>
-
+        {isFiltersLoaded && (
+          <ReportFilters onChange={setGlobalFilters} initialFilters={globalFilters || undefined} />
+        )}
       </header>
 
       <div className={styles.dashboardGrid}>
@@ -114,7 +134,7 @@ export default function Dashboard() {
           <div className={styles.heroValue}>{format(totalValue)}</div>
           <div className={styles.heroChange}>
             <span>{isPositive ? '▲' : '▼'}</span>
-            <span>{format(Math.abs(dayChange))} ({summary.dayChangePercent.toFixed(2)}%)</span>
+            <span>{format(Math.abs(dayChange))} ({activeSummary.dayChangePercent.toFixed(2)}%)</span>
             <span className={styles.heroChangeLabel}>Today</span>
           </div>
         </div>
@@ -123,16 +143,16 @@ export default function Dashboard() {
         <div className={styles.statsGrid}>
           <div className={styles.statCard}>
             <div className={styles.statLabel}>Portfolio XIRR</div>
-            <div className={`${styles.statValue} ${summary.xirr && summary.xirr >= 0 ? styles.positive : styles.negative}`}>
-              {summary.xirr ? `${(summary.xirr * 100).toFixed(2)}%` : 'N/A'}
+            <div className={`${styles.statValue} ${activeSummary.xirr && activeSummary.xirr >= 0 ? styles.positive : styles.negative}`}>
+              {activeSummary.xirr ? `${(activeSummary.xirr * 100).toFixed(2)}%` : 'N/A'}
             </div>
           </div>
           <div className={styles.statCard}>
             <div className={styles.statLabel}>All Time Return</div>
             <div className={styles.statValueRow}>
               <span className={styles.statAmount}>{format(totalGrowth)}</span>
-              <span className={`${styles.statPercentPill} ${summary.totalGrowthPercent >= 0 ? styles.positive : styles.negative}`}>
-                {summary.totalGrowthPercent >= 0 ? '▲' : '▼'} {summary.totalGrowthPercent ? `${Math.abs(summary.totalGrowthPercent).toFixed(2)}%` : '0.00%'}
+              <span className={`${styles.statPercentPill} ${activeSummary.totalGrowthPercent >= 0 ? styles.positive : styles.negative}`}>
+                {activeSummary.totalGrowthPercent >= 0 ? '▲' : '▼'} {activeSummary.totalGrowthPercent ? `${Math.abs(activeSummary.totalGrowthPercent).toFixed(2)}%` : '0.00%'}
               </span>
             </div>
           </div>
@@ -141,15 +161,15 @@ export default function Dashboard() {
         {/* Insights Grid */}
         <div className={styles.insightsGrid}>
           <TopMovers
-            constituents={summary.constituents}
-            portfolioTotalValue={summary.totalValue}
-            portfolioDayChange={summary.dayChange}
+            constituents={activeSummary.constituents}
+            portfolioTotalValue={activeSummary.totalValue}
+            portfolioDayChange={activeSummary.dayChange}
           />
           <DividendSummary
-            dividendsYTD={summary.dividendsYTD}
-            upcomingDividends={summary.upcomingDividends}
-            totalValue={summary.totalValue}
-            projectedDividends={summary.projectedDividends}
+            dividendsYTD={activeSummary.dividendsYTD}
+            upcomingDividends={activeSummary.upcomingDividends}
+            totalValue={activeSummary.totalValue}
+            projectedDividends={activeSummary.projectedDividends}
           />
         </div>
 
@@ -162,8 +182,10 @@ export default function Dashboard() {
             setCustomStart={setCustomStart}
             customEnd={customEnd}
             setCustomEnd={setCustomEnd}
-            overrideChange={summary?.dayChange}
-            overrideChangePercent={summary?.dayChangePercent}
+            overrideChange={activeSummary?.dayChange}
+            overrideChangePercent={activeSummary?.dayChangePercent}
+            filterInvestmentTypes={globalFilters?.investmentTypes}
+            filterAccountTypes={globalFilters?.accountTypes}
           />
         </section>
 
@@ -176,12 +198,14 @@ export default function Dashboard() {
             setCustomStart={setCustomStart}
             customEnd={customEnd}
             setCustomEnd={setCustomEnd}
+            filterInvestmentTypes={globalFilters?.investmentTypes}
+            filterAccountTypes={globalFilters?.accountTypes}
           />
         </section>
 
       </div>
 
-      {summary?.lastUpdated && (
+      {activeSummary?.lastUpdated && (
         <div style={{
           textAlign: 'right',
           fontSize: '0.75rem',
@@ -190,7 +214,7 @@ export default function Dashboard() {
           paddingRight: '1rem',
           opacity: 0.8
         }}>
-          Last Data Refresh: {new Date(summary.lastUpdated).toLocaleString()}
+          Last Data Refresh: {new Date(activeSummary.lastUpdated).toLocaleString()}
         </div>
       )}
     </div>

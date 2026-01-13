@@ -31,6 +31,8 @@ interface PortfolioChartProps {
     customEnd: string;
     setCustomEnd: (date: string) => void;
     externalData?: HistoryPoint[]; // New prop for controlled mode
+    filterInvestmentTypes?: string[];
+    filterAccountTypes?: string[];
 }
 
 export const RANGES = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '2Y', '3Y', '5Y', '10Y', 'ALL'];
@@ -43,7 +45,9 @@ export default function PortfolioChart({
     customEnd,
     setCustomEnd,
     externalData,
-    hideControls
+    hideControls,
+    filterInvestmentTypes,
+    filterAccountTypes
 }: PortfolioChartProps & { hideControls?: boolean }) {
     const [data, setData] = useState<HistoryPoint[]>([]);
     // Local state removed
@@ -65,6 +69,12 @@ export default function PortfolioChart({
                 if (range === 'CUSTOM' && customStart && customEnd) {
                     url += `&startDate=${customStart}&endDate=${customEnd}`;
                 }
+                if (filterInvestmentTypes && filterInvestmentTypes.length > 0) {
+                    url += `&investmentTypes=${filterInvestmentTypes.join(',')}`;
+                }
+                if (filterAccountTypes && filterAccountTypes.length > 0) {
+                    url += `&accountTypes=${filterAccountTypes.join(',')}`;
+                }
 
                 const res = await fetch(url);
                 const json = await res.json();
@@ -81,7 +91,7 @@ export default function PortfolioChart({
         if (range !== 'CUSTOM' || (customStart && customEnd)) {
             fetchData();
         }
-    }, [range, customStart, customEnd, externalData, currency]);
+    }, [range, customStart, customEnd, externalData, currency, filterInvestmentTypes, filterAccountTypes]);
 
     // Convert data to selected currency (only if not external, as external data is already converted)
     const chartData = displayData.map(point => ({

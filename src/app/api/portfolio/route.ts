@@ -11,10 +11,13 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const targetCurrency = searchParams.get('currency') || 'USD';
-        console.log(`[PortfolioAPI] Processing for currency: ${targetCurrency}`);
+        const investmentTypes = searchParams.get('investmentTypes')?.split(',') || [];
+        const accountTypes = searchParams.get('accountTypes')?.split(',') || [];
+
+        console.log(`[PortfolioAPI] Processing for currency: ${targetCurrency}, Filters: Inv=${investmentTypes}, Acc=${accountTypes}`);
 
         // 1. Fetch all activities and activity types
-        const [activities, activityTypes] = await Promise.all([
+        const [allActivities, activityTypes] = await Promise.all([
             prisma.activity.findMany({
                 include: {
                     investment: true,
@@ -25,6 +28,15 @@ export async function GET(request: NextRequest) {
             }),
             prisma.activityType.findMany()
         ]);
+
+        // Apply Filters
+        let activities = allActivities;
+        if (investmentTypes.length > 0) {
+            activities = activities.filter(a => investmentTypes.includes(a.investment.type));
+        }
+        if (accountTypes.length > 0) {
+            activities = activities.filter(a => a.account && accountTypes.includes(a.account.type));
+        }
 
         // Map activity type name to behavior
         const behaviorMap = new Map<string, string>();
