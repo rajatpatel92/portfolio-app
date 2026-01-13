@@ -1,6 +1,6 @@
 'use client';
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useCurrency } from '@/context/CurrencyContext';
 import styles from './AllocationChart.module.css';
 
@@ -21,12 +21,14 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 
 export default function AllocationChart(props: AllocationChartProps) {
     const { title, data, onSelect, selectedName } = props;
-    const { format, convert, currency } = useCurrency();
+    const { format, convert } = useCurrency();
 
     const chartData = data.map(item => ({
         ...item,
         value: (props.isPreConverted ? item.value : convert(item.value, 'USD'))
     })).filter(item => item.value > 0);
+
+    const totalValue = chartData.reduce((sum, item) => sum + item.value, 0);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleClick = (data: any, index: number, e: React.MouseEvent) => {
@@ -47,16 +49,17 @@ export default function AllocationChart(props: AllocationChartProps) {
     return (
         <div className={styles.container}>
             <h3 className={styles.title}>{title}</h3>
-            <div className={styles.chartWrapper}>
-                <ResponsiveContainer width="100%" height={300}>
+
+            <div className={styles.chartArea}>
+                <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
                             data={chartData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={60}
+                            innerRadius={50}
                             outerRadius={90}
-                            paddingAngle={5}
+                            paddingAngle={2}
                             dataKey="value"
                             onClick={handleClick}
                             cursor="pointer"
@@ -81,26 +84,31 @@ export default function AllocationChart(props: AllocationChartProps) {
                             }}
                             itemStyle={{ color: 'var(--text-primary)' }}
                         />
-                        <Legend
-                            layout="horizontal"
-                            verticalAlign="bottom"
-                            align="center"
-                            iconType="circle"
-                            wrapperStyle={{ paddingTop: '10px' }}
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            formatter={(value, entry: any) => {
-                                const { payload } = entry;
-                                const total = chartData.reduce((sum, item) => sum + item.value, 0);
-                                const percent = (payload.value / total) * 100;
-                                return (
-                                    <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem', marginRight: '0.5rem' }}>
-                                        {value} <span style={{ opacity: 0.7 }}>({percent.toFixed(1)}%)</span>
-                                    </span>
-                                );
-                            }}
-                        />
                     </PieChart>
                 </ResponsiveContainer>
+            </div>
+
+            <div className={styles.legendContainer}>
+                {chartData.map((entry, index) => {
+                    const isActive = !selectedName || selectedName === entry.name;
+                    const percent = totalValue > 0 ? (entry.value / totalValue) * 100 : 0;
+
+                    return (
+                        <div
+                            key={`legend-${index}`}
+                            className={`${styles.legendItem} ${isActive ? styles.active : styles.inactive}`}
+                            onClick={(e) => handleClick(entry, index, e)}
+                        >
+                            <div
+                                className={styles.legendColor}
+                                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                            />
+                            <span>
+                                {entry.name} <span style={{ opacity: 0.7 }}>({percent.toFixed(1)}%)</span>
+                            </span>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

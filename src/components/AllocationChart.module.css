@@ -13,9 +13,71 @@
     margin-bottom: 1.5rem;
 }
 
-.chartWrapper {
+.chartArea {
     width: 100%;
-    height: 300px;
+    height: 250px;
+}
+
+.legendContainer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    max-height: 120px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+    /* Space for scrollbar */
+}
+
+/* Custom Scrollbar */
+.legendContainer::-webkit-scrollbar {
+    width: 4px;
+}
+
+.legendContainer::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.legendContainer::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+.legendItem {
+    display: flex;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    background-color: transparent;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.legendItem:hover {
+    background-color: var(--hover-bg);
+}
+
+.legendItem.active {
+    background-color: var(--highlight-bg, rgba(59, 130, 246, 0.1));
+    color: var(--text-primary);
+    border-color: var(--primary);
+    font-weight: 500;
+}
+
+.legendItem.inactive {
+    opacity: 0.5;
+}
+
+.legendColor {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
 }
 
 .empty {
