@@ -152,6 +152,8 @@ async function main() {
         { name: 'STOCK_SPLIT', behavior: 'SPLIT', isSystem: true },
         { name: 'DEPOSIT', behavior: 'ADD', isSystem: true },
         { name: 'WITHDRAWAL', behavior: 'REMOVE', isSystem: true },
+        { name: 'TRANSFER_IN', behavior: 'ADD', isSystem: true },
+        { name: 'TRANSFER_OUT', behavior: 'REMOVE', isSystem: true },
     ];
 
     for (const type of activityTypes) {

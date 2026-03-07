@@ -59,6 +59,8 @@ export async function GET(request: Request, props: { params: Promise<{ symbol: s
         if (!behaviorMap.has('SELL')) behaviorMap.set('SELL', 'REMOVE');
         if (!behaviorMap.has('DIVIDEND')) behaviorMap.set('DIVIDEND', 'NEUTRAL');
         if (!behaviorMap.has('STOCK_SPLIT')) behaviorMap.set('STOCK_SPLIT', 'SPLIT');
+        if (!behaviorMap.has('TRANSFER_IN')) behaviorMap.set('TRANSFER_IN', 'ADD');
+        if (!behaviorMap.has('TRANSFER_OUT')) behaviorMap.set('TRANSFER_OUT', 'REMOVE');
 
         let firstBuyDate: Date | null = null;
 

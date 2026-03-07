@@ -175,6 +175,16 @@
     color: var(--warning);
 }
 
+.badge.TRANSFER_IN {
+    background: rgba(168, 85, 247, 0.1); /* Purple */
+    color: #a855f7;
+}
+
+.badge.TRANSFER_OUT {
+    background: rgba(236, 72, 153, 0.1); /* Pink */
+    color: #ec4899;
+}
+
 .pagination {
     padding: 1rem;
     border-top: 1px solid var(--card-border);

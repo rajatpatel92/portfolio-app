@@ -11,6 +11,7 @@ import DateInput from '@/components/DateInput';
 import Papa from 'papaparse';
 import BulkUploadModal from '@/components/BulkUploadModal';
 import BulkEditModal from '@/components/BulkEditModal';
+import TransferAccountsModal from '@/components/TransferAccountsModal';
 import { formatQuantity } from '@/lib/format';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -57,6 +58,7 @@ export default function ActivitiesPage() {
     const [showImportModal, setShowImportModal] = useState(false);
     const [showDividendModal, setShowDividendModal] = useState(false);
     const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+    const [showTransferModal, setShowTransferModal] = useState(false);
 
     // Dividend Fetching States
     type DividendStep = 'SELECTION' | 'SCANNING' | 'RESULTS';
@@ -713,6 +715,28 @@ export default function ActivitiesPage() {
                                             >
                                                 Import CSV
                                             </button>
+                                            <button
+                                                onClick={() => {
+                                                    setShowTransferModal(true);
+                                                    setShowDesktopMenu(false);
+                                                }}
+                                                style={{
+                                                    display: 'block',
+                                                    width: '100%',
+                                                    textAlign: 'left',
+                                                    padding: '0.75rem 1rem',
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    color: 'var(--text-primary)',
+                                                    cursor: 'pointer',
+                                                    fontSize: '0.875rem',
+                                                    borderTop: '1px solid var(--card-border)'
+                                                }}
+                                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                            >
+                                                Transfer Accounts
+                                            </button>
                                         </div>
                                     </>
                                 )}
@@ -841,6 +865,26 @@ export default function ActivitiesPage() {
                                             }}
                                         >
                                             Import CSV
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowTransferModal(true);
+                                                setShowMobileMenu(false);
+                                            }}
+                                            style={{
+                                                display: 'block',
+                                                width: '100%',
+                                                textAlign: 'left',
+                                                padding: '0.75rem 1rem',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: 'var(--text-primary)',
+                                                cursor: 'pointer',
+                                                fontSize: '0.875rem',
+                                                borderTop: '1px solid var(--card-border)'
+                                            }}
+                                        >
+                                            Transfer Accounts
                                         </button>
                                     </div>
                                 </>
@@ -1121,6 +1165,16 @@ export default function ActivitiesPage() {
                     onSuccess={() => {
                         fetchActivities();
                         setShowImportModal(false);
+                    }}
+                />
+            )}
+
+            {showTransferModal && (
+                <TransferAccountsModal
+                    onClose={() => setShowTransferModal(false)}
+                    onSuccess={() => {
+                        fetchActivities();
+                        setShowTransferModal(false);
                     }}
                 />
             )}
