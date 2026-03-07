@@ -13,6 +13,9 @@ interface Account {
     type: string;
     platformId: string;
     currency: string;
+    platform?: {
+        name: string;
+    };
 }
 
 export default function TransferAccountsModal({ onClose, onSuccess }: TransferAccountsModalProps) {
@@ -98,7 +101,7 @@ export default function TransferAccountsModal({ onClose, onSuccess }: TransferAc
                         >
                             <option value="">Select Source Account</option>
                             {accounts.map(acc => (
-                                <option key={acc.id} value={acc.id}>{acc.name} ({acc.type})</option>
+                                <option key={acc.id} value={acc.id}>{acc.name} - {acc.type} - {acc.platform?.name || 'Unknown'}</option>
                             ))}
                         </select>
                         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>All positive holdings will be transferred out of this account.</p>
@@ -113,7 +116,7 @@ export default function TransferAccountsModal({ onClose, onSuccess }: TransferAc
                         >
                             <option value="">Select Destination Account</option>
                             {accounts.map(acc => (
-                                <option key={acc.id} value={acc.id} disabled={acc.id === sourceAccountId}>{acc.name} ({acc.type})</option>
+                                <option key={acc.id} value={acc.id} disabled={acc.id === sourceAccountId}>{acc.name} - {acc.type} - {acc.platform?.name || 'Unknown'}</option>
                             ))}
                         </select>
                         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>The holdings will be transferred into this account and their average cost will be preserved.</p>
