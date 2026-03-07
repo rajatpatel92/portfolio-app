@@ -7,7 +7,7 @@ export function formatQuantity(quantity: number | undefined | null): string {
     if (quantity === undefined || quantity === null) return '-';
     // Use standard locale formatting, limit to 4 decimals
     // If integer, shows no decimals. If 1.123456, shows 1.1235
-    return quantity.toLocaleString(undefined, {
+    return quantity.toLocaleString('en-US', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 4
     });
