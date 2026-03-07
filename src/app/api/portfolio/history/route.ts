@@ -18,7 +18,6 @@ export async function GET(request: Request) {
     try {
         // 1. Determine date range
         let startDate = new Date();
-        // const endDate = new Date(); // Unused
 
         if (range === 'CUSTOM' && customStart && customEnd) {
             startDate = new Date(customStart);
@@ -43,8 +42,6 @@ export async function GET(request: Request) {
         // Store the requested start date for filtering
         const filterStartDate = new Date(startDate);
         const filterStartDateStr = filterStartDate.toISOString().split('T')[0];
-
-        // console.log(`[HistoryAPI] Range=${range}, FilterStart=${filterStartDateStr}, CalcStart=${startDate.toISOString()}`);
 
         // 2. Fetch ALL activities (include Account for filtering)
         const allActivities = await prisma.activity.findMany({
@@ -104,7 +101,6 @@ export async function GET(request: Request) {
                 const CACHE_TTL = 5 * 60 * 1000; // 5 Minutes
 
                 if (cached && cached.key === CACHE_KEY && (Date.now() - cached.timestamp < CACHE_TTL)) {
-                    // console.log(`[HistoryAPI] Serving 1D Cache (${((Date.now() - cached.timestamp) / 1000).toFixed(0)}s old)`);
                     return NextResponse.json(cached.data);
                 }
 
