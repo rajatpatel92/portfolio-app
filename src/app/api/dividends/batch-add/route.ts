@@ -12,24 +12,38 @@ export async function POST(request: Request) {
 
         const results = [];
 
+        // 1. Collect Unique Keys for Bulk Queries
+        const uniqueSymbols = [...new Set(dividends.map(div => div.symbol))];
+        const uniqueAccountIds = [...new Set(dividends.filter(div => !!div.accountId).map(div => div.accountId))];
+
+        // 2. Bulk Fetch Required Data
+        const [investments, accounts] = await Promise.all([
+            prisma.investment.findMany({
+                where: { symbol: { in: uniqueSymbols } }
+            }),
+            prisma.account.findMany({
+                where: { id: { in: uniqueAccountIds } }
+            })
+        ]);
+
+        // 3. Create Lookup Maps
+        const investmentMap = new Map(investments.map(inv => [inv.symbol, inv]));
+        const accountMap = new Map(accounts.map(acc => [acc.id, acc]));
+
         for (const div of dividends) {
             try {
-                // 1. Find Investment
-                const investment = await prisma.investment.findUnique({
-                    where: { symbol: div.symbol }
-                });
+                // 1. Find Investment from Map
+                const investment = investmentMap.get(div.symbol);
 
                 if (!investment) {
                     results.push({ symbol: div.symbol, status: 'error', message: 'Investment not found' });
                     continue;
                 }
 
-                // 2. Find Account and Platform
+                // 2. Find Account and Platform from Map
                 let platformId = null;
                 if (div.accountId) {
-                    const account = await prisma.account.findUnique({
-                        where: { id: div.accountId }
-                    });
+                    const account = accountMap.get(div.accountId);
                     if (account) {
                         platformId = account.platformId;
                     }
