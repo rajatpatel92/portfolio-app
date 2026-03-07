@@ -35,11 +35,9 @@ export async function getHoldingsAtDate(symbol: string, date: Date): Promise<Rec
         if (activity.type === 'BUY') {
             holdings[accId] += activity.quantity;
         } else if (activity.type === 'SELL') {
-            // FIX: Handle signed or unsigned quantities for SELL
-            // Ideally SELLs decrease holdings, so we subtract the absolute value
             holdings[accId] -= Math.abs(activity.quantity);
-        } else if (activity.type === 'SPLIT') {
-            holdings[accId] += activity.quantity;
+        } else if (activity.type === 'SPLIT' || activity.type === 'STOCK_SPLIT') {
+            holdings[accId] *= activity.quantity;
         }
     }
 
