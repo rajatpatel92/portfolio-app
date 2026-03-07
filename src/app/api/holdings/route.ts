@@ -32,6 +32,8 @@ export async function GET(request: Request) {
         // Default behaviors
         if (!behaviorMap.has('BUY')) behaviorMap.set('BUY', 'ADD');
         if (!behaviorMap.has('SELL')) behaviorMap.set('SELL', 'REMOVE');
+        if (!behaviorMap.has('TRANSFER_IN')) behaviorMap.set('TRANSFER_IN', 'ADD');
+        if (!behaviorMap.has('TRANSFER_OUT')) behaviorMap.set('TRANSFER_OUT', 'REMOVE');
 
         let quantity = 0;
 

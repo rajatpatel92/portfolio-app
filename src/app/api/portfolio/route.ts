@@ -46,6 +46,8 @@ export async function GET(request: NextRequest) {
         if (!behaviorMap.has('BUY')) behaviorMap.set('BUY', 'ADD');
         if (!behaviorMap.has('SELL')) behaviorMap.set('SELL', 'REMOVE');
         if (!behaviorMap.has('DIVIDEND')) behaviorMap.set('DIVIDEND', 'NEUTRAL');
+        if (!behaviorMap.has('TRANSFER_IN')) behaviorMap.set('TRANSFER_IN', 'ADD');
+        if (!behaviorMap.has('TRANSFER_OUT')) behaviorMap.set('TRANSFER_OUT', 'REMOVE');
 
         // Fetch Users for Display Name mapping
         const users = await prisma.user.findMany();
