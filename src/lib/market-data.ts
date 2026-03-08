@@ -189,7 +189,7 @@ export class MarketDataService {
                 newsCount: 0,
                 enableNavLinks: false,
                 enableEnhancedTrivialQuery: false
-            })) as any;
+            }, { validateResult: false })) as any;
 
             if (!results.quotes) return [];
 
@@ -252,7 +252,7 @@ export class MarketDataService {
             let quoteRealtime = null;
             let lastError: any = null;
             try {
-                quoteRealtime = await apiThrottler.add(() => yahooFinance.quote(symbol));
+                quoteRealtime = await apiThrottler.add(() => yahooFinance.quote(symbol, {}, { validateResult: false })) as any;
             } catch (e: any) {
                 lastError = e;
                 // if (process.env.DEBUG) console.warn(`API Error (Quote) for ${symbol}: ${e.message || e}`);
@@ -262,7 +262,7 @@ export class MarketDataService {
             try {
                 // Only fetch summary if we really need it or if quote failed? 
                 // We need it for sector/country/dividend info which are important.
-                quoteSummary = await apiThrottler.add(() => yahooFinance.quoteSummary(symbol, { modules: ['summaryProfile', 'summaryDetail', 'topHoldings', 'calendarEvents', 'defaultKeyStatistics'] }));
+                quoteSummary = await apiThrottler.add(() => yahooFinance.quoteSummary(symbol, { modules: ['summaryProfile', 'summaryDetail', 'topHoldings', 'calendarEvents', 'defaultKeyStatistics'] }, { validateResult: false })) as any;
             } catch (e: any) {
                 if (!lastError) lastError = e;
                 // console.warn(`API Error (Summary) for ${symbol}: ${e.message || e}`);
