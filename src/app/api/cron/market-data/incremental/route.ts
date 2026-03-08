@@ -21,6 +21,12 @@ export async function GET(request: Request) {
         const investments = await prisma.investment.findMany({ select: { symbol: true } });
         const uniqueSymbols = Array.from(new Set(investments.map(i => i.symbol)));
 
+        // Add Benchmark Symbols (both system and user configured)
+        const benchmarks = await prisma.benchmark.findMany({ select: { symbol: true } });
+        benchmarks.forEach(b => {
+            if (!uniqueSymbols.includes(b.symbol)) uniqueSymbols.push(b.symbol);
+        });
+
         // Add Currencies
         const currencyPairs = ['CAD=X', 'EUR=X', 'GBP=X', 'INR=X', 'AUD=X', 'JPY=X'];
         currencyPairs.forEach(pair => {
