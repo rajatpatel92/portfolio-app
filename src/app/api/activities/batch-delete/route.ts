@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
 
 export async function POST(req: Request) {
-    try {
-        // TODO: Add proper auth check once middleware/session issue is resolved.
-        // Currently matching other APIs which are unprotected.
+    const session = await auth();
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
+    try {
         const { ids } = await req.json();
 
         if (!Array.isArray(ids) || ids.length === 0) {
