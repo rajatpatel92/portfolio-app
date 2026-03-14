@@ -29,11 +29,11 @@ export async function POST(req: NextRequest) {
         });
 
         const existingSymbolMap = new Map(existingInvestments.map(i => [i.symbol, i]));
-        const newInvestments: any[] = [];
 
-        // Prepare new investments
-        for (const symbol of uniqueSymbols) {
-            if (!existingSymbolMap.has(symbol)) {
+        // Prepare new investments in parallel
+        const newInvestments = await Promise.all(Array.from(uniqueSymbols)
+            .filter(symbol => !existingSymbolMap.has(symbol))
+            .map(async (symbol) => {
                 // Find the first activity with this symbol to get metadata
                 const activity = activities.find((a: any) => a.Symbol === symbol);
 
@@ -66,14 +66,14 @@ export async function POST(req: NextRequest) {
                     console.error(`Failed to fetch metadata for ${symbol}`, err);
                 }
 
-                newInvestments.push({
+                return {
                     symbol: symbol,
                     name: name || symbol, // Fallback to symbol
                     type: type || 'EQUITY', // Default
                     currencyCode: currency || 'USD' // Default
-                });
-            }
-        }
+                };
+            })
+        );
 
         // Create missing investments
         if (newInvestments.length > 0) {
