@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { MarketDataService } from '@/lib/market-data';
+import { auth } from '@/auth';
 
 export async function POST(request: Request) {
+    const session = await auth();
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     try {
         const body = await request.json();
         const { symbol, type, date, quantity, price, fee, platformId, accountId, currency } = body;
@@ -76,6 +82,11 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
+    const session = await auth();
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     try {
         const activities = await prisma.activity.findMany({
             include: {

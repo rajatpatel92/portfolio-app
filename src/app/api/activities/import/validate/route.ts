@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import Papa from 'papaparse';
 import { MarketDataService } from '@/lib/market-data';
+import { auth } from '@/auth';
 
 const REQUIRED_FIELDS = ['Date', 'Type', 'Symbol', 'Quantity', 'Price', 'Username', 'Account Type', 'Platform'];
 
 export async function POST(req: NextRequest) {
+    const session = await auth();
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     try {
         const body = await req.json();
         const { csvContent } = body;
