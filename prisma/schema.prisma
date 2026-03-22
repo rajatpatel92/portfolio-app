@@ -152,3 +152,14 @@ model SystemSetting {
   updatedAt DateTime @updatedAt
   description String?
 }
+
+model TargetAllocation {
+  id                    String   @id @default(uuid())
+  symbol                String   @unique
+  targetPercentage      Float    
+  yearlyDriftAdjustment Float?   
+  lastAdjustmentDate    DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+

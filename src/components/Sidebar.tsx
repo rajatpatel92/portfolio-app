@@ -26,7 +26,8 @@ import {
     MdExpandMore,
     MdCalculate,
     MdBarChart,
-    MdAutoAwesome
+    MdAutoAwesome,
+    MdBalance
 } from 'react-icons/md';
 import { signOut } from 'next-auth/react';
 
@@ -81,6 +82,7 @@ export default function Sidebar({ aiEnabled }: { aiEnabled?: boolean }) {
             ]
         },
         { name: 'Activities', href: '/activities', icon: <MdFormatListBulleted size={20} /> },
+        { name: 'Rebalancer', href: '/rebalancer', icon: <MdBalance size={20} /> },
     ];
 
     if (isAIEnabled) {
