@@ -5,13 +5,16 @@ const prisma = new PrismaClient();
 
 async function main() {
     const adminUsername = 'admin';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminPassword = process.env.ADMIN_PASSWORD;
 
     const existingAdmin = await prisma.user.findUnique({
         where: { username: adminUsername },
     });
 
     if (!existingAdmin) {
+        if (!adminPassword) {
+            throw new Error('ADMIN_PASSWORD environment variable is required for initial seeding of the admin user.');
+        }
         const hashedPassword = await bcrypt.hash(adminPassword, 10);
         await prisma.user.create({
             data: {

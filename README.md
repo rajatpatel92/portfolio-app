@@ -61,7 +61,7 @@ The fastest way to get started using the official pre-built image (supports `amd
     AUTH_TRUST_HOST=true
 
     # Seeding
-    ADMIN_PASSWORD="admin123"
+    ADMIN_PASSWORD="your_secure_password_here"
     ```
 
 3.  **Create `docker-compose.yml`**:
@@ -113,7 +113,7 @@ The fastest way to get started using the official pre-built image (supports `amd
 
 5.  **Access the Dashboard:**
     Open [http://localhost:3000](http://localhost:3000).
-    -   **Default Admin Credentials**: `admin` / `admin123` (or as configured in `.env`)
+    -   **Default Admin Credentials**: `admin` / (The password configured in `.env`)
 
 ---
 
