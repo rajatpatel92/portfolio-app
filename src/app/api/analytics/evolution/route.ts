@@ -8,7 +8,6 @@ export async function POST(req: Request) {
     if (!session?.user) {
         return new NextResponse('Unauthorized', { status: 401 });
     }
-    // const session = { user: { id: 'test' } }; // Dummy session
 
     try {
         const { filters, range, currency, mode } = await req.json();
