@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { FaCloudUploadAlt, FaCheckCircle, FaExclamationTriangle, FaSpinner, FaTimes } from 'react-icons/fa';
+import { FaCloudUploadAlt, FaCheckCircle, FaSpinner, FaTimes } from 'react-icons/fa';
 import styles from './BulkUploadModal.module.css';
 
 interface BulkUploadModalProps {
@@ -160,7 +160,7 @@ export default function BulkUploadModal({ onClose, onSuccess }: BulkUploadModalP
                                         </li>
                                     ))}
                                 </ul>
-                                <p className={styles.fixMessage}>Please fix these errors in your CSV and try again.</p>
+                                <p className={styles.validationInstruction}>Please fix these errors in your CSV and try again.</p>
                                 <button
                                     className={styles.secondaryButton}
                                     onClick={() => setStep('UPLOAD')}
