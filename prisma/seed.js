@@ -8,11 +8,14 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const prisma = new client_1.PrismaClient();
 async function main() {
     const adminUsername = 'admin';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminPassword = process.env.ADMIN_PASSWORD;
     const existingAdmin = await prisma.user.findUnique({
         where: { username: adminUsername },
     });
     if (!existingAdmin) {
+        if (!adminPassword) {
+            throw new Error('ADMIN_PASSWORD environment variable is required for initial seeding of the admin user.');
+        }
         const hashedPassword = await bcryptjs_1.default.hash(adminPassword, 10);
         await prisma.user.create({
             data: {
