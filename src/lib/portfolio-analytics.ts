@@ -494,14 +494,22 @@ export class PortfolioAnalytics {
             });
 
             // Process Splits Pre-Market
-            const splitActivities = rawDaysActivities.filter(a => a.type === 'STOCK_SPLIT');
-            const otherActivities = rawDaysActivities.filter(a => a.type !== 'STOCK_SPLIT');
+            const splitActivities = rawDaysActivities.filter(a => a.type === 'STOCK_SPLIT' || a.type === 'SPLIT');
+            const otherActivities = rawDaysActivities.filter(a => a.type !== 'STOCK_SPLIT' && a.type !== 'SPLIT');
 
             splitActivities.forEach(a => {
+                const symbol = a.investment.symbol;
                 // Apply Split Multiplier
                 // e.g. 3:1 Split -> Quantity 3
-                holdings[a.investment.symbol] = (holdings[a.investment.symbol] || 0) * a.quantity;
-                log(`[Pre-Market Split] ${a.investment.symbol} multiplied by ${a.quantity}`);
+                holdings[symbol] = (holdings[symbol] || 0) * a.quantity;
+
+                // Also adjust lastKnownPrice so the passive MV calculation on this day (and next)
+                // doesn't spike if the new market price hasn't arrived yet.
+                if (lastKnownPrices[symbol]) {
+                    lastKnownPrices[symbol] /= a.quantity;
+                }
+
+                log(`[Pre-Market Split] ${symbol} multiplied by ${a.quantity}`);
             });
 
             // Use other activities for Net Flow calculation
@@ -538,7 +546,7 @@ export class PortfolioAnalytics {
                     // Note: If we have NO rate ever, we might assume 1 or 0. Data gaps in FX are bad.
                 }
 
-                if (a.type === 'BUY') {
+                if (a.type === 'BUY' || a.type === 'DEPOSIT') {
                     // Cost = (Qty * Price) + Fee
                     // All in Asset Currency? Usually Price is Asset Currency. Fee might be Account Currency?
                     // Complex. For now, assume uniform currency for simplicity or map Fee separately if needed.
@@ -547,7 +555,7 @@ export class PortfolioAnalytics {
                     netFlow += flowVal * fxRate;
 
                     holdings[a.investment.symbol] = (holdings[a.investment.symbol] || 0) + a.quantity;
-                } else if (a.type === 'SELL') {
+                } else if (a.type === 'SELL' || a.type === 'WITHDRAWAL') {
                     const flowVal = (Math.abs(a.quantity) * a.price) - (a.fee || 0); // Proceeds - Fee
                     netFlow -= flowVal * fxRate; // Outflow is negative
 
@@ -568,8 +576,6 @@ export class PortfolioAnalytics {
                     const divVal = (a.quantity * a.price);
                     dailyDividends += divVal * fxRate;
                     log(`[Dividend] ${a.date} ${symbol}: Qty=${a.quantity}, Price=${a.price}, FX=${fxRate} -> Val=${divVal * fxRate} (DailyTotal=${dailyDividends})`);
-                } else if (a.type === 'STOCK_SPLIT') {
-                    holdings[a.investment.symbol] = (holdings[a.investment.symbol] || 0) * a.quantity;
                 }
 
                 // [FIX]: Ensure we update lastKnownPrices/Fx for the asset involved today.
@@ -578,8 +584,9 @@ export class PortfolioAnalytics {
                 // causing a massive fake "inflow" equal to the entire position value.
                 if (priceMaps[symbol]?.[dateStr]) {
                     lastKnownPrices[symbol] = priceMaps[symbol][dateStr];
-                } else if (a.price > 0 && !lastKnownPrices[symbol]) {
+                } else if (a.price > 0 && !lastKnownPrices[symbol] && a.type !== 'DIVIDEND') {
                     // Fallback to execution price ONLY if we have no market data history
+                    // and this is NOT a dividend (dividend price is not asset price)
                     lastKnownPrices[symbol] = a.price;
                 }
 
@@ -753,9 +760,9 @@ export class PortfolioAnalytics {
         const h: Record<string, number> = {};
         activities.forEach(a => {
             const s = (a as Activity & { investment: { symbol: string } }).investment.symbol;
-            if (a.type === 'BUY') h[s] = (h[s] || 0) + a.quantity;
-            if (a.type === 'SELL') h[s] = (h[s] || 0) - Math.abs(a.quantity);
-            if (a.type === 'STOCK_SPLIT') h[s] = (h[s] || 0) * a.quantity;
+            if (a.type === 'BUY' || a.type === 'DEPOSIT') h[s] = (h[s] || 0) + a.quantity;
+            if (a.type === 'SELL' || a.type === 'WITHDRAWAL') h[s] = (h[s] || 0) - Math.abs(a.quantity);
+            if (a.type === 'STOCK_SPLIT' || a.type === 'SPLIT') h[s] = (h[s] || 0) * a.quantity;
         });
         return h;
     }
