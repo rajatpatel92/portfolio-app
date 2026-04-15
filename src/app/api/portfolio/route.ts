@@ -14,8 +14,6 @@ export async function GET(request: NextRequest) {
         const investmentTypes = searchParams.get('investmentTypes')?.split(',') || [];
         const accountTypes = searchParams.get('accountTypes')?.split(',') || [];
 
-        console.log(`[PortfolioAPI] Processing for currency: ${targetCurrency}, Filters: Inv=${investmentTypes}, Acc=${accountTypes}`);
-
         // 1. Fetch all activities and activity types
         const [allActivities, activityTypes] = await Promise.all([
             prisma.activity.findMany({
@@ -209,7 +207,6 @@ export async function GET(request: NextRequest) {
                     const diffHours = (nowTime - dataTime) / (1000 * 60 * 60);
 
                     if (diffHours > 24) {
-                        // console.log(`[PortfolioAPI] Zeroing 1D change for ${symbol} (Data age: ${diffHours.toFixed(1)}h)`);
                         regularMarketChange = 0;
                         regularMarketChangePercent = 0;
                     }
@@ -469,12 +466,6 @@ export async function GET(request: NextRequest) {
             if (marketData && marketData.regularMarketTime) {
                 const ts = new Date(marketData.regularMarketTime);
 
-                // Debug Stale Data
-                const diff = (new Date().getTime() - ts.getTime()) / 1000 / 60; // Minutes
-                if (diff > 20) {
-                    // console.log(`[PortfolioAPI] Stale Data Detected: ${result.symbol} is ${diff.toFixed(1)} mins old. (Market Time: ${ts.toISOString()})`);
-                }
-
                 if (!latestDataTimestamp || ts > latestDataTimestamp) {
                     latestDataTimestamp = ts;
                 }
@@ -581,8 +572,6 @@ export async function GET(request: NextRequest) {
         let totalGrowth = (totalValue - totalCostBasis) + totalLifetimeDividends;
         const totalGrowthPercent = totalCostBasis > 0 ? (totalGrowth / totalCostBasis) * 100 : 0;
 
-        console.log(`[PortfolioAPI] Total Value (USD): ${totalValue.toFixed(2)}, Cost Basis: ${totalCostBasis.toFixed(2)}, Lifetime Divs: ${totalLifetimeDividends.toFixed(2)}, Growth: ${totalGrowth.toFixed(2)}`);
-
         // Convert to Target Currency
         let finalRate = 1;
         if (targetCurrency !== 'USD') {
@@ -591,7 +580,6 @@ export async function GET(request: NextRequest) {
         }
 
         if (finalRate !== 1) {
-            console.log(`[PortfolioAPI] Converting to ${targetCurrency} at rate ${finalRate}`);
             totalValue *= finalRate;
             totalCostBasis *= finalRate;
             totalDayChange *= finalRate;
