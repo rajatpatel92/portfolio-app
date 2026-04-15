@@ -4,14 +4,8 @@ import { prisma } from '@/lib/prisma';
 
 const yahooFinance = new YahooFinance({
     suppressNotices: ['yahooSurvey'],
-    //fetchOptions: {
-    //    headers: {
-    //        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    //    }
-    //}
 });
 
-// Throttler to prevent 429 Errors
 // Throttler to prevent 429 Errors
 class Throttler {
     private queue: Array<{ fn: () => Promise<any>, resolve: (v: any) => void, reject: (e: any) => void }> = [];
@@ -145,7 +139,6 @@ async function estimateNextDividend(symbol: string): Promise<{ date: Date, amoun
         };
 
     } catch (e) {
-        // console.warn(`Failed to estimate dividend for ${symbol}`);
         return undefined;
     }
 }
@@ -227,7 +220,6 @@ export class MarketDataService {
                 // Return valid cache
                 return {
                     symbol: cached.symbol,
-                    // ... rest of return
                     price: cached.price,
                     currency: cached.currency,
                     regularMarketTime: cached.marketTime || cached.lastUpdated,
@@ -243,8 +235,6 @@ export class MarketDataService {
                 };
             }
 
-            // console.log(`[MarketData] Fetching fresh data for ${symbol} (Force=${forceRefresh}, Stale=${isStale})`);
-
             // 2. Fetch from API (Only if forceRefresh is true OR cache is missing)
             // Fetch both Quote (for realtime price) and Summary (for metadata)
             const now = new Date();
@@ -255,17 +245,13 @@ export class MarketDataService {
                 quoteRealtime = await apiThrottler.add(() => yahooFinance.quote(symbol, {}, { validateResult: false })) as any;
             } catch (e: any) {
                 lastError = e;
-                // if (process.env.DEBUG) console.warn(`API Error (Quote) for ${symbol}: ${e.message || e}`);
             }
 
             let quoteSummary = null;
             try {
-                // Only fetch summary if we really need it or if quote failed? 
-                // We need it for sector/country/dividend info which are important.
                 quoteSummary = await apiThrottler.add(() => yahooFinance.quoteSummary(symbol, { modules: ['summaryProfile', 'summaryDetail', 'topHoldings', 'calendarEvents', 'defaultKeyStatistics'] }, { validateResult: false })) as any;
             } catch (e: any) {
                 if (!lastError) lastError = e;
-                // console.warn(`API Error (Summary) for ${symbol}: ${e.message || e}`);
             }
 
             // If both failed, throw error to trigger cache fallback or cron retry
@@ -357,7 +343,6 @@ export class MarketDataService {
                 if (estimated) {
                     data.exDividendDate = estimated.date;
                     data.estNextDividendAmount = estimated.amount;
-                    // console.log(`[SmartDiv] Projected ${symbol} next div: ${estimated.date.toISOString()} = ${estimated.amount}`);
                 }
             }
 
@@ -512,7 +497,6 @@ export class MarketDataService {
                 return bestQuote ? (bestQuote.close || bestQuote.adjClose) : null;
 
             } catch {
-                // console.warn(`Failed history rate for ${ticker}`, e);
                 return null;
             }
         };
@@ -816,9 +800,6 @@ export class MarketDataService {
             const ytd = new Date(today.getFullYear(), 0, 1);
             prices['YTD'] = findPrice(ytd);
 
-
-            // console.log(`[MarketData] getDailyHistory(${symbol}): Fetched ${quotes.length} points. Updating Cache.`);
-
             // 4. Update Cache
             // DO NOT update 'lastUpdated' here. See getHistoricalPrices.
             const now = new Date();
@@ -1025,11 +1006,7 @@ export class MarketDataService {
                 where: { symbol },
                 data: priceData
             });
-
-            // If not exists, we don't insert partial data. 
-            // The full job handles creation.
         } catch (error) {
-            // console.warn(`[FastRefresh] Failed for ${symbol}`, error);
             throw error;
         }
     }
@@ -1067,7 +1044,6 @@ export class MarketDataService {
 
         // 1. Return Cache if Valid
         if (cached && (now - cached.timestamp < this.INTRADAY_TTL)) {
-            // console.log(`[MarketData] Serving intraday cache for ${symbol}`);
             return cached.data;
         }
 
@@ -1100,7 +1076,6 @@ export class MarketDataService {
             return data;
 
         } catch (error) {
-            // console.warn(`[FastRefresh] Failed for ${symbol}`, error);
             throw error;
         }
     }
