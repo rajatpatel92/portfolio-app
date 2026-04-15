@@ -148,7 +148,7 @@ export class SplitService {
         relevantAccounts: Set<string>,
         hasUnassigned: boolean
     ) {
-        const activities = Array.from(relevantAccounts).map(accountId => ({
+        const activities: any[] = Array.from(relevantAccounts).map(accountId => ({
             investmentId,
             type: 'STOCK_SPLIT',
             date,
