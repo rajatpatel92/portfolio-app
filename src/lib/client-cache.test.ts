@@ -1,29 +1,45 @@
 import test from 'node:test';
 import assert from 'node:assert';
-import { ClientCache } from './client-cache.ts';
 
-// Mock store
-let mockStore: Record<string, string> = {};
-
-// Mock localStorage object
-const mockLocalStorage = {
-    getItem: (key: string) => mockStore[key] || null,
-    setItem: (key: string, value: string) => { mockStore[key] = String(value); },
-    removeItem: (key: string) => { delete mockStore[key]; },
-    clear: () => { mockStore = {}; },
-    get length() { return Object.keys(mockStore).length; }
+// Mocking browser environment before importing ClientCache
+const storage: Record<string, string> = {};
+const localStorageMock = {
+    getItem: (key: string) => storage[key] || null,
+    setItem: (key: string, value: string) => {
+        storage[key] = String(value);
+        (localStorageMock as any)[key] = String(value);
+    },
+    removeItem: (key: string) => {
+        delete storage[key];
+        delete (localStorageMock as any)[key];
+    },
+    clear: () => {
+        Object.keys(storage).forEach(k => {
+            delete (localStorageMock as any)[k];
+            delete storage[k];
+        });
+    },
+    get length() {
+        return Object.keys(storage).length;
+    }
 };
 
-// Set up globals
-global.window = {} as any;
-global.btoa = (str: string) => Buffer.from(str).toString('base64');
-global.DOMException = class extends Error {
+(globalThis as any).localStorage = localStorageMock;
+(globalThis as any).window = {};
+(globalThis as any).btoa = (str: string) => Buffer.from(str).toString('base64');
+
+// DOMException mock for QuotaExceededError
+class MockDOMException extends Error {
     name: string;
     constructor(message: string, name: string) {
         super(message);
         this.name = name;
     }
-} as any;
+}
+(globalThis as any).DOMException = MockDOMException;
+
+// Now import ClientCache
+import { ClientCache } from './client-cache.ts';
 
 const CACHE_PREFIX = 'portfolio_cache_';
 const CURRENT_VERSION = 2;
@@ -31,18 +47,17 @@ const DEFAULT_TTL = 24 * 60 * 60 * 1000;
 
 test('ClientCache', async (t) => {
     t.beforeEach(() => {
-        mockStore = {};
-        global.window = {} as any;
-        global.localStorage = mockLocalStorage as any;
+        // Clear storage before each test
+        localStorageMock.clear();
+        (globalThis as any).window = {};
     });
 
     await t.test('get', async (t) => {
         await t.test('returns null if window is undefined', () => {
-            const originalWindow = global.window;
-            // @ts-ignore
-            global.window = undefined;
+            const originalWindow = (globalThis as any).window;
+            delete (globalThis as any).window;
             assert.strictEqual(ClientCache.get('test'), null);
-            global.window = originalWindow;
+            (globalThis as any).window = originalWindow;
         });
 
         await t.test('returns null if item does not exist', () => {
@@ -56,7 +71,7 @@ test('ClientCache', async (t) => {
                 data,
                 version: CURRENT_VERSION
             };
-            mockStore[CACHE_PREFIX + 'test'] = JSON.stringify(entry);
+            storage[CACHE_PREFIX + 'test'] = JSON.stringify(entry);
             assert.deepStrictEqual(ClientCache.get('test'), data);
         });
 
@@ -66,9 +81,9 @@ test('ClientCache', async (t) => {
                 data: 'old',
                 version: 1
             };
-            mockStore[CACHE_PREFIX + 'test'] = JSON.stringify(entry);
+            localStorageMock.setItem(CACHE_PREFIX + 'test', JSON.stringify(entry));
             assert.strictEqual(ClientCache.get('test'), null);
-            assert.strictEqual(mockStore[CACHE_PREFIX + 'test'], undefined);
+            assert.strictEqual(storage[CACHE_PREFIX + 'test'], undefined);
         });
 
         await t.test('returns null and removes item if expired', () => {
@@ -77,31 +92,31 @@ test('ClientCache', async (t) => {
                 data: 'expired',
                 version: CURRENT_VERSION
             };
-            mockStore[CACHE_PREFIX + 'test'] = JSON.stringify(entry);
+            localStorageMock.setItem(CACHE_PREFIX + 'test', JSON.stringify(entry));
             assert.strictEqual(ClientCache.get('test'), null);
-            assert.strictEqual(mockStore[CACHE_PREFIX + 'test'], undefined);
+            assert.strictEqual(storage[CACHE_PREFIX + 'test'], undefined);
         });
 
-        await t.test('handles JSON.parse errors', () => {
-            mockStore[CACHE_PREFIX + 'test'] = 'invalid json';
-            assert.strictEqual(ClientCache.get('test'), null);
+        await t.test('handles malformed JSON', () => {
+            storage[CACHE_PREFIX + 'malformed'] = 'invalid json';
+            (localStorageMock as any)[CACHE_PREFIX + 'malformed'] = 'invalid json';
+            assert.strictEqual(ClientCache.get('malformed'), null);
         });
     });
 
     await t.test('set', async (t) => {
         await t.test('does nothing if window is undefined', () => {
-            const originalWindow = global.window;
-            // @ts-ignore
-            global.window = undefined;
+            const originalWindow = (globalThis as any).window;
+            delete (globalThis as any).window;
             ClientCache.set('test', 'data');
-            assert.strictEqual(mockStore[CACHE_PREFIX + 'test'], undefined);
-            global.window = originalWindow;
+            assert.strictEqual(Object.keys(storage).length, 0);
+            (globalThis as any).window = originalWindow;
         });
 
         await t.test('correctly stores data', () => {
             const data = { key: 'value' };
             ClientCache.set('test', data);
-            const item = mockStore[CACHE_PREFIX + 'test'];
+            const item = storage[CACHE_PREFIX + 'test'];
             assert.ok(item);
             const entry = JSON.parse(item!);
             assert.strictEqual(entry.version, CURRENT_VERSION);
@@ -111,30 +126,29 @@ test('ClientCache', async (t) => {
 
         await t.test('handles QuotaExceededError by clearing and retrying', () => {
             let callCount = 0;
-            mockStore[CACHE_PREFIX + 'other'] = 'some data';
+            storage[CACHE_PREFIX + 'other'] = 'some data';
+            (localStorageMock as any)[CACHE_PREFIX + 'other'] = 'some data';
+            storage['not_our_prefix'] = 'leave me alone';
+            (localStorageMock as any)['not_our_prefix'] = 'leave me alone';
 
-            const originalLocalStorage = global.localStorage;
-            global.localStorage = {
-                ...mockLocalStorage,
-                setItem: (key: string, value: string) => {
-                    callCount++;
-                    if (callCount === 1) {
-                        throw new (global.DOMException as any)('Quota exceeded', 'QuotaExceededError');
-                    }
-                    mockStore[key] = String(value);
-                },
-                // Crucially, ClientCache.clear() will use Object.keys(localStorage)
-                // To make that work, we need the keys to be on this object
-                [CACHE_PREFIX + 'other']: 'some data'
-            } as any;
+            const originalSetItem = localStorageMock.setItem;
+            localStorageMock.setItem = (key: string, value: string) => {
+                callCount++;
+                if (callCount === 1) {
+                    throw new MockDOMException('Quota exceeded', 'QuotaExceededError');
+                }
+                storage[key] = String(value);
+                (localStorageMock as any)[key] = String(value);
+            };
 
             ClientCache.set('test', 'new data');
 
             assert.strictEqual(callCount, 2);
-            assert.strictEqual(mockStore[CACHE_PREFIX + 'other'], undefined);
-            assert.ok(mockStore[CACHE_PREFIX + 'test']);
+            assert.strictEqual(storage[CACHE_PREFIX + 'other'], undefined); // Cleared
+            assert.strictEqual(storage['not_our_prefix'], 'leave me alone'); // Not cleared
+            assert.ok(storage[CACHE_PREFIX + 'test']); // Retried successfully
 
-            global.localStorage = originalLocalStorage;
+            localStorageMock.setItem = originalSetItem;
         });
     });
 
@@ -152,33 +166,29 @@ test('ClientCache', async (t) => {
         });
 
         await t.test('handles nested objects and arrays', () => {
-            const params = {
-                filter: { type: 'buy', tags: ['a', 'b'] },
-                ids: [1, 2]
-            };
-            const key = ClientCache.generateKey('base', params);
-            assert.ok(key.startsWith('base_'));
+            const base = 'nested';
+            const params1 = { filters: ['z', 'a'], options: { y: 2, x: 1 } };
+            const params2 = { options: { x: 1, y: 2 }, filters: ['a', 'z'] };
+
+            const key1 = ClientCache.generateKey(base, params1);
+            const key2 = ClientCache.generateKey(base, params2);
+
+            assert.strictEqual(key1, key2);
         });
     });
 
     await t.test('clear', async (t) => {
-        await t.test('only removes items with prefix', () => {
-            mockStore[CACHE_PREFIX + '1'] = 'data1';
-            mockStore['other_key'] = 'data2';
-
-            const originalLocalStorage = global.localStorage;
-            global.localStorage = {
-                ...mockLocalStorage,
-                [CACHE_PREFIX + '1']: 'data1',
-                'other_key': 'data2'
-            } as any;
+        await t.test('removes only prefixed keys', () => {
+            localStorageMock.setItem(CACHE_PREFIX + '1', 'val1');
+            localStorageMock.setItem(CACHE_PREFIX + '2', 'val2');
+            storage['other_app'] = 'val3';
+            (localStorageMock as any)['other_app'] = 'val3';
 
             ClientCache.clear();
 
-            assert.strictEqual(mockStore[CACHE_PREFIX + '1'], undefined);
-            assert.strictEqual(mockStore['other_key'], 'data2');
-
-            global.localStorage = originalLocalStorage;
+            assert.strictEqual(storage[CACHE_PREFIX + '1'], undefined);
+            assert.strictEqual(storage[CACHE_PREFIX + '2'], undefined);
+            assert.strictEqual(storage['other_app'], 'val3');
         });
     });
 });
