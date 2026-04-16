@@ -15,6 +15,7 @@ export async function GET() {
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
         const updated = [];
+        const updateOperations = [];
 
         for (const target of targets) {
             // Compare against last adjustment date or creation date
@@ -23,19 +24,26 @@ export async function GET() {
             if (referenceDate <= oneYearAgo) {
                 const newTarget = Math.max(0, target.targetPercentage + (target.yearlyDriftAdjustment || 0));
                 
-                const res = await prisma.targetAllocation.update({
-                    where: { id: target.id },
-                    data: {
-                        targetPercentage: newTarget,
-                        lastAdjustmentDate: new Date()
-                    }
-                });
+                updateOperations.push(
+                    prisma.targetAllocation.update({
+                        where: { id: target.id },
+                        data: {
+                            targetPercentage: newTarget,
+                            lastAdjustmentDate: new Date()
+                        }
+                    })
+                );
+
                 updated.push({
                     symbol: target.symbol,
                     oldTarget: target.targetPercentage,
                     newTarget: newTarget
                 });
             }
+        }
+
+        if (updateOperations.length > 0) {
+            await prisma.$transaction(updateOperations);
         }
 
         return NextResponse.json({

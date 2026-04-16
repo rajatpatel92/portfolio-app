@@ -11,6 +11,7 @@ export async function POST(request: Request) {
         }
 
         const results = [];
+        const activitiesToCreate = [];
 
         // 1. Collect Unique Keys for Bulk Queries
         const uniqueSymbols = [...new Set(dividends.map(div => div.symbol))];
@@ -49,19 +50,17 @@ export async function POST(request: Request) {
                     }
                 }
 
-                // 3. Create Dividend Activity
-                await prisma.activity.create({
-                    data: {
-                        investmentId: investment.id,
-                        type: 'DIVIDEND',
-                        date: new Date(div.date),
-                        quantity: div.quantity,
-                        price: div.rate, // Storing rate in price field
-                        fee: 0,
-                        currency: div.currency,
-                        accountId: div.accountId || null,
-                        platformId: platformId
-                    }
+                // 3. Prepare Dividend Activity
+                activitiesToCreate.push({
+                    investmentId: investment.id,
+                    type: 'DIVIDEND',
+                    date: new Date(div.date),
+                    quantity: div.quantity,
+                    price: div.rate, // Storing rate in price field
+                    fee: 0,
+                    currency: div.currency,
+                    accountId: div.accountId || null,
+                    platformId: platformId
                 });
 
                 // 4. Handle Reinvestment (DRIP)
@@ -69,27 +68,32 @@ export async function POST(request: Request) {
                     const rawQty = div.amount / div.price;
                     const reinvestQty = Math.round(rawQty * 10000) / 10000;
 
-                    await prisma.activity.create({
-                        data: {
-                            investmentId: investment.id,
-                            type: 'BUY',
-                            date: new Date(div.date),
-                            quantity: reinvestQty,
-                            price: div.price,
-                            fee: 0,
-                            currency: div.currency,
-                            accountId: div.accountId || null,
-                            platformId: platformId
-                        }
+                    activitiesToCreate.push({
+                        investmentId: investment.id,
+                        type: 'BUY',
+                        date: new Date(div.date),
+                        quantity: reinvestQty,
+                        price: div.price,
+                        fee: 0,
+                        currency: div.currency,
+                        accountId: div.accountId || null,
+                        platformId: platformId
                     });
                 }
 
                 results.push({ symbol: div.symbol, status: 'success' });
 
             } catch (err) {
-                console.error(`Error adding dividend for ${div.symbol}:`, err);
-                results.push({ symbol: div.symbol, status: 'error', message: 'Database error' });
+                console.error(`Error processing dividend for ${div.symbol}:`, err);
+                results.push({ symbol: div.symbol, status: 'error', message: 'Internal error' });
             }
+        }
+
+        // 5. Bulk Create Activities
+        if (activitiesToCreate.length > 0) {
+            await prisma.activity.createMany({
+                data: activitiesToCreate
+            });
         }
 
         return NextResponse.json({ results });

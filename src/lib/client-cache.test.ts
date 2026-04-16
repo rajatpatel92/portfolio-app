@@ -147,7 +147,7 @@ test('ClientCache', async (t) => {
             assert.strictEqual(storage[CACHE_PREFIX + 'other'], undefined); // Cleared
             assert.strictEqual(storage['not_our_prefix'], 'leave me alone'); // Not cleared
             assert.ok(storage[CACHE_PREFIX + 'test']); // Retried successfully
-
+            
             localStorageMock.setItem = originalSetItem;
         });
     });

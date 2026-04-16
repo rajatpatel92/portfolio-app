@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import YahooFinance from 'yahoo-finance2';
-import { getHoldingsAtDate, findDividendMatch } from '@/lib/portfolio-helper';
+import { getHoldingsAtDate } from '@/lib/portfolio-helper';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,6 +99,24 @@ export async function POST(request: Request) {
                     events: 'div'
                 });
 
+                // Pre-fetch all dividend activities for this symbol to avoid N+1 queries
+                // We fetch with a 10-day buffer around the scan range to handle fuzzy matching
+                const startBuffer = new Date(startDate);
+                startBuffer.setDate(startBuffer.getDate() - 10);
+                const endBuffer = new Date(endDate);
+                endBuffer.setDate(endBuffer.getDate() + 10);
+
+                const existingDividends = await prisma.activity.findMany({
+                    where: {
+                        investment: { symbol },
+                        type: 'DIVIDEND',
+                        date: {
+                            gte: startBuffer,
+                            lte: endBuffer
+                        }
+                    }
+                });
+
                 if (chartResult.events && chartResult.events.dividends) {
                     for (const div of chartResult.events.dividends) {
                         const divDate = new Date(div.date);
@@ -124,8 +142,16 @@ export async function POST(request: Request) {
                         for (const [accountId, quantity] of Object.entries(holdingsByAccount)) {
                             // Use epsilon for floating point comparison to avoid ghost dividends
                             if (quantity > 0.0001) {
-                                // Check for fuzzy match specifically for this account
-                                const match = await findDividendMatch(symbol, divDate, div.amount, accountId);
+                                // In-memory fuzzy match (+/- 10 days) for this account
+                                // Use epsilon for floating point comparison for the amount if needed in the future
+                                const match = existingDividends.find(d => {
+                                    if (accountId !== 'unknown' && d.accountId !== accountId) return false;
+                                    if (accountId === 'unknown' && d.accountId !== null) return false;
+
+                                    const dDate = new Date(d.date);
+                                    const diffDays = Math.abs(dDate.getTime() - divDate.getTime()) / (1000 * 60 * 60 * 24);
+                                    return diffDays <= 10;
+                                });
 
                                 const account = accountMap.get(accountId);
                                 let displayName = account?.name;

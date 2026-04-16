@@ -107,39 +107,69 @@ export class SplitService {
                     continue;
                 }
 
-                // Apply to Accounts
-                for (const accountId of relevantAccounts) {
-                    await prisma.activity.create({
-                        data: {
-                            investmentId: inv.id,
-                            type: 'STOCK_SPLIT',
-                            date: splitDate,
-                            quantity: ratio, // Store Ratio as Quantity
-                            price: 0,
-                            currency: inv.currencyCode,
-                            accountId: accountId
-                        }
-                    });
-                    console.log(`[SplitService] Applied split to Account ${accountId}`);
-                }
+                // Prepare activities for batch insertion
+                const activitiesToCreate = SplitService.prepareSplitActivities(
+                    inv.id,
+                    inv.currencyCode,
+                    splitDate,
+                    ratio,
+                    relevantAccounts,
+                    hasUnassigned
+                );
 
-                // Apply to Unassigned if needed
-                if (hasUnassigned) {
-                    await prisma.activity.create({
-                        data: {
-                            investmentId: inv.id,
-                            type: 'STOCK_SPLIT',
-                            date: splitDate,
-                            quantity: ratio,
-                            price: 0,
-                            currency: inv.currencyCode,
-                            accountId: null // Unassigned
-                        }
+                if (activitiesToCreate.length > 0) {
+                    await prisma.activity.createMany({
+                        data: activitiesToCreate
                     });
-                    console.log(`[SplitService] Applied split to Unassigned Account`);
+
+                    // Restore granular logging
+                    relevantAccounts.forEach(accountId => {
+                        console.log(`[SplitService] Applied split to Account ${accountId}`);
+                    });
+                    if (hasUnassigned) {
+                        console.log(`[SplitService] Applied split to Unassigned Account`);
+                    }
+                    console.log(`[SplitService] Batched ${activitiesToCreate.length} split activities for ${symbol}`);
                 }
             }
         }
         console.log('[SplitService] Detection complete.');
+    }
+
+    /**
+     * Prepares activity data for STOCK_SPLIT across multiple accounts.
+     * Extracted for testability and to avoid N+1 queries.
+     */
+    static prepareSplitActivities(
+        investmentId: string,
+        currencyCode: string,
+        date: Date,
+        ratio: number,
+        relevantAccounts: Set<string>,
+        hasUnassigned: boolean
+    ) {
+        const activities: any[] = Array.from(relevantAccounts).map(accountId => ({
+            investmentId,
+            type: 'STOCK_SPLIT',
+            date,
+            quantity: ratio,
+            price: 0,
+            currency: currencyCode,
+            accountId
+        }));
+
+        if (hasUnassigned) {
+            activities.push({
+                investmentId,
+                type: 'STOCK_SPLIT',
+                date,
+                quantity: ratio,
+                price: 0,
+                currency: currencyCode,
+                accountId: null
+            });
+        }
+
+        return activities;
     }
 }
