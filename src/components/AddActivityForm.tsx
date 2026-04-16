@@ -18,6 +18,10 @@ interface AddActivityFormProps {
     onCancel?: () => void;
 }
 
+function toLocalDateString(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export default function AddActivityForm({ onSuccess, initialData, onCancel }: AddActivityFormProps) {
     const [symbol, setSymbol] = useState('');
     const [symbolName, setSymbolName] = useState('');
@@ -28,7 +32,7 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
 
     // Other form fields
     const [type, setType] = useState('BUY');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(toLocalDateString(new Date()));
     const [quantity, setQuantity] = useState('');
     const [price, setPrice] = useState('');
     const [fee, setFee] = useState('');
@@ -90,7 +94,7 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
             setCurrency(initialData.investment.currencyCode || 'CAD');
 
             setType(initialData.type);
-            setDate(new Date(initialData.date).toISOString().split('T')[0]);
+            setDate(toLocalDateString(new Date(initialData.date)));
             setQuantity(initialData.quantity.toString());
             setPrice(initialData.price.toString());
             setFee(initialData.fee ? initialData.fee.toString() : '');
