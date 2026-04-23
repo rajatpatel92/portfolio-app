@@ -21,8 +21,9 @@ export default function InactivityManager() {
             if (timerRef.current) {
                 clearTimeout(timerRef.current);
             }
-            timerRef.current = setTimeout(() => {
-                signOut();
+            timerRef.current = setTimeout(async () => {
+                await signOut({ redirect: false });
+                window.location.href = '/login';
             }, TIMEOUT_MS);
         };
 
