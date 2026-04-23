@@ -256,7 +256,10 @@ export default function Sidebar({ aiEnabled }: { aiEnabled?: boolean }) {
 
                         <button
                             className={styles.logoutButton}
-                            onClick={() => signOut({ callbackUrl: '/login' })}
+                            onClick={async () => {
+                                await signOut({ redirect: false });
+                                window.location.href = '/login';
+                            }}
                             aria-label="Logout"
                             style={{
                                 background: 'none',
