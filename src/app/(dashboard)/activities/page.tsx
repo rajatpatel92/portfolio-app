@@ -1379,7 +1379,6 @@ export default function ActivitiesPage() {
                                         {paginatedActivities.map((activity) => {
                                             const fromCurrency = activity.investment.currencyCode || 'USD';
                                             const convertedPrice = convert(activity.price, fromCurrency);
-                                            // const convertedFee = convert(activity.fee || 0, fromCurrency); // Fee removed from display
 
                                             let total = activity.quantity * activity.price;
                                             if (activity.type === 'BUY') {
