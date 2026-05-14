@@ -39,6 +39,9 @@ export async function getHoldingsAtDate(symbol: string, date: Date): Promise<Rec
         } else if (activity.type === 'SPLIT' || activity.type === 'STOCK_SPLIT') {
             holdings[accId] *= activity.quantity;
         }
+
+        // Negative Holdings Protection
+        if (holdings[accId] < 0) holdings[accId] = 0;
     }
 
     // Filter out zero or negative holdings

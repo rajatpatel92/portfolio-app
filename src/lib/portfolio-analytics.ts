@@ -503,6 +503,9 @@ export class PortfolioAnalytics {
                 // e.g. 3:1 Split -> Quantity 3
                 holdings[symbol] = (holdings[symbol] || 0) * a.quantity;
 
+                // Negative Holdings Protection
+                if (holdings[symbol] < 0) holdings[symbol] = 0;
+
                 // Also adjust lastKnownPrice so the passive MV calculation on this day (and next)
                 // doesn't spike if the new market price hasn't arrived yet.
                 if (lastKnownPrices[symbol]) {
@@ -555,6 +558,9 @@ export class PortfolioAnalytics {
                     netFlow += flowVal * fxRate;
 
                     holdings[a.investment.symbol] = (holdings[a.investment.symbol] || 0) + a.quantity;
+
+                    // Negative Holdings Protection
+                    if (holdings[a.investment.symbol] < 0) holdings[a.investment.symbol] = 0;
                 } else if (a.type === 'SELL' || a.type === 'WITHDRAWAL') {
                     const flowVal = (Math.abs(a.quantity) * a.price) - (a.fee || 0); // Proceeds - Fee
                     netFlow -= flowVal * fxRate; // Outflow is negative
@@ -763,6 +769,9 @@ export class PortfolioAnalytics {
             if (a.type === 'BUY' || a.type === 'DEPOSIT') h[s] = (h[s] || 0) + a.quantity;
             if (a.type === 'SELL' || a.type === 'WITHDRAWAL') h[s] = (h[s] || 0) - Math.abs(a.quantity);
             if (a.type === 'STOCK_SPLIT' || a.type === 'SPLIT') h[s] = (h[s] || 0) * a.quantity;
+
+            // Negative Holdings Protection: prevent negative balances due to missing history
+            if (h[s] < 0) h[s] = 0;
         });
         return h;
     }

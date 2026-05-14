@@ -13,6 +13,8 @@ class PortfolioAnalyticsMock {
             if (a.type === 'BUY' || a.type === 'DEPOSIT') h[s] = (h[s] || 0) + a.quantity;
             if (a.type === 'SELL' || a.type === 'WITHDRAWAL') h[s] = (h[s] || 0) - Math.abs(a.quantity);
             if (a.type === 'STOCK_SPLIT' || a.type === 'SPLIT') h[s] = (h[s] || 0) * a.quantity;
+
+            if (h[s] < 0) h[s] = 0;
         });
         return h;
     }
@@ -75,14 +77,14 @@ test('PortfolioAnalytics.computeHoldingsState', async (t) => {
         assert.deepStrictEqual(result, { AAPL: 10 });
     });
 
-    await t.test('allows negative holdings (overselling)', () => {
+    await t.test('prevents negative holdings (overselling)', () => {
         const activities = [
             { type: 'BUY', quantity: 10, investment: { symbol: 'AAPL' }, price: 150 },
             { type: 'SELL', quantity: 15, investment: { symbol: 'AAPL' }, price: 160 },
         ];
 
         const result = PortfolioAnalyticsMock.computeHoldingsState(activities);
-        assert.deepStrictEqual(result, { AAPL: -5 });
+        assert.deepStrictEqual(result, { AAPL: 0 });
     });
 
     await t.test('handles DEPOSIT as BUY', () => {
