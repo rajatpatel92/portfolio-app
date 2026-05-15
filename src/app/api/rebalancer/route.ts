@@ -50,22 +50,17 @@ export async function GET(request: NextRequest) {
             }
         }));
 
-        // Pre-fetch unique exchange rates to avoid N+1 DB lookups
-        const uniqueCurrencies = [...new Set(prices.map(p => p.currency).filter(c => c !== 'USD'))];
-        const exchangeRateEntries = await Promise.all(
-            uniqueCurrencies.map(async (curr) => {
-                const rate = await MarketDataService.getExchangeRate(curr, 'USD');
-                return [curr, rate || 1] as [string, number];
-            })
-        );
-        const exchangeRateMap = new Map<string, number>(exchangeRateEntries);
+        // Pre-fetch unique exchange rates to USD in parallel
+        const uniqueCurrencies = Array.from(new Set(prices.map(p => p.currency).filter(c => c !== 'USD')));
+        const exchangeRates = await Promise.all(uniqueCurrencies.map(async (currency) => {
+            const r = await MarketDataService.getExchangeRate(currency, 'USD');
+            return { currency, rate: r || 1 };
+        }));
+        const rateMap = new Map(exchangeRates.map(er => [er.currency, er.rate]));
 
         for (const pd of prices) {
             const qty = holdings[pd.symbol] || 0;
-            let rateToUSD = 1;
-            if (pd.currency !== 'USD') {
-                rateToUSD = exchangeRateMap.get(pd.currency) || 1;
-            }
+            const rateToUSD = pd.currency === 'USD' ? 1 : (rateMap.get(pd.currency) || 1);
 
             const valueUSD = qty * pd.price * rateToUSD;
             totalValueUSD += valueUSD;

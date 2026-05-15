@@ -4,12 +4,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useCurrency } from '@/context/CurrencyContext';
-import PortfolioChart from '@/components/PortfolioChart';
 import StockChart from '@/components/StockChart';
 import { formatQuantity } from '@/lib/format';
 import styles from './page.module.css';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { Pie } from 'react-chartjs-2';
 import { MdRefresh, MdArrowBack } from 'react-icons/md';
 import Link from 'next/link';
 import SymbolSkeleton from '@/components/SymbolSkeleton';

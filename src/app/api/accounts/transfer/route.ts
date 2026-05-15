@@ -128,9 +128,9 @@ export async function POST(request: Request) {
         }
 
         // 5. Save all new activities in a transaction
-        await prisma.$transaction(
-            transferActivitiesToCreate.map(data => prisma.activity.create({ data }))
-        );
+        await prisma.activity.createMany({
+            data: transferActivitiesToCreate
+        });
 
         return NextResponse.json({ success: true, transferredHoldingsCount: transferActivitiesToCreate.length / 2 });
 
