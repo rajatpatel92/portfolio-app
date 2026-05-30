@@ -219,6 +219,17 @@ export default function PerformanceChart({
         return `${val.toFixed(0)}%`;
     };
 
+    const formatTooltipValue = (val: number) => {
+        const maxVal = chartData.length > 0 ? Math.max(...chartData.map(d => Math.abs(d.value))) : 0;
+        if (maxVal < 0.01) {
+            return [`${val.toFixed(4)}%`, 'Time-Weighted Return'];
+        }
+        if (maxVal < 0.1) {
+            return [`${val.toFixed(3)}%`, 'Time-Weighted Return'];
+        }
+        return [`${val.toFixed(2)}%`, 'Time-Weighted Return'];
+    };
+
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -345,7 +356,7 @@ export default function PerformanceChart({
                             axisLine={false}
                         />
                         <Tooltip
-                            formatter={(val: number) => [`${val.toFixed(2)}%`, 'Time-Weighted Return']}
+                            formatter={formatTooltipValue}
                             labelFormatter={(label) => {
                                 if (range === '1D') {
                                     return new Date(label).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
