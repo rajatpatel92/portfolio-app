@@ -43,7 +43,7 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
     const [currency, setCurrency] = useState('CAD');
 
     const [platforms, setPlatforms] = useState<{ id: string, name: string }[]>([]);
-    const [accounts, setAccounts] = useState<{ id: string, name: string, type: string, platformId: string, currency: string }[]>([]);
+    const [accounts, setAccounts] = useState<{ id: string, name: string, type: string, platformId: string, currency: string, isActive?: boolean }[]>([]);
     // ... inside component ...
     interface InvestmentType {
         id: string;
@@ -402,7 +402,7 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
                     >
                         <option value="">Select Account</option>
                         {accounts
-                            .filter(a => a.currency === currency)
+                            .filter(a => a.currency === currency && (a.isActive !== false || a.id === accountId))
                             .map(a => {
                                 const user = users.find(u => u.username === a.name);
                                 const displayName = user?.name || a.name;
