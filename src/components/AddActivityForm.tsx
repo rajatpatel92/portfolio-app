@@ -406,8 +406,11 @@ export default function AddActivityForm({ onSuccess, initialData, onCancel }: Ad
                             .map(a => {
                                 const user = users.find(u => u.username === a.name);
                                 const displayName = user?.name || a.name;
+                                const platform = platforms.find(p => p.id === a.platformId);
+                                const platformName = platform?.name || '';
+                                const label = platformName ? `${displayName} - ${a.type} - ${platformName}` : `${displayName} - ${a.type}`;
                                 return (
-                                    <option key={a.id} value={a.id}>{displayName} - {a.type}</option>
+                                    <option key={a.id} value={a.id}>{label}</option>
                                 );
                             })}
                     </select>
