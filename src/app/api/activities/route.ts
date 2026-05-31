@@ -96,9 +96,11 @@ export async function GET(request: Request) {
                 platform: true,
                 account: true,
             },
-            orderBy: {
-                date: 'desc',
-            },
+            orderBy: [
+                { date: 'desc' },
+                { createdAt: 'desc' },
+                { id: 'desc' }
+            ],
         });
         return NextResponse.json(activities);
     } catch (error) {
