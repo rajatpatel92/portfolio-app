@@ -22,6 +22,12 @@ export async function GET(request: NextRequest) {
 
         // 2. Fetch Holdings
         let activities = await prisma.activity.findMany({
+            where: {
+                OR: [
+                    { accountId: null },
+                    { account: { isActive: true } }
+                ]
+            },
             include: { investment: true, account: true }
         });
 
